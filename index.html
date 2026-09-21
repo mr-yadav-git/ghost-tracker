@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GHOST Tracker</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; color: #fff; font-size: 1.5rem; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #777; font-size: 0.85rem; margin-bottom: 20px; }
+        
+        #auth-screen {
+            max-width: 400px;
+            margin: 80px auto;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            padding: 30px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        #auth-screen input {
+            width: 80%;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            font-family: monospace;
+            border-radius: 3px;
+        }
+        #app-screen { display: none; }
+
+        .profile-bar {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h3 { margin: 0; font-size: 1.1rem; }
+        canvas {
+            background: #181818;
+            border: 1px solid #2c2c2c;
+            width: 100%;
+            height: 140px;
+            display: block;
+        }
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 5px;
+            margin-top: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+            padding: 5px;
+            background: #151515;
+            border: 1px solid #2c2c2c;
+        }
+        .input-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+        }
+        .input-cell input {
+            width: 40px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            text-align: center;
+            font-family: monospace;
+            padding: 2px;
+        }
+        
+        /* Hide up/down spinner arrows for number inputs in grid */
+        .input-cell input::-webkit-inner-spin-button, 
+        .input-cell input::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .input-cell input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            align-items: center;
+        }
+        button, select, input[type="text"], input[type="password"], input[type="number"] {
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            font-family: monospace;
+            border-radius: 3px;
+        }
+        button:hover { background: #3d3d3d; cursor: pointer; }
+        .danger-btn { background: #500 !important; border-color: #800 !important; padding: 4px 8px !important; font-size: 0.75rem !important; }
+        .danger-btn:hover { background: #700 !important; }
+        .admin-panel { border-color: #00ff66; background: #151a15; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="auth-screen">
+        <h2>Embrace Yourself(Create/LogIn)</h2>
+        <p style="color:#777; font-size:0.8rem; margin-bottom:20px;">Enter your username & password.</p>
+        <input type="text" id="auth-user" placeholder="Username" /><br>
+        <input type="password" id="auth-pass" placeholder="Password" /><br>
+        <button onclick="handleLogin()" style="width: 88%; padding: 10px; background: #00ff66; color: #000; font-weight: bold; border: none;">Access Matrix</button>
+        <p id="auth-error" style="color: #ff3333; font-size: 0.8rem; margin-top: 15px;"></p>
+    </div>
+
+    <!-- MAIN TRACKER APP SCREEN -->
+    <div id="app-screen">
+        <h1>Ghost Mode</h1>
+        <div class="subtitle">System-Monitor Style Habit & Goal Tracker</div>
+
+        <div class="profile-bar">
+            <div>Logged in as: <b id="display-user" style="color: #00ff66;"></b></div>
+            <button onclick="handleLogout()" class="danger-btn">Logout</button>
+        </div>
+
+        <!-- ADMIN PANEL -->
+        <div id="admin-section" class="card admin-panel" style="display: none;">
+            <h3 style="color: #00ff66;">⚡ ADMIN OVERRIDE PANEL</h3>
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Manage registered users, reset passwords, or securely delete accounts using two-step verification.</p>
+            <div id="users-list-container" style="margin-top: 15px; font-size: 0.85rem;"></div>
+        </div>
+
+        <div id="trackers-container"></div>
+
+        <div class="card">
+            <h3>+ Add New Custom Graph</h3>
+            <div class="form-group">
+                <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" style="flex: 2; min-width: 180px;" />
+                <input type="number" id="new-max" placeholder="Max Y-Axis (e.g. 12)" style="width: 150px;" />
+                <select id="new-color">
+                    <option value="#00ff66">Green Line</option>
+                    <option value="#ff3333">Red Line</option>
+                    <option value="#3399ff">Blue Line</option>
+                    <option value="#ffcc00">Yellow Line</option>
+                </select>
+                <button onclick="addNewTracker()">Create Graph</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentUser = null;
+    let trackers = [];
+
+    const MASTER_ADMIN = 'mr_yadav'; 
+
+    function handleLogin() {
+        const user = document.getElementById('auth-user').value.trim();
+        const pass = document.getElementById('auth-pass').value;
+        const errTag = document.getElementById('auth-error');
+
+        if (!user || !pass) {
+            errTag.innerText = 'Error: Username and password are required.';
+            return;
+        }
+
+        let usersDb = JSON.parse(localStorage.getItem('sys_users_db')) || {};
+
+        if (usersDb[user]) {
+            if (usersDb[user].pass !== pass) {
+                errTag.innerText = 'Error: Incorrect password for this username.';
+                return;
+            }
+        } else {
+            usersDb[user] = { pass: pass };
+            localStorage.setItem('sys_users_db', JSON.stringify(usersDb));
+        }
+
+        currentUser = user;
+        document.getElementById('display-user').innerText = currentUser;
+        
+        if (currentUser === MASTER_ADMIN) {
+            document.getElementById('admin-section').style.display = 'block';
+            renderAdminPanel();
+        } else {
+            document.getElementById('admin-section').style.display = 'none';
+        }
+
+        const savedData = localStorage.getItem('sys_trackers_' + currentUser);
+        trackers = savedData ? JSON.parse(savedData) : [];
+
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'block';
+        render();
+    }
+
+    function renderAdminPanel() {
+        const container = document.getElementById('users-list-container');
+        let usersDb = JSON.parse(localStorage.getItem('sys_users_db')) || {};
+        
+        let html = '<table style="width:100%; border-collapse: collapse;">';
+        html += '<tr style="border-bottom: 1px solid #333; text-align: left;"><th>Username</th><th>Password</th><th>Actions</th></tr>';
+        
+        for (let username in usersDb) {
+            html += `<tr style="border-bottom: 1px solid #222;">
+                <td style="padding: 6px;">${username}</td>
+                <td style="padding: 6px; color: #888;">${usersDb[username].pass}</td>
+                <td style="padding: 6px; display: flex; gap: 6px;">
+                    <button onclick="adminResetPassword('${username}')" style="padding: 2px 6px; font-size: 0.7rem;">Reset Pass</button>
+                    ${username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${username}')" class="danger-btn">Delete</button>` : ''}
+                </td>
+            </tr>`;
+        }
+        html += '</table>';
+        container.innerHTML = html;
+    }
+
+    function adminResetPassword(targetUser) {
+        let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
+        if (!newPass) return;
+
+        let usersDb = JSON.parse(localStorage.getItem('sys_users_db')) || {};
+        if (usersDb[targetUser]) {
+            usersDb[targetUser].pass = newPass;
+            localStorage.setItem('sys_users_db', JSON.stringify(usersDb));
+            alert(`Password for "${targetUser}" successfully updated.`);
+            renderAdminPanel();
+        }
+    }
+
+    function adminDeleteAccount(targetUser) {
+        let adminPassInput = prompt(`SECURITY 2FA: To delete account "${targetUser}", please enter your Admin Password (${MASTER_ADMIN}):`);
+        if (!adminPassInput) return;
+
+        let usersDb = JSON.parse(localStorage.getItem('sys_users_db')) || {};
+
+        if (usersDb[MASTER_ADMIN].pass !== adminPassInput) {
+            alert('Authentication Failed: Incorrect admin password. Account deletion aborted.');
+            return;
+        }
+
+        if (confirm(`Are you absolutely sure you want to completely erase user "${targetUser}" and all their data?`)) {
+            delete usersDb[targetUser];
+            localStorage.setItem('sys_users_db', JSON.stringify(usersDb));
+            localStorage.removeItem('sys_trackers_' + targetUser);
+            alert(`Account "${targetUser}" has been permanently deleted.`);
+            renderAdminPanel();
+        }
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        trackers = [];
+        document.getElementById('auth-user').value = '';
+        document.getElementById('auth-pass').value = '';
+        document.getElementById('auth-error').innerText = '';
+        document.getElementById('app-screen').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'block';
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('sys_trackers_' + currentUser, JSON.stringify(trackers));
+        render();
+    }
+
+    function updateValue(id, dayIndex, val) {
+        const tracker = trackers.find(t => t.id === id);
+        tracker.data[dayIndex] = parseFloat(val) || 0;
+        saveAndRender();
+    }
+
+    function render() {
+        const container = document.getElementById('trackers-container');
+        container.innerHTML = '';
+
+        if(trackers.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center; color:#777; padding:30px;">No graphs created yet. Use the builder below to add your first graph!</div>`;
+            return;
+        }
+
+        trackers.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            let inputsHtml = '';
+            for(let i = 0; i < 30; i++) {
+                inputsHtml += `
+                    <div class="input-cell">
+                        <span>${i+1}</span>
+                        <input type="number" value="${t.data[i]}" onchange="updateValue('${t.id}', ${i}, this.value)" />
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${t.title} <span style="font-size:0.8rem; color:#777;">(Max Y: ${t.max})</span></h3>
+                    <button class="danger-btn" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                </div>
+                <canvas id="canvas-${t.id}"></canvas>
+                <div class="inputs-grid">${inputsHtml}</div>
+            `;
+            container.appendChild(card);
+            drawGraph(t);
+        });
+    }
+
+    function drawGraph(t) {
+        const canvas = document.getElementById(`canvas-${t.id}`);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = canvas.parentElement.clientWidth - 30;
+        canvas.height = 140;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#222222';
+        ctx.lineWidth = 1;
+        const rows = 4;
+        for (let i = 0; i <= rows; i++) {
+            let y = (canvas.height / rows) * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#555';
+            ctx.font = '10px monospace';
+            let labelVal = Math.round(t.max - (t.max / rows) * i);
+            ctx.fillText(labelVal, canvas.width - 30, y > 10 ? y - 3 : 10);
+        }
+
+        const dx = canvas.width / 29;
+        ctx.strokeStyle = t.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        t.data.forEach((val, i) => {
+            let x = i * dx;
+            let clampedVal = Math.min(val, t.max);
+            let y = canvas.height - (clampedVal / t.max) * canvas.height;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+    }
+
+    function addNewTracker() {
+        const titleInput = document.getElementById('new-title');
+        const maxInput = document.getElementById('new-max');
+        const colorInput = document.getElementById('new-color');
+        
+        if(!titleInput.value || !maxInput.value) {
+            alert('Please fill in both the title and max Y-axis value.');
+            return;
+        }
+
+        const newId = 'tracker_' + Date.now();
+        trackers.push({
+            id: newId,
+            title: titleInput.value,
+            color: colorInput.value,
+            data: Array(30).fill(0),
+            max: parseFloat(maxInput.value) || 100
+        });
+
+        titleInput.value = '';
+        maxInput.value = '';
+        saveAndRender();
+    }
+
+    function deleteTracker(id, title) {
+        const confirmed = confirm(`Are you sure you want to delete the graph "${title}"? This cannot be undone.`);
+        if (confirmed) {
+            trackers = trackers.filter(t => t.id !== id);
+            saveAndRender();
+        }
+    }
+
+    window.onresize = () => trackers.forEach(drawGraph);
+</script>
+
+</body>
+</html>
