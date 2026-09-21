@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold tracking-wider text-emerald-400">GHOST TRACKER</h1>
+            <p class="text-xs text-gray-400 mt-1">Global Cloud Matrix Synchronization</p>
+        </div>
+
+        <!-- Auth Section -->
+        <div id="auth-container">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Username</label>
+                    <input type="text" id="username" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleLogin()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Sign In</button>
+                    <button onclick="handleSignup()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2 rounded-lg text-sm transition">Register</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section (Hidden by default) -->
+        <div id="dashboard-container" class="hidden space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-800">
+                <span class="text-sm text-gray-400">Logged in as: <strong id="current-user" class="text-emerald-400"></strong></span>
+                <button onclick="handleLogout()" class="text-xs text-red-400 hover:underline">Sign Out</button>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1">Encrypted Data / Notes</label>
+                <textarea id="user-data" rows="4" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="Store your matrix data here..."></textarea>
+            </div>
+            <button onclick="saveData()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Save to Cloud</button>
+        </div>
+
+        <p id="status-msg" class="text-xs text-center mt-4 h-4 text-emerald-500"></p>
+    </div>
+
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://mzscytgqzquyfkllrjbp.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_UNtkwhDfD5-NFwNUoLKduQ_iZiXKMl5';
+        
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+
+        function setStatus(msg, isError = false) {
+            const el = document.getElementById('status-msg');
+            el.textContent = msg;
+            el.className = `text-xs text-center mt-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}`;
+        }
+
+        async function handleSignup() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            if (!u || !p) return setStatus('Fill in all fields', true);
+
+            const { error } = await _supabase.from('profiles').insert([{ username: u, password: p, data: '' }]);
+            if (error) {
+                setStatus(error.message, true);
+            } else {
+                setStatus('Account created successfully! You can now log in.');
+            }
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            if (!u || !p) return setStatus('Fill in all fields', true);
+
+            const { data, error } = await _supabase.from('profiles').select('*').eq('username', u).eq('password', p).single();
+            if (error || !data) {
+                setStatus('Invalid credentials', true);
+            } else {
+                currentUser = u;
+                document.getElementById('current-user').textContent = u;
+                document.getElementById('user-data').value = data.data || '';
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('dashboard-container').classList.remove('hidden');
+                setStatus('Connected to cloud matrix.');
+            }
+        }
+
+        async function saveData() {
+            if (!currentUser) return;
+            const content = document.getElementById('user-data').value;
+            const { error } = await _supabase.from('profiles').update({ data: content }).eq('username', currentUser);
+            if (error) {
+                setStatus('Failed to sync data', true);
+            } else {
+                setStatus('Data synchronized successfully!');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('dashboard-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+            setStatus('Logged out.');
+        }
+    </script>
+</body>
+</html>
