@@ -8,47 +8,79 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .input-cell input::-webkit-inner-spin-button, 
+        .input-cell input::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .input-cell input[type=number] { -moz-appearance: textfield; }
+    </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl">
-        <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold tracking-wider text-emerald-400">GHOST TRACKER</h1>
-            <p class="text-xs text-gray-400 mt-1">Global Cloud Matrix Synchronization</p>
-        </div>
-
-        <!-- Auth Section -->
-        <div id="auth-container">
+    <div class="w-full max-w-4xl mx-auto">
+        
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl mt-16">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold tracking-wider text-emerald-400">GHOST TRACKER</h1>
+                <p class="text-xs text-gray-400 mt-1">Embrace Yourself (Create / Log In)</p>
+            </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Username</label>
-                    <input type="text" id="username" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="text" id="auth-user" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
-                    <input type="password" id="password" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                    <input type="password" id="auth-pass" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="handleLogin()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Sign In</button>
-                    <button onclick="handleSignup()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2 rounded-lg text-sm transition">Register</button>
+                <button onclick="handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Access Cloud Matrix</button>
+                <p id="auth-error" class="text-xs text-center text-red-400 h-4"></p>
+            </div>
+        </div>
+
+        <!-- App Screen -->
+        <div id="app-screen" class="hidden space-y-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold tracking-wider text-emerald-400">Ghost Mode</h1>
+                <p class="text-xs text-gray-400 mt-1">Cloud-Synced System-Monitor Habit & Goal Tracker</p>
+            </div>
+
+            <!-- Profile Bar -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-xl flex justify-between items-center">
+                <span class="text-sm text-gray-400">Logged in as: <strong id="display-user" class="text-emerald-400"></strong></span>
+                <button onclick="handleLogout()" class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 text-xs px-3 py-1.5 rounded-lg transition">Logout</button>
+            </div>
+
+            <!-- Global Admin Override Panel -->
+            <div id="admin-section" class="bg-gray-900 border border-emerald-500/50 rounded-xl p-5 shadow-xl hidden">
+                <h3 class="text-emerald-400 font-bold text-sm tracking-wider flex items-center gap-2">⚡ GLOBAL ADMIN OVERRIDE PANEL</h3>
+                <p class="text-xs text-gray-400 mt-1">Manage global users, reset passwords, or securely delete accounts across the cloud database.</p>
+                <div id="users-list-container" class="mt-4 text-xs overflow-x-auto">Loading users...</div>
+            </div>
+
+            <!-- Dynamic Trackers Container -->
+            <div id="trackers-container" class="space-y-6"></div>
+
+            <!-- Add New Custom Graph Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl">
+                <h3 class="text-sm font-semibold text-gray-200 mb-3">+ Add New Custom Graph</h3>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                    <input type="number" id="new-max" placeholder="Max Y-Axis (e.g. 12)" class="w-40 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                    <select id="new-color" class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500">
+                        <option value="#34d399">Green Line</option>
+                        <option value="#f87171">Red Line</option>
+                        <option value="#60a5fa">Blue Line</option>
+                        <option value="#fbbf24">Yellow Line</option>
+                    </select>
+                    <button onclick="addNewTracker()" class="bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold px-4 py-2 rounded-lg text-sm transition">Create Graph</button>
                 </div>
             </div>
         </div>
 
-        <!-- Dashboard Section (Hidden by default) -->
-        <div id="dashboard-container" class="hidden space-y-4">
-            <div class="flex justify-between items-center pb-3 border-b border-gray-800">
-                <span class="text-sm text-gray-400">Logged in as: <strong id="current-user" class="text-emerald-400"></strong></span>
-                <button onclick="handleLogout()" class="text-xs text-red-400 hover:underline">Sign Out</button>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1">Encrypted Data / Notes</label>
-                <textarea id="user-data" rows="4" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="Store your matrix data here..."></textarea>
-            </div>
-            <button onclick="saveData()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Save to Cloud</button>
-        </div>
-
-        <p id="status-msg" class="text-xs text-center mt-4 h-4 text-emerald-500"></p>
     </div>
 
     <script>
@@ -56,67 +88,259 @@
         const SUPABASE_URL = 'https://mzscytgqzquyfkllrjbp.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_UNtkwhDfD5-NFwNUoLKduQ_iZiXKMl5';
         
-        const { createClient } = supabase;
-        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
-
-        function setStatus(msg, isError = false) {
-            const el = document.getElementById('status-msg');
-            el.textContent = msg;
-            el.className = `text-xs text-center mt-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}`;
-        }
-
-        async function handleSignup() {
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-            if (!u || !p) return setStatus('Fill in all fields', true);
-
-            const { error } = await _supabase.from('profiles').insert([{ username: u, password: p, data: '' }]);
-            if (error) {
-                setStatus(error.message, true);
-            } else {
-                setStatus('Account created successfully! You can now log in.');
-            }
-        }
+        let trackers = [];
+        const MASTER_ADMIN = 'mr_yadav'; 
 
         async function handleLogin() {
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-            if (!u || !p) return setStatus('Fill in all fields', true);
+            const user = document.getElementById('auth-user').value.trim();
+            const pass = document.getElementById('auth-pass').value;
+            const errTag = document.getElementById('auth-error');
 
-            const { data, error } = await _supabase.from('profiles').select('*').eq('username', u).eq('password', p).single();
-            if (error || !data) {
-                setStatus('Invalid credentials', true);
+            if (!user || !pass) {
+                errTag.innerText = 'Error: Username and password are required.';
+                return;
+            }
+
+            const { data: existingUser, error } = await client
+                .from('profiles')
+                .select('*')
+                .eq('username', user)
+                .single();
+
+            if (existingUser) {
+                if (existingUser.password !== pass) {
+                    errTag.innerText = 'Error: Incorrect password for this username.';
+                    return;
+                }
+                trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
             } else {
-                currentUser = u;
-                document.getElementById('current-user').textContent = u;
-                document.getElementById('user-data').value = data.data || '';
-                document.getElementById('auth-container').classList.add('hidden');
-                document.getElementById('dashboard-container').classList.remove('hidden');
-                setStatus('Connected to cloud matrix.');
+                trackers = [];
+                const { error: insertError } = await client
+                    .from('profiles')
+                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers) }]);
+                
+                if (insertError) {
+                    errTag.innerText = 'Error creating user in cloud database.';
+                    return;
+                }
+            }
+
+            currentUser = user;
+            document.getElementById('display-user').innerText = currentUser;
+            
+            if (currentUser === MASTER_ADMIN) {
+                document.getElementById('admin-section').classList.remove('hidden');
+                renderAdminPanel();
+            } else {
+                document.getElementById('admin-section').classList.add('hidden');
+            }
+
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            render();
+        }
+
+        async function renderAdminPanel() {
+            const container = document.getElementById('users-list-container');
+            const { data: users, error } = await client.from('profiles').select('username, password');
+            
+            if (error) {
+                container.innerHTML = 'Error loading users from cloud.';
+                return;
+            }
+            
+            let html = '<table class="w-full border-collapse text-left">';
+            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2 px-3">Username</th><th class="py-2 px-3">Password</th><th class="py-2 px-3">Actions</th></tr>';
+            
+            users.forEach(u => {
+                html += `<tr class="border-b border-gray-800/50">
+                    <td class="py-2.5 px-3 text-emerald-400 font-medium">${u.username}</td>
+                    <td class="py-2.5 px-3 text-gray-400">${u.password}</td>
+                    <td class="py-2.5 px-3 flex gap-2">
+                        <button onclick="adminResetPassword('${u.username}')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded text-xs transition">Reset Pass</button>
+                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-2 py-1 rounded text-xs transition">Delete</button>` : ''}
+                    </td>
+                </tr>`;
+            });
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        async function adminResetPassword(targetUser) {
+            let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
+            if (!newPass) return;
+
+            const { error } = await client
+                .from('profiles')
+                .update({ password: newPass })
+                .eq('username', targetUser);
+
+            if (!error) {
+                alert(`Password for "${targetUser}" successfully updated.`);
+                renderAdminPanel();
+            } else {
+                alert('Failed to update password.');
             }
         }
 
-        async function saveData() {
-            if (!currentUser) return;
-            const content = document.getElementById('user-data').value;
-            const { error } = await _supabase.from('profiles').update({ data: content }).eq('username', currentUser);
-            if (error) {
-                setStatus('Failed to sync data', true);
-            } else {
-                setStatus('Data synchronized successfully!');
+        async function adminDeleteAccount(targetUser) {
+            let adminPassInput = prompt(`SECURITY 2FA: To delete account "${targetUser}", please enter your Admin Password (${MASTER_ADMIN}):`);
+            if (!adminPassInput) return;
+
+            const { data: adminData } = await client.from('profiles').select('password').eq('username', MASTER_ADMIN).single();
+            if (!adminData || adminData.password !== adminPassInput) {
+                alert('Authentication Failed: Incorrect admin password. Account deletion aborted.');
+                return;
+            }
+
+            if (confirm(`Are you absolutely sure you want to completely erase user "${targetUser}" from the cloud?`)) {
+                const { error } = await client.from('profiles').delete().eq('username', targetUser);
+                if (!error) {
+                    alert(`Account "${targetUser}" has been permanently deleted from the database.`);
+                    renderAdminPanel();
+                } else {
+                    alert('Deletion failed.');
+                }
             }
         }
 
         function handleLogout() {
             currentUser = null;
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('dashboard-container').classList.add('hidden');
-            document.getElementById('auth-container').classList.remove('hidden');
-            setStatus('Logged out.');
+            trackers = [];
+            document.getElementById('auth-user').value = '';
+            document.getElementById('auth-pass').value = '';
+            document.getElementById('auth-error').innerText = '';
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
         }
+
+        async function saveAndCloudSync() {
+            await client
+                .from('profiles')
+                .update({ data: JSON.stringify(trackers) })
+                .eq('username', currentUser);
+            render();
+        }
+
+        function updateValue(id, dayIndex, val) {
+            const tracker = trackers.find(t => t.id === id);
+            tracker.data[dayIndex] = parseFloat(val) || 0;
+            saveAndCloudSync();
+        }
+
+        function render() {
+            const container = document.getElementById('trackers-container');
+            container.innerHTML = '';
+
+            if(trackers.length === 0) {
+                container.innerHTML = `<div class="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center text-gray-500 text-sm">No graphs created yet. Use the builder below to add your first graph!</div>`;
+                return;
+            }
+
+            trackers.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl space-y-4';
+                
+                let inputsHtml = '';
+                for(let i = 0; i < 30; i++) {
+                    inputsHtml += `
+                        <div class="flex flex-col items-center text-[10px] text-gray-500">
+                            <span class="mb-1">${i+1}</span>
+                            <input type="number" value="${t.data[i]}" onchange="updateValue('${t.id}', ${i}, this.value)" class="w-10 bg-gray-950 border border-gray-800 text-gray-200 text-center rounded p-1 focus:outline-none focus:border-emerald-500 font-mono text-xs" />
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-semibold text-gray-200">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Y: ${t.max})</span></h3>
+                        <button class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-3 py-1 rounded text-xs transition" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                    </div>
+                    <canvas id="canvas-${t.id}" class="w-full h-[140px] bg-gray-950 border border-gray-800 rounded-lg block"></canvas>
+                    <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-950 border border-gray-800 rounded-lg">${inputsHtml}</div>
+                `;
+                container.appendChild(card);
+                drawGraph(t);
+            });
+        }
+
+        function drawGraph(t) {
+            const canvas = document.getElementById(`canvas-${t.id}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth - 40;
+            canvas.height = 140;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#1f2937';
+            ctx.lineWidth = 1;
+            const rows = 4;
+            for (let i = 0; i <= rows; i++) {
+                let y = (canvas.height / rows) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '10px monospace';
+                let labelVal = Math.round(t.max - (t.max / rows) * i);
+                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
+            }
+
+            const dx = canvas.width / 29;
+            ctx.strokeStyle = t.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            t.data.forEach((val, i) => {
+                let x = i * dx;
+                let clampedVal = Math.min(val, t.max);
+                let y = canvas.height - (clampedVal / t.max) * canvas.height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
+
+        function addNewTracker() {
+            const titleInput = document.getElementById('new-title');
+            const maxInput = document.getElementById('new-max');
+            const colorInput = document.getElementById('new-color');
+            
+            if(!titleInput.value || !maxInput.value) {
+                alert('Please fill in both the title and max Y-axis value.');
+                return;
+            }
+
+            const newId = 'tracker_' + Date.now();
+            trackers.push({
+                id: newId,
+                title: titleInput.value,
+                color: colorInput.value,
+                data: Array(30).fill(0),
+                max: parseFloat(maxInput.value) || 100
+            });
+
+            titleInput.value = '';
+            maxInput.value = '';
+            saveAndCloudSync();
+        }
+
+        function deleteTracker(id, title) {
+            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"? This cannot be undone.`);
+            if (confirmed) {
+                trackers = trackers.filter(t => t.id !== id);
+                saveAndCloudSync();
+            }
+        }
+
+        window.onresize = () => trackers.forEach(drawGraph);
     </script>
 </body>
 </html>
