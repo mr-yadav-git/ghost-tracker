@@ -84,7 +84,6 @@
     </div>
 
     <script>
-        // Supabase Configuration
         const SUPABASE_URL = 'https://mzscytgqzquyfkllrjbp.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_UNtkwhDfD5-NFwNUoLKduQ_iZiXKMl5';
         
@@ -98,25 +97,34 @@
             const user = document.getElementById('auth-user').value.trim();
             const pass = document.getElementById('auth-pass').value;
             const errTag = document.getElementById('auth-error');
+            errTag.innerText = '';
 
             if (!user || !pass) {
                 errTag.innerText = 'Error: Username and password are required.';
                 return;
             }
 
-            const { data: existingUser, error } = await client
+            // Check if user exists
+            const { data: existingUser, error: fetchError } = await client
                 .from('profiles')
                 .select('*')
                 .eq('username', user)
-                .single();
+                .maybeSingle();
+
+            if (fetchError) {
+                errTag.innerText = 'Database connection error. Try again.';
+                return;
+            }
 
             if (existingUser) {
+                // User exists -> Validate password
                 if (existingUser.password !== pass) {
-                    errTag.innerText = 'Error: Incorrect password for this username.';
+                    errTag.innerText = 'Error: Incorrect password. Username already exists.';
                     return;
                 }
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
             } else {
+                // User does not exist -> Create new account
                 trackers = [];
                 const { error: insertError } = await client
                     .from('profiles')
@@ -293,7 +301,7 @@
                 ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
             }
 
-            const dx = canvas.width / 29;
+const dx = canvas.width / 29;
             ctx.strokeStyle = t.color;
             ctx.lineWidth = 2;
             ctx.beginPath();
