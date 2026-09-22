@@ -96,7 +96,7 @@
                 <!-- Admin Tab Content: Separate "Users" View -->
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-gray-400">Complete registered user directory and access controls.</p>
+                        <p class="text-xs text-gray-400">Complete registered user directory, credentials, and last activity metrics.</p>
                         <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500 w-56" />
                     </div>
                     <div class="max-h-96 overflow-y-auto border border-gray-800 rounded-lg p-2 bg-gray-950">
@@ -160,6 +160,12 @@
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
                 document.getElementById('display-user').innerText = currentUser;
                 
+                // Update last action timestamp on session restore/refresh
+                await client
+                    .from('profiles')
+                    .update({ last_action: new Date().toISOString() })
+                    .eq('username', currentUser);
+
                 if (currentUser === MASTER_ADMIN) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -199,17 +205,21 @@
                 return;
             }
 
+            const now = new Date().toISOString();
+
             if (existingUser) {
                 if (existingUser.password !== pass) {
                     errTag.innerText = 'Error: Incorrect password. Username already exists.';
                     return;
                 }
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
+                // Update last action on login
+                await client.from('profiles').update({ last_action: now }).eq('username', user);
             } else {
                 trackers = [];
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers) }]);
+                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers), last_action: now }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -260,7 +270,7 @@
             const container = document.getElementById('users-list-container');
             container.innerHTML = '<p class="text-gray-400 py-2 px-2">Loading user matrix from cloud...</p>';
             
-            const { data: users, error } = await client.from('profiles').select('username, password');
+            const { data: users, error } = await client.from('profiles').select('username, password, last_action');
             
             if (error) {
                 container.innerHTML = `<p class="text-red-400 py-2 px-2">Error loading users from cloud: ${error.message}</p>`;
@@ -277,6 +287,20 @@
             displayAdminTable(filtered);
         }
 
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Never';
+            const diffMs = new Date() - new Date(timestamp);
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays === 1) return '1 day ago';
+            return `${diffDays} days ago`;
+        }
+
         function displayAdminTable(users) {
             const container = document.getElementById('users-list-container');
             if (!users || users.length === 0) {
@@ -285,12 +309,14 @@
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Password</th><th class="py-2.5 px-3 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Password</th><th class="py-2.5 px-3">Last Active</th><th class="py-2.5 px-3 text-right">Actions</th></tr>';
             
             users.forEach(u => {
+                const timeAgoStr = formatTimeAgo(u.last_action);
                 html += `<tr class="border-b border-gray-800/50 hover:bg-gray-900/40">
                     <td class="py-2.5 px-3 text-emerald-400 font-medium">${u.username}</td>
                     <td class="py-2.5 px-3 text-gray-400 font-mono">${u.password}</td>
+                    <td class="py-2.5 px-3 text-gray-300 font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-2.5 px-3 flex gap-2 justify-end">
                         <button onclick="adminResetPassword('${u.username}')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1 rounded text-xs transition">Reset Pass</button>
                         ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-2.5 py-1 rounded text-xs transition">Delete</button>` : ''}
@@ -356,7 +382,8 @@
             await client
                 .from('profiles')
                 .update({ 
-                    data: JSON.stringify(trackers)
+                    data: JSON.stringify(trackers),
+                    last_action: new Date().toISOString()
                 })
                 .eq('username', currentUser);
             render();
