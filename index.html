@@ -125,6 +125,19 @@
         <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
 
+    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP -->
+    <div id="goalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
+            <div id="modalGlow" class="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
+            <div id="modalEmoji" class="text-6xl mb-4 animate-bounce">🎯</div>
+            <h2 id="modalTitle" class="text-2xl font-bold mb-3 text-[var(--text-main)]">Goal Achieved!</h2>
+            <p id="modalMessage" class="text-[var(--text-muted)] text-sm md:text-base mb-8 leading-relaxed">Fantastic job hitting your target cycle!</p>
+            <button onclick="closeGoalPopup()" class="w-full py-3 dynamic-bg font-bold rounded-xl shadow-md transition cursor-pointer">
+                Awesome, Continue 🚀
+            </button>
+        </div>
+    </div>
+
     <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY -->
     <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
         <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
@@ -588,6 +601,10 @@
 
                 currentUser = username;
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
+                
+                // Check and evaluate periodic reset/congratulation cycles on session restore
+                checkAndResetPeriodicGoals();
+
                 document.getElementById('display-user').innerText = currentUser;
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
@@ -653,6 +670,10 @@
 
             currentUser = user;
             localStorage.setItem('ghost_current_user', currentUser);
+            
+            // Check and evaluate periodic reset/congratulation cycles on login
+            checkAndResetPeriodicGoals();
+
             document.getElementById('display-user').innerText = currentUser;
             
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
@@ -680,6 +701,61 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             render();
+        }
+
+        // Periodic cycle check & reset functionality based on timeframe ('Day', 'Week', 'Month')
+        function checkAndResetPeriodicGoals() {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const currentWeekNum = getWeekNumber(now);
+            const currentMonthNum = now.getMonth(); // 0-11
+
+            let updated = false;
+
+            trackers.forEach(t => {
+                if (!t.lastResetPeriod) {
+                    t.lastResetPeriod = todayStr;
+                    t.lastResetWeek = currentWeekNum;
+                    t.lastResetMonth = currentMonthNum;
+                    updated = true;
+                    return;
+                }
+
+                if (t.timeframe === 'Day') {
+                    if (t.lastResetPeriod !== todayStr) {
+                        t.data = Array(30).fill(0); // Reset for the new day loop
+                        t.lastResetPeriod = todayStr;
+                        t.congratulatedCycle = false; // Allow fresh congratulation for the new cycle
+                        updated = true;
+                    }
+                } else if (t.timeframe === 'Week') {
+                    if (t.lastResetWeek !== currentWeekNum) {
+                        t.data = Array(30).fill(0); // Reset for the new week loop
+                        t.lastResetWeek = currentWeekNum;
+                        t.congratulatedCycle = false;
+                        updated = true;
+                    }
+                } else if (t.timeframe === 'Month') {
+                    if (t.lastResetMonth !== currentMonthNum) {
+                        t.data = Array(30).fill(0); // Reset for the new month loop
+                        t.lastResetMonth = currentMonthNum;
+                        t.congratulatedCycle = false;
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated && currentUser) {
+                saveAndCloudSync();
+            }
+        }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+            let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+            return `${d.getUTCFullYear()}-W${weekNo}`;
         }
 
         async function handleRegularDeleteAccount() {
@@ -855,7 +931,49 @@
                 num = tracker.max;
             }
             tracker.data[dayIndex] = num;
+            
+            // Evaluate if goal threshold has been reached to trigger celebration popup
+            evaluateGoalCompletion(tracker);
+            
             saveAndCloudSync();
+        }
+
+        // Trigger Congratulation Modal Popup and state flag
+        function evaluateGoalCompletion(tracker) {
+            const totalVal = tracker.data.reduce((a, b) => a + (b || 0), 0);
+            const maxPossible = tracker.max * 30;
+            const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
+            const isAchieved = percentage >= 100 || (tracker.goal && totalVal >= tracker.goal);
+
+            if (isAchieved && !tracker.congratulatedCycle) {
+                tracker.congratulatedCycle = true;
+                showGoalPopup(tracker);
+            }
+        }
+
+        function showGoalPopup(tracker) {
+            const modal = document.getElementById('goalModal');
+            const content = document.getElementById('modalContent');
+            const titleEl = document.getElementById('modalTitle');
+            const messageEl = document.getElementById('modalMessage');
+            const emojiEl = document.getElementById('modalEmoji');
+
+            let timeframeLabel = tracker.timeframe || 'Day';
+            emojiEl.innerText = timeframeLabel === 'Day' ? '🎯' : (timeframeLabel === 'Week' ? '🌟' : '🏆');
+            titleEl.innerText = `${timeframeLabel} Goal Achieved!`;
+            messageEl.innerText = `Outstanding work! You successfully hit your target goal for this ${timeframeLabel.toLowerCase()} cycle on "${tracker.title}". Your target status will repeat for the next cycle until turned off!`;
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeGoalPopup() {
+            const modal = document.getElementById('goalModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
         }
 
         function switchTrackerTab(id, tabName) {
@@ -966,7 +1084,7 @@
                     const activeDays = t.data.filter(v => v > 0).length;
                     const consistency = Math.round((activeDays / 30) * 100);
                     const dailyAverage = activeDays > 0 ? (totalVal / activeDays).toFixed(1) : '0.0';
-                    const isGoalAchieved = percentage >= 100;
+                    const isGoalAchieved = percentage >= 100 || (t.goal && totalVal >= t.goal);
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
@@ -985,11 +1103,11 @@
                                 <div class="flex items-center gap-2.5">
                                     <span class="text-lg">🏆</span>
                                     <div>
-                                        <h4 class="text-xs font-bold dynamic-text tracking-wide uppercase">Goal Achieved! Outstanding Discipline!</h4>
-                                        <p class="text-[11px] text-[var(--text-muted)]">You reached 100%+ completion for your ${t.title.toLowerCase()} (${t.timeframe} target goal).</p>
+                                        <h4 class="text-xs font-bold dynamic-text tracking-wide uppercase">${t.timeframe} Goal Achieved! Cycle Repeating Active!</h4>
+                                        <p class="text-[11px] text-[var(--text-muted)]">Target reached for your ${t.title.toLowerCase()} (${t.timeframe} target goal). Cycle will repeat until turned off.</p>
                                     </div>
                                 </div>
-                                <span class="dynamic-bg px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Unlocked</span>
+                                <span class="dynamic-bg px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Active Cycle</span>
                             </div>
                         ` : ''}
 
@@ -1142,6 +1260,7 @@
                 return;
             }
 
+            const now = new Date();
             const newId = 'tracker_' + Date.now();
             trackers.push({
                 id: newId,
@@ -1151,7 +1270,11 @@
                 max: parseFloat(maxInput.value) || 50,
                 goal: parseFloat(goalInput.value) || 10,
                 timeframe: timeframeSelect.value,
-                activeTab: 'graph'
+                activeTab: 'graph',
+                lastResetPeriod: now.toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(now),
+                lastResetMonth: now.getMonth(),
+                congratulatedCycle: false
             });
 
             titleInput.value = '';
@@ -1172,6 +1295,7 @@
                 return;
             }
 
+            const now = new Date();
             const newId = 'tracker_' + Date.now();
             trackers.push({
                 id: newId,
@@ -1181,7 +1305,11 @@
                 max: parseFloat(maxInput.value) || 50,
                 goal: parseFloat(goalInput.value) || 10,
                 timeframe: timeframeSelect.value,
-                activeTab: 'graph'
+                activeTab: 'graph',
+                lastResetPeriod: now.toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(now),
+                lastResetMonth: now.getMonth(),
+                congratulatedCycle: false
             });
 
             titleInput.value = '';
