@@ -299,11 +299,14 @@
                     <div id="trackers-container" class="space-y-6"></div>
 
                     <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center flex-wrap gap-3">
+                        <div class="flex justify-between items-center">
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                                 <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                             </h3>
-                            <div id="admin-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                            <div class="flex gap-1.5">
+                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                            </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                             <div class="flex flex-col gap-1.5">
@@ -339,8 +342,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center pt-2">
-                            <button type="button" onclick="saveUserPreset('')" class="dynamic-card border px-3 py-2 rounded-xl text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">💾 Save Current as Preset</button>
+                        <div class="flex justify-end pt-2">
                             <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                         </div>
                     </div>
@@ -361,11 +363,14 @@
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center flex-wrap gap-3">
+                    <div class="flex justify-between items-center">
                         <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                             <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                         </h3>
-                        <div id="reg-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                         <div class="flex flex-col gap-1.5">
@@ -401,8 +406,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <button type="button" onclick="saveUserPreset('reg-')" class="dynamic-card border px-3 py-2 rounded-xl text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">💾 Save Current as Preset</button>
+                    <div class="flex justify-end pt-2">
                         <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                     </div>
                 </div>
@@ -451,7 +455,6 @@
             if (!dismissed) {
                 document.getElementById('welcome-overlay').classList.remove('hidden');
             }
-            renderPresetBars();
         })();
 
         function goToWizardStep(stepNum) {
@@ -485,82 +488,6 @@
                 await restoreSession(savedUser);
             }
         });
-
-        // USER CUSTOM PRESETS SYSTEM
-        function getCustomPresets() {
-            try {
-                const p = localStorage.getItem('ghost_user_presets');
-                return p ? JSON.parse(p) : [];
-            } catch(e) {
-                return [];
-            }
-        }
-
-        function saveUserPreset(prefix) {
-            const title = document.getElementById(`${prefix}new-title`).value.trim();
-            const max = document.getElementById(`${prefix}new-max`).value;
-            const goal = document.getElementById(`${prefix}new-goal`).value;
-            const timeframe = document.getElementById(`${prefix}new-timeframe`).value;
-            const color = document.getElementById(`${prefix}new-color`).value;
-
-            if (!title || !max) {
-                alert('Please enter at least a Tracker Name and Max Target limit before saving as a preset.');
-                return;
-            }
-
-            let presetName = prompt(`Enter a name for your preset "${title}":`, title);
-            if (!presetName) return;
-
-            let presets = getCustomPresets();
-            presets.push({ name: presetName, title, max, goal, timeframe, color });
-            localStorage.setItem('ghost_user_presets', JSON.stringify(presets));
-            renderPresetBars();
-            alert(`Preset "${presetName}" saved successfully!`);
-        }
-
-        function loadPreset(name, prefix) {
-            let presets = getCustomPresets();
-            let p = presets.find(x => x.name === name);
-            if (!p) return;
-
-            document.getElementById(`${prefix}new-title`).value = p.title;
-            document.getElementById(`${prefix}new-max`).value = p.max;
-            document.getElementById(`${prefix}new-goal`).value = p.goal || '';
-            document.getElementById(`${prefix}new-timeframe`).value = p.timeframe || 'Week';
-            document.getElementById(`${prefix}new-color`).value = p.color || '#2ecc71';
-        }
-
-        function deletePreset(name, event) {
-            event.stopPropagation();
-            if (confirm(`Delete custom preset "${name}"?`)) {
-                let presets = getCustomPresets();
-                presets = presets.filter(x => x.name !== name);
-                localStorage.setItem('ghost_user_presets', JSON.stringify(presets));
-                renderPresetBars();
-            }
-        }
-
-        function renderPresetBars() {
-            ['', 'reg-'].forEach(prefix => {
-                const bar = document.getElementById(`${prefix}presets-bar`);
-                if (!bar) return;
-                let presets = getCustomPresets();
-                if (presets.length === 0) {
-                    bar.innerHTML = '<span class="text-[10px] text-[var(--text-muted)] italic">No custom presets yet</span>';
-                    return;
-                }
-                let html = '';
-                presets.forEach(p => {
-                    html += `
-                        <div class="inline-flex items-center gap-1 dynamic-card border rounded-lg px-2 py-1 text-[10px]">
-                            <button type="button" onclick="loadPreset('${p.name}', '${prefix}')" class="text-[var(--text-main)] hover:text-[var(--theme-primary)]">${p.name}</button>
-                            <button type="button" onclick="deletePreset('${p.name}', event)" class="text-red-400 hover:text-red-300 font-bold ml-1">×</button>
-                        </div>
-                    `;
-                });
-                bar.innerHTML = html;
-            });
-        }
 
         async function triggerThemeUpdate() {
             const accentSelect = document.getElementById('global-accent-select');
@@ -963,8 +890,7 @@
             if (isNaN(num) || val === '') {
                 num = 0;
             } else if (num > tracker.max) {
-                alert(`Error: Value (${num}) cannot exceed the maximum target limit (${tracker.max}) for this graph!`);
-                tracker.data[dayIndex] = 0;
+                alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);
                 render();
                 return;
             }
@@ -1067,6 +993,42 @@
                 tracker.congratulatedCycle = false;
                 tracker.showSettings = false;
                 saveAndCloudSync();
+            }
+        }
+
+        function loadPreset(type) {
+            const titleInput = document.getElementById('new-title');
+            const maxInput = document.getElementById('new-max');
+            const goalInput = document.getElementById('new-goal');
+            const timeframeSelect = document.getElementById('new-timeframe');
+            if (type === 'pushups') {
+                titleInput.value = 'Pushups';
+                maxInput.value = '50';
+                goalInput.value = '10';
+                timeframeSelect.value = 'Week';
+            } else if (type === 'study') {
+                titleInput.value = 'Study Hours';
+                maxInput.value = '8';
+                goalInput.value = '5';
+                timeframeSelect.value = 'Day';
+            }
+        }
+
+        function loadPresetReg(type) {
+            const titleInput = document.getElementById('reg-new-title');
+            const maxInput = document.getElementById('reg-new-max');
+            const goalInput = document.getElementById('reg-new-goal');
+            const timeframeSelect = document.getElementById('reg-new-timeframe');
+            if (type === 'pushups') {
+                titleInput.value = 'Pushups';
+                maxInput.value = '50';
+                goalInput.value = '10';
+                timeframeSelect.value = 'Week';
+            } else if (type === 'study') {
+                titleInput.value = 'Study Hours';
+                maxInput.value = '8';
+                goalInput.value = '5';
+                timeframeSelect.value = 'Day';
             }
         }
 
