@@ -245,12 +245,16 @@
             </div>
 
             <!-- Profile Bar -->
-            <div class="dynamic-card backdrop-blur-md border rounded-2xl p-4 shadow-xl flex justify-between items-center">
+            <div class="dynamic-card backdrop-blur-md border rounded-2xl p-4 shadow-xl flex justify-between items-center flex-wrap gap-3">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
                     <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
                 </div>
-                <button onclick="handleLogout()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200">Logout</button>
+                <div class="flex items-center gap-2">
+                    <!-- Regular User Delete Account Button (Hidden for Master Admin) -->
+                    <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200 hidden">Delete Account</button>
+                    <button onclick="handleLogout()" class="dynamic-card border text-xs px-3 py-1.5 rounded-xl transition duration-200 text-[var(--text-main)]">Logout</button>
+                </div>
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
@@ -516,13 +520,17 @@
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
                 document.getElementById('display-user').innerText = currentUser;
 
+                // Toggle visibility of regular delete button vs admin section
+                const regDeleteBtn = document.getElementById('regular-delete-btn');
                 if (currentUser === MASTER_ADMIN) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+                    if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
                     renderAdminPanel();
                 } else {
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
+                    if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
                 }
 
                 document.getElementById('auth-screen').classList.add('hidden');
@@ -589,18 +597,42 @@
                 }
             }
 
+            const regDeleteBtn = document.getElementById('regular-delete-btn');
             if (currentUser === MASTER_ADMIN) {
                 document.getElementById('admin-section').classList.remove('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+                if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
                 renderAdminPanel();
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
+                if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
             }
 
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             render();
+        }
+
+        async function handleRegularDeleteAccount() {
+            let passInput = prompt(`SECURITY CONFIRMATION: Enter your password to delete your account ("${currentUser}") permanently:`);
+            if (!passInput) return;
+
+            const { data: userData } = await client.from('profiles').select('password').eq('username', currentUser).single();
+            if (!userData || userData.password !== passInput) {
+                alert('Authentication Failed: Incorrect password.');
+                return;
+            }
+
+            if (confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped from the database.`)) {
+                const { error } = await client.from('profiles').delete().eq('username', currentUser);
+                if (!error) {
+                    alert('Your account has been successfully deleted.');
+                    handleLogout();
+                } else {
+                    alert('Failed to delete account.');
+                }
+            }
         }
 
         function switchAdminTab(tab) {
