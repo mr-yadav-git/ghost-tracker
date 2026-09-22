@@ -99,6 +99,14 @@
         .animate-fade-in {
             animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.02); opacity: 1; }
+        }
+        .animate-goal-banner {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
     </style>
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
@@ -134,7 +142,6 @@
                     <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your 30-day habits, review consistency metrics, and command your discipline without noise.</p>
                 </div>
 
-                <!-- 2 Pillars / Features (No 3rd box) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
                         <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
@@ -148,7 +155,6 @@
                     </div>
                 </div>
 
-                <!-- Motivational Banner Quote -->
                 <div class="dynamic-card-solid border border-dashed rounded-2xl p-3.5 text-center shadow-inner">
                     <p class="text-[11px] italic text-[var(--text-muted)]">"We are what we repeatedly do. Excellence, then, is not an act, but a habit."</p>
                 </div>
@@ -305,18 +311,31 @@
                     <div id="trackers-container" class="space-y-6"></div>
 
                     <!-- Add New Custom Graph Card -->
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-[var(--text-main)]">+ Add New Custom Graph</h3>
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
-                            <input type="number" id="new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
-                            <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition">
-                                <option value="#34d399">Green Line</option>
-                                <option value="#f87171">Red Line</option>
-                                <option value="#60a5fa">Blue Line</option>
-                                <option value="#fbbf24">Yellow Line</option>
+                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)]">+ Add New Custom Graph</h3>
+                            <div class="flex gap-1.5">
+                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">💪 Pushups Preset</button>
+                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">📚 Study Hour Preset</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Pushups Goal)" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
+                            <input type="number" id="new-max" placeholder="Max Target / Limit (e.g. 100)" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
+                            <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition">
+                                <option value="Day">Daily Goal</option>
+                                <option value="Week">Weekly Goal</option>
+                                <option value="Month">Monthly Goal</option>
                             </select>
-                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs transition duration-200 shadow-md">Create Graph</button>
+                            <div class="flex gap-2">
+                                <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition flex-1">
+                                    <option value="#34d399">Green Line</option>
+                                    <option value="#f87171">Red Line</option>
+                                    <option value="#60a5fa">Blue Line</option>
+                                    <option value="#fbbf24">Yellow Line</option>
+                                </select>
+                                <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs transition duration-200 shadow-md whitespace-nowrap">Create</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -337,18 +356,31 @@
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <!-- Add New Custom Graph Card for Regular Users -->
-                <div class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-[var(--text-main)]">+ Add New Custom Graph</h3>
-                    <div class="flex flex-wrap gap-3 items-center">
-                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
-                        <input type="number" id="reg-new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
-                        <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
-                            <option value="#34d399">Green Line</option>
-                            <option value="#f87171">Red Line</option>
-                            <option value="#60a5fa">Blue Line</option>
-                            <option value="#fbbf24">Yellow Line</option>
+                <div class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)]">+ Add New Custom Graph</h3>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">💪 Pushups Preset</button>
+                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">📚 Study Hour Preset</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Pushups Goal)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                        <input type="number" id="reg-new-max" placeholder="Max Target / Limit (e.g. 100)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                        <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
+                            <option value="Day">Daily Goal</option>
+                            <option value="Week">Weekly Goal</option>
+                            <option value="Month">Monthly Goal</option>
                         </select>
-                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md">Create Graph</button>
+                        <div class="flex gap-2">
+                            <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition flex-1">
+                                <option value="#34d399">Green Line</option>
+                                <option value="#f87171">Red Line</option>
+                                <option value="#60a5fa">Blue Line</option>
+                                <option value="#fbbf24">Yellow Line</option>
+                            </select>
+                            <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md whitespace-nowrap">Create</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -807,6 +839,36 @@
             render();
         }
 
+        function loadPreset(type) {
+            const titleInput = document.getElementById('new-title');
+            const maxInput = document.getElementById('new-max');
+            const timeframeSelect = document.getElementById('new-timeframe');
+            if (type === 'pushups') {
+                titleInput.value = 'Pushups Goal';
+                maxInput.value = '100';
+                timeframeSelect.value = 'Day';
+            } else if (type === 'study') {
+                titleInput.value = 'Study Hour Goal';
+                maxInput.value = '8';
+                timeframeSelect.value = 'Day';
+            }
+        }
+
+        function loadPresetReg(type) {
+            const titleInput = document.getElementById('reg-new-title');
+            const maxInput = document.getElementById('reg-new-max');
+            const timeframeSelect = document.getElementById('reg-new-timeframe');
+            if (type === 'pushups') {
+                titleInput.value = 'Pushups Goal';
+                maxInput.value = '100';
+                timeframeSelect.value = 'Day';
+            } else if (type === 'study') {
+                titleInput.value = 'Study Hour Goal';
+                maxInput.value = '8';
+                timeframeSelect.value = 'Day';
+            }
+        }
+
         function render() {
             if (currentUser && currentUser !== MASTER_ADMIN) {
                 client.from('profiles').select('theme, force_logout').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
@@ -843,6 +905,7 @@
 
                 trackers.forEach(t => {
                     if (!t.activeTab) t.activeTab = 'graph';
+                    if (!t.timeframe) t.timeframe = 'Day';
 
                     const card = document.createElement('div');
                     card.className = 'dynamic-card backdrop-blur-md border rounded-2xl p-5 shadow-xl space-y-4';
@@ -869,14 +932,15 @@
                     const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
                     const activeDays = t.data.filter(v => v > 0).length;
                     const consistency = Math.round((activeDays / 30) * 100);
-
-                    // Replaced Period Difference with Daily Average per active day
                     const dailyAverage = activeDays > 0 ? (totalVal / activeDays).toFixed(1) : '0.0';
+
+                    // Goal achievement check
+                    const isGoalAchieved = percentage >= 100;
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
                             <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Max Limit: ${t.max})</span></h3>
+                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.max} / ${t.timeframe})</span></h3>
                                 <div class="flex dynamic-card-solid border rounded-xl p-0.5 text-xs">
                                     <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">Habit tracker</button>
                                     <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">History & Stats</button>
@@ -884,6 +948,19 @@
                             </div>
                             <button class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs transition duration-200" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
                         </div>
+
+                        ${isGoalAchieved ? `
+                            <div class="dynamic-card-solid border dynamic-border rounded-xl p-3 flex items-center justify-between gap-3 shadow-md animate-goal-banner">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-lg">🏆</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold dynamic-text tracking-wide uppercase">Goal Achieved! Outstanding Discipline!</h4>
+                                        <p class="text-[11px] text-[var(--text-muted)]">You reached 100%+ completion for your ${t.title.toLowerCase()} (${t.timeframe} target goal). Keep pushing forward!</p>
+                                    </div>
+                                </div>
+                                <span class="dynamic-bg px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Unlocked</span>
+                            </div>
+                        ` : ''}
 
                         <div id="tab-content-${t.id}">
                             ${t.activeTab === 'graph' ? `
@@ -1025,10 +1102,11 @@
         function addNewTracker() {
             const titleInput = document.getElementById('new-title');
             const maxInput = document.getElementById('new-max');
+            const timeframeSelect = document.getElementById('new-timeframe');
             const colorInput = document.getElementById('new-color');
             
             if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the title and max daily target value.');
+                alert('Please fill in both the title and max target value.');
                 return;
             }
 
@@ -1039,6 +1117,7 @@
                 color: colorInput.value,
                 data: Array(30).fill(0),
                 max: parseFloat(maxInput.value) || 100,
+                timeframe: timeframeSelect.value,
                 activeTab: 'graph'
             });
 
@@ -1050,10 +1129,11 @@
         function addNewTrackerRegular() {
             const titleInput = document.getElementById('reg-new-title');
             const maxInput = document.getElementById('reg-new-max');
+            const timeframeSelect = document.getElementById('reg-new-timeframe');
             const colorInput = document.getElementById('reg-new-color');
             
             if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the title and max daily target value.');
+                alert('Please fill in both the title and max target value.');
                 return;
             }
 
@@ -1064,6 +1144,7 @@
                 color: colorInput.value,
                 data: Array(30).fill(0),
                 max: parseFloat(maxInput.value) || 100,
+                timeframe: timeframeSelect.value,
                 activeTab: 'graph'
             });
 
