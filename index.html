@@ -42,12 +42,6 @@
         <div class="w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px]"></div>
     </div>
 
-    <!-- Live Date/Time Display in Top Corner -->
-    <div id="live-clock-container" class="fixed top-4 right-4 z-50 hidden bg-gray-950/80 backdrop-blur-md border border-gray-800/80 rounded-xl px-3 py-1.5 shadow-lg flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="live-clock" class="text-xs font-mono text-gray-300"></span>
-    </div>
-
     <div class="w-full max-w-4xl mx-auto relative z-10">
         
         <!-- Auth Screen -->
@@ -75,9 +69,18 @@
 
         <!-- App Screen -->
         <div id="app-screen" class="hidden space-y-6">
-            <div class="text-center pt-2">
-                <h1 class="text-2xl font-bold tracking-wider text-emerald-400">Ghost Mode</h1>
-                <p class="text-xs text-gray-400 mt-0.5">Cloud-Synced System-Monitor Habit & Goal Tracker</p>
+            
+            <!-- Header Row with Live Clock (Responsive: Stacks on mobile, side-by-side on desktop) -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+                <div class="text-center sm:text-left">
+                    <h1 class="text-2xl font-bold tracking-wider text-emerald-400">Ghost Mode</h1>
+                    <p class="text-xs text-gray-400 mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
+                </div>
+                <!-- Live Date/Time Badge -->
+                <div id="live-clock-container" class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="live-clock" class="text-xs font-mono text-gray-300"></span>
+                </div>
             </div>
 
             <!-- Profile Bar -->
@@ -182,7 +185,6 @@
 
         function startLiveClock() {
             const clockEl = document.getElementById('live-clock');
-            const clockContainer = document.getElementById('live-clock-container');
             
             function updateClock() {
                 const now = new Date();
@@ -217,7 +219,6 @@
 
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('live-clock-container').classList.remove('hidden');
                 render();
             } else {
                 localStorage.removeItem('ghost_current_user');
@@ -279,7 +280,6 @@
 
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('live-clock-container').classList.remove('hidden');
             render();
         }
 
@@ -414,7 +414,6 @@
             document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('live-clock-container').classList.add('hidden');
         }
 
         async function saveAndCloudSync() {
