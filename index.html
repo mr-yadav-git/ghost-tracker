@@ -9,23 +9,68 @@
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Dynamic Theme Variables Root */
+        /* Dynamic Theme Variables Root (Default Dark Emerald) */
         :root {
-            --theme-primary: #34d399; /* Emerald 400 default */
-            --theme-primary-bg: #10b981; /* Emerald 500 default */
-            --theme-primary-hover: #34d399; /* Emerald 400 default */
-            --theme-border: rgba(52, 211, 153, 0.3);
-            --theme-glow: rgba(52, 211, 153, 0.05);
+            --bg-main: #030712;
+            --bg-card: rgba(17, 24, 39, 0.6);
+            --bg-card-solid: #0b0f19;
+            --bg-input: #030712;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: rgba(52, 211, 153, 0.3);
+            --glow-color: rgba(52, 211, 153, 0.05);
+            
+            --theme-primary: #34d399; 
+            --theme-primary-bg: #10b981; 
+            --theme-primary-hover: #34d399; 
             --theme-selection-bg: #34d399;
             --theme-selection-text: #030712;
+            
+            --canvas-bg: #030712;
+            --canvas-grid: #111827;
+            --canvas-text: #4b5563;
+        }
+
+        /* Light Mode Overrides */
+        body.light-mode {
+            --bg-main: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-solid: #ffffff;
+            --bg-input: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --canvas-bg: #ffffff;
+            --canvas-grid: #e2e8f0;
+            --canvas-text: #94a3b8;
         }
 
         /* Apply theme variables to custom utility classes */
+        body {
+            background-color: var(--bg-main) !important;
+            color: var(--text-main) !important;
+        }
+
+        .dynamic-card {
+            background-color: var(--bg-card) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .dynamic-card-solid {
+            background-color: var(--bg-card-solid) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .dynamic-input {
+            background-color: var(--bg-input) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border-color) !important;
+        }
+
         .dynamic-text { color: var(--theme-primary) !important; }
         .dynamic-bg { background-color: var(--theme-primary-bg) !important; color: #030712 !important; }
         .dynamic-bg:hover { background-color: var(--theme-primary-hover) !important; }
-        .dynamic-border { border-color: var(--theme-border) !important; }
-        .dynamic-glow { background-color: var(--theme-glow) !important; }
+        .dynamic-border { border-color: var(--border-color) !important; }
+        .dynamic-glow { background-color: var(--glow-color) !important; }
         
         ::selection {
             background-color: var(--theme-selection-bg);
@@ -41,24 +86,14 @@
         .input-cell input[type=number] { 
             -moz-appearance: textfield; 
         }
-        /* Custom scrollbar for minimalist clean look */
-        ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #030712;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f2937;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #374151;
-        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
     </style>
 </head>
-<body id="app-body" class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
+<body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
 
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
@@ -68,24 +103,24 @@
     <div class="w-full max-w-4xl mx-auto relative z-10">
         
         <!-- Auth Screen -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
+        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card backdrop-blur-xl border rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-950 border dynamic-border dynamic-text mb-3 shadow-inner transition-colors duration-300">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3 shadow-inner">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
-                <h1 class="text-xl font-bold tracking-widest dynamic-text transition-colors duration-300">GHOST TRACKER</h1>
-                <p class="text-xs text-gray-400 mt-1">Minimalist Tracker</p>
+                <h1 class="text-xl font-bold tracking-widest dynamic-text">GHOST TRACKER</h1>
+                <p class="text-xs text-[var(--text-muted)] mt-1">SECURE TELEMETRY & HABIT MATRIX</p>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Username</label>
-                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                    <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Username</label>
+                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Password</label>
-                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                    <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Password</label>
+                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
-                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Access Your Matrix</button>
+                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Access Cloud Matrix</button>
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
@@ -97,55 +132,65 @@
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
                 <div class="text-center sm:text-left">
                     <h1 class="text-2xl font-bold tracking-wider dynamic-text transition-colors duration-300">Ghost Mode</h1>
-                    <p class="text-xs text-gray-400 mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
                 </div>
                 <!-- Live Date/Time Badge -->
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse transition-colors duration-300"></span>
-                    <span id="live-clock" class="text-xs font-mono text-gray-300"></span>
+                <div class="dynamic-card backdrop-blur-md border rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                    <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
                 </div>
             </div>
 
             <!-- Profile Bar -->
-            <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-4 shadow-xl flex justify-between items-center">
+            <div class="dynamic-card backdrop-blur-md border rounded-2xl p-4 shadow-xl flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse transition-colors duration-300"></span>
-                    <span class="text-xs text-gray-400">Logged in as: <strong id="display-user" class="dynamic-text font-semibold transition-colors duration-300"></strong></span>
+                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                    <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
                 </div>
                 <button onclick="handleLogout()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200">Logout</button>
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
-            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border dynamic-border rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
-                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-gray-800/80 pb-4">
+            <div id="admin-section" class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                     <div>
-                        <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2 transition-colors duration-300">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-gray-400 mt-1">Manage platform users, themes, reset credentials, or inspect activity securely.</p>
+                        <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                        <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, 10 themes, reset credentials, or inspect activity securely.</p>
                     </div>
                     <!-- Navigation Tabs -->
-                    <div class="flex bg-gray-950/80 border border-gray-800 rounded-xl p-1 text-xs shadow-inner">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200">Users</button>
+                    <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs shadow-inner">
+                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm">Tracker & Donut</button>
+                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users</button>
                     </div>
                 </div>
 
                 <!-- Admin Tab Content: Tracker & Donut View -->
                 <div id="admin-content-tracker" class="space-y-6">
                     
-                    <!-- Global Theme Selector Card -->
-                    <div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-5 shadow-xl space-y-3">
-                        <div class="flex justify-between items-center flex-wrap gap-3">
+                    <!-- Global 10-Theme Selector Card -->
+                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl space-y-4">
+                        <div class="flex justify-between items-center flex-wrap gap-4">
                             <div>
-                                <h3 class="text-xs font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">🎨 Global Site Theme Control</h3>
-                                <p class="text-[11px] text-gray-400 mt-0.5">Select a theme to instantly update accent colors across all user screens persistently.</p>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine any of the 5 accent colors with Dark or Clean White background modes.</p>
                             </div>
-                            <select id="global-theme-select" onchange="applyAndSaveTheme(this.value)" class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-xs dynamic-text font-semibold focus:outline-none focus:border-emerald-500 transition">
-                                <option value="emerald">Emerald Night (Default)</option>
-                                <option value="cyan">Cyber Neon (Cyan)</option>
-                                <option value="amber">Matrix Amber</option>
-                                <option value="indigo">Deep Indigo</option>
-                                <option value="crimson">Crimson Protocol</option>
-                            </select>
+                            
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <!-- Accent Color Selector -->
+                                <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none transition">
+                                    <option value="emerald">Emerald Accent</option>
+                                    <option value="cyan">Cyber Neon (Cyan)</option>
+                                    <option value="amber">Matrix Amber</option>
+                                    <option value="indigo">Deep Indigo</option>
+                                    <option value="crimson">Crimson Protocol</option>
+                                </select>
+
+                                <!-- Background Mode Selector (Dark / Light) -->
+                                <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none transition">
+                                    <option value="dark">Dark Night Mode</option>
+                                    <option value="light">Pure White Mode</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -153,12 +198,12 @@
                     <div id="trackers-container" class="space-y-6"></div>
 
                     <!-- Add New Custom Graph Card -->
-                    <div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-5 shadow-xl">
-                        <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3">+ Add New Custom Graph</h3>
+                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-[var(--text-main)]">+ Add New Custom Graph</h3>
                         <div class="flex flex-wrap gap-3 items-center">
-                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
-                            <input type="number" id="new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
-                            <select id="new-color" class="bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-emerald-500 transition">
+                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
+                            <input type="number" id="new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition" />
+                            <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none transition">
                                 <option value="#34d399">Green Line</option>
                                 <option value="#f87171">Red Line</option>
                                 <option value="#60a5fa">Blue Line</option>
@@ -172,10 +217,10 @@
                 <!-- Admin Tab Content: Separate "Users" View -->
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-gray-400">Complete registered user directory, credentials, live status, and remote controls.</p>
-                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 w-56 transition" />
+                        <p class="text-xs text-[var(--text-muted)]">Complete registered user directory, credentials, live status, and remote controls.</p>
+                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56 transition" />
                     </div>
-                    <div class="max-h-96 overflow-y-auto border border-gray-800 rounded-xl p-2 bg-gray-950/80 shadow-inner">
+                    <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid shadow-inner">
                         <div id="users-list-container" class="text-xs">Loading users...</div>
                     </div>
                 </div>
@@ -185,12 +230,12 @@
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <!-- Add New Custom Graph Card for Regular Users -->
-                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3">+ Add New Custom Graph</h3>
+                <div class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-[var(--text-main)]">+ Add New Custom Graph</h3>
                     <div class="flex flex-wrap gap-3 items-center">
-                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
-                        <input type="number" id="reg-new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
-                        <select id="reg-new-color" class="bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-300 focus:outline-none focus:border-emerald-500 transition">
+                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                        <input type="number" id="reg-new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                        <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
                             <option value="#34d399">Green Line</option>
                             <option value="#f87171">Red Line</option>
                             <option value="#60a5fa">Blue Line</option>
@@ -216,62 +261,33 @@
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
 
-        // 5 Fully Configured Cyberpunk / Minimalist Themes
-        const THEMES = {
-            emerald: { 
-                name: 'Emerald Night', 
-                primary: '#34d399', 
-                primaryBg: '#10b981', 
-                primaryHover: '#34d399', 
-                border: 'rgba(52, 211, 153, 0.3)', 
-                glow: 'rgba(52, 211, 153, 0.05)' 
-            },
-            cyan: { 
-                name: 'Cyber Neon', 
-                primary: '#22d3ee', 
-                primaryBg: '#06b6d4', 
-                primaryHover: '#22d3ee', 
-                border: 'rgba(34, 211, 238, 0.3)', 
-                glow: 'rgba(34, 211, 238, 0.05)' 
-            },
-            amber: { 
-                name: 'Matrix Amber', 
-                primary: '#fbbf24', 
-                primaryBg: '#f59e0b', 
-                primaryHover: '#fbbf24', 
-                border: 'rgba(251, 191, 36, 0.3)', 
-                glow: 'rgba(251, 191, 36, 0.05)' 
-            },
-            indigo: { 
-                name: 'Deep Indigo', 
-                primary: '#818cf8', 
-                primaryBg: '#6366f1', 
-                primaryHover: '#818cf8', 
-                border: 'rgba(129, 140, 248, 0.3)', 
-                glow: 'rgba(129, 140, 248, 0.05)' 
-            },
-            crimson: { 
-                name: 'Crimson Protocol', 
-                primary: '#f87171', 
-                primaryBg: '#ef4444', 
-                primaryHover: '#f87171', 
-                border: 'rgba(248, 113, 113, 0.3)', 
-                glow: 'rgba(248, 113, 113, 0.05)' 
-            }
+        // 5 Accent Color Configurations
+        const ACCENTS = {
+            emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.05)', glowLight: 'rgba(16, 185, 129, 0.08)' },
+            cyan: { primary: '#22d3ee', primaryBg: '#06b6d4', primaryHover: '#22d3ee', borderDark: 'rgba(34, 211, 238, 0.3)', borderLight: 'rgba(6, 182, 212, 0.4)', glowDark: 'rgba(34, 211, 238, 0.05)', glowLight: 'rgba(6, 182, 212, 0.08)' },
+            amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.05)', glowLight: 'rgba(245, 158, 11, 0.08)' },
+            indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.05)', glowLight: 'rgba(99, 102, 241, 0.08)' },
+            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.05)', glowLight: 'rgba(239, 68, 68, 0.08)' }
         };
-        let currentThemeKey = 'emerald';
 
-        // IMMEDIATELY fetch theme from cloud before user interacts to prevent any flash of emerald on refresh
+        let currentAccentKey = 'emerald';
+        let currentModeKey = 'dark'; // 'dark' or 'light'
+
+        // IMMEDIATELY fetch theme from cloud on page load before render to prevent ANY flash of default emerald on refresh
         (async function initThemeOnLoad() {
             try {
                 const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-                if (data && data.theme && THEMES[data.theme]) {
-                    currentThemeKey = data.theme;
+                if (data && data.theme) {
+                    const parts = data.theme.split('_'); // e.g. "emerald_dark" or "cyan_light"
+                    if (parts.length === 2 && ACCENTS[parts[0]]) {
+                        currentAccentKey = parts[0];
+                        currentModeKey = parts[1];
+                    }
                 }
             } catch (e) {
-                // fallback to default
+                // fallback
             }
-            applyThemeUI(currentThemeKey);
+            applyThemeUI(currentAccentKey, currentModeKey);
         })();
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -282,30 +298,47 @@
             }
         });
 
-        async function applyAndSaveTheme(themeKey) {
-            currentThemeKey = themeKey;
-            applyThemeUI(themeKey);
+        async function triggerThemeUpdate() {
+            const accentSelect = document.getElementById('global-accent-select');
+            const modeSelect = document.getElementById('global-mode-select');
+            if (!accentSelect || !modeSelect) return;
 
-            // Save globally in Master Admin row so it persists permanently for all visitors/users
-            await client.from('profiles').update({ theme: themeKey }).eq('username', MASTER_ADMIN);
+            currentAccentKey = accentSelect.value;
+            currentModeKey = modeSelect.value;
+            const combinedThemeKey = `${currentAccentKey}_${currentModeKey}`;
+
+            applyThemeUI(currentAccentKey, currentModeKey);
+
+            // Save globally in Master Admin row so it persists permanently for all visitors/users across refreshes
+            await client.from('profiles').update({ theme: combinedThemeKey }).eq('username', MASTER_ADMIN);
             
             render();
         }
 
-        function applyThemeUI(themeKey) {
-            const theme = THEMES[themeKey] || THEMES['emerald'];
-            
-            // Set CSS root variables so the entire page transforms instantly
+        function applyThemeUI(accentKey, modeKey) {
+            const accent = ACCENTS[accentKey] || ACCENTS['emerald'];
             const root = document.documentElement;
-            root.style.setProperty('--theme-primary', theme.primary);
-            root.style.setProperty('--theme-primary-bg', theme.primaryBg);
-            root.style.setProperty('--theme-primary-hover', theme.primaryHover);
-            root.style.setProperty('--theme-border', theme.border);
-            root.style.setProperty('--theme-glow', theme.glow);
-            root.style.setProperty('--theme-selection-bg', theme.primary);
+            const body = document.getElementById('app-body');
 
-            const themeSelect = document.getElementById('global-theme-select');
-            if (themeSelect) themeSelect.value = themeKey;
+            if (modeKey === 'light') {
+                body.classList.add('light-mode');
+                root.style.setProperty('--border-color', accent.borderLight);
+                root.style.setProperty('--glow-color', accent.glowLight);
+            } else {
+                body.classList.remove('light-mode');
+                root.style.setProperty('--border-color', accent.borderDark);
+                root.style.setProperty('--glow-color', accent.glowDark);
+            }
+
+            root.style.setProperty('--theme-primary', accent.primary);
+            root.style.setProperty('--theme-primary-bg', accent.primaryBg);
+            root.style.setProperty('--theme-primary-hover', accent.primaryHover);
+            root.style.setProperty('--theme-selection-bg', accent.primary);
+
+            const accentSelect = document.getElementById('global-accent-select');
+            const modeSelect = document.getElementById('global-mode-select');
+            if (accentSelect) accentSelect.value = accentKey;
+            if (modeSelect) modeSelect.value = modeKey;
         }
 
         function startLiveClock() {
@@ -321,9 +354,13 @@
 
         async function restoreSession(username) {
             const { data, error: themeError } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (!themeError && data && data.theme && THEMES[data.theme]) {
-                currentThemeKey = data.theme;
-                applyThemeUI(currentThemeKey);
+            if (!themeError && data && data.theme) {
+                const parts = data.theme.split('_');
+                if (parts.length === 2 && ACCENTS[parts[0]]) {
+                    currentAccentKey = parts[0];
+                    currentModeKey = parts[1];
+                    applyThemeUI(currentAccentKey, currentModeKey);
+                }
             }
 
             const { data: existingUser, error } = await client
@@ -408,8 +445,12 @@
             // Sync theme
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
             if (adminData && adminData.theme) {
-                currentThemeKey = adminData.theme;
-                applyThemeUI(currentThemeKey);
+                const parts = adminData.theme.split('_');
+                if (parts.length === 2 && ACCENTS[parts[0]]) {
+                    currentAccentKey = parts[0];
+                    currentModeKey = parts[1];
+                    applyThemeUI(currentAccentKey, currentModeKey);
+                }
             }
 
             if (currentUser === MASTER_ADMIN) {
@@ -434,13 +475,13 @@
             const usersContent = document.getElementById('admin-content-users');
 
             if (tab === 'tracker') {
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm';
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
                 trackerContent.classList.remove('hidden');
                 usersContent.classList.add('hidden');
             } else {
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm';
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
                 usersContent.classList.remove('hidden');
                 trackerContent.classList.add('hidden');
                 renderAdminPanel();
@@ -449,7 +490,7 @@
 
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
-            container.innerHTML = '<p class="text-gray-400 py-3 px-3">Loading user matrix from cloud...</p>';
+            container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
             const { data: users, error } = await client.from('profiles').select('username, password, last_action');
             
@@ -485,22 +526,22 @@
         function displayAdminTable(users) {
             const container = document.getElementById('users-list-container');
             if (!users || users.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 py-3 px-3">No users found.</p>';
+                container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">No users found.</p>';
                 return;
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-gray-800 text-gray-400 text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Graph Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Graph Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
-                html += `<tr class="border-b border-gray-800/40 hover:bg-gray-900/60 transition">
+                html += `<tr class="border-b border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5 transition">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
-                    <td class="py-3 px-3.5 text-gray-400 font-mono text-[11px]">${u.password}</td>
-                    <td class="py-3 px-3.5 text-gray-300 font-mono text-[11px]">${timeAgoStr}</td>
+                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
+                    <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end">
-                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[11px] transition" title="Instantly log this user out of their device">Force Logout</button>
-                        <button onclick="adminResetPassword('${u.username}')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1 rounded-lg text-[11px] transition">Reset Pass</button>
+                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[11px] transition" title="Instantly log this user out">Force Logout</button>
+                        <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] transition text-[var(--text-main)]">Reset Pass</button>
                         ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg text-[11px] transition">Delete</button>` : ''}
                     </td>
                 </tr>`;
@@ -510,12 +551,8 @@
         }
 
         async function adminForceLogout(targetUser) {
-            if (confirm(`Are you sure you want to force logout user "${targetUser}"? They will be immediately disconnected on their device and required to re-enter credentials.`)) {
-                const { error } = await client
-                    .from('profiles')
-                    .update({ force_logout: true })
-                    .eq('username', targetUser);
-
+            if (confirm(`Are you sure you want to force logout user "${targetUser}"?`)) {
+                const { error } = await client.from('profiles').update({ force_logout: true }).eq('username', targetUser);
                 if (!error) {
                     alert(`User "${targetUser}" has been successfully logged out from their device.`);
                     renderAdminPanel();
@@ -528,12 +565,7 @@
         async function adminResetPassword(targetUser) {
             let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
             if (!newPass) return;
-
-            const { error } = await client
-                .from('profiles')
-                .update({ password: newPass })
-                .eq('username', targetUser);
-
+            const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
             if (!error) {
                 alert(`Password for "${targetUser}" successfully updated.`);
                 renderAdminPanel();
@@ -543,19 +575,17 @@
         }
 
         async function adminDeleteAccount(targetUser) {
-            let adminPassInput = prompt(`SECURITY 2FA: To delete account "${targetUser}", please enter your Admin Password (${MASTER_ADMIN}):`);
+            let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${MASTER_ADMIN}):`);
             if (!adminPassInput) return;
-
             const { data: adminData } = await client.from('profiles').select('password').eq('username', MASTER_ADMIN).single();
             if (!adminData || adminData.password !== adminPassInput) {
-                alert('Authentication Failed: Incorrect admin password. Account deletion aborted.');
+                alert('Authentication Failed: Incorrect admin password.');
                 return;
             }
-
-            if (confirm(`Are you absolutely sure you want to completely erase user "${targetUser}" from the cloud?`)) {
+            if (confirm(`Permanently erase user "${targetUser}" from cloud?`)) {
                 const { error } = await client.from('profiles').delete().eq('username', targetUser);
                 if (!error) {
-                    alert(`Account "${targetUser}" has been permanently deleted from the database.`);
+                    alert(`Account "${targetUser}" deleted.`);
                     renderAdminPanel();
                 } else {
                     alert('Deletion failed.');
@@ -577,27 +607,22 @@
         }
 
         async function saveAndCloudSync() {
-            await client
-                .from('profiles')
-                .update({ 
-                    data: JSON.stringify(trackers),
-                    last_action: new Date().toISOString()
-                })
-                .eq('username', currentUser);
+            await client.from('profiles').update({ 
+                data: JSON.stringify(trackers),
+                last_action: new Date().toISOString()
+            }).eq('username', currentUser);
             render();
         }
 
         function updateValue(id, dayIndex, val) {
             const tracker = trackers.find(t => t.id === id);
             let num = parseFloat(val);
-
             if (isNaN(num) || val === '') {
                 num = 0;
             } else if (num > tracker.max) {
                 num = tracker.max;
                 alert(`Value cannot exceed the max Y-axis limit (${tracker.max}).`);
             }
-
             tracker.data[dayIndex] = num;
             saveAndCloudSync();
         }
@@ -610,18 +635,21 @@
         }
 
         function render() {
-            // Live background sync check for regular users (theme and force logout)
             if (currentUser && currentUser !== MASTER_ADMIN) {
                 client.from('profiles').select('theme, force_logout').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
-                    if (adminData && adminData.theme && adminData.theme !== currentThemeKey) {
-                        currentThemeKey = adminData.theme;
-                        applyThemeUI(currentThemeKey);
+                    if (adminData && adminData.theme) {
+                        const parts = adminData.theme.split('_');
+                        if (parts.length === 2 && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey)) {
+                            currentAccentKey = parts[0];
+                            currentModeKey = parts[1];
+                            applyThemeUI(currentAccentKey, currentModeKey);
+                        }
                     }
                 });
 
                 client.from('profiles').select('force_logout').eq('username', currentUser).maybeSingle().then(({data}) => {
                     if (data && data.force_logout === true) {
-                        alert('Session terminated by administrator. Please log back in.');
+                        alert('Session terminated by administrator.');
                         handleLogout();
                     }
                 });
@@ -636,7 +664,7 @@
                 container.innerHTML = '';
 
                 if(trackers.length === 0) {
-                    container.innerHTML = `<div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-8 text-center text-gray-500 text-xs">No graphs created yet. Use the builder below to add your first graph!</div>`;
+                    container.innerHTML = `<div class="dynamic-card border rounded-2xl p-8 text-center text-[var(--text-muted)] text-xs">No graphs created yet. Use the builder below to add your first graph!</div>`;
                     return;
                 }
 
@@ -644,13 +672,13 @@
                     if (!t.activeTab) t.activeTab = 'graph';
 
                     const card = document.createElement('div');
-                    card.className = 'bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-5 shadow-xl space-y-4';
+                    card.className = 'dynamic-card backdrop-blur-md border rounded-2xl p-5 shadow-xl space-y-4';
                     
                     let inputsHtml = '';
                     for(let i = 0; i < 30; i++) {
                         const displayVal = (t.data[i] === 0 || t.data[i] === undefined) ? '' : t.data[i];
                         inputsHtml += `
-                            <div class="flex flex-col items-center text-[10px] text-gray-500 input-cell">
+                            <div class="flex flex-col items-center text-[10px] text-[var(--text-muted)] input-cell">
                                 <span class="mb-1">${i+1}</span>
                                 <input type="number" 
                                        value="${displayVal}" 
@@ -658,7 +686,7 @@
                                        min="0" 
                                        max="${t.max}" 
                                        onchange="updateValue('${t.id}', ${i}, this.value)" 
-                                       class="w-10 bg-gray-950 border border-gray-800/80 text-gray-200 text-center rounded-lg p-1.5 focus:outline-none focus:border-emerald-500 font-mono text-xs placeholder:text-gray-700 transition" />
+                                       class="w-10 dynamic-card-solid border text-center rounded-lg p-1.5 focus:outline-none font-mono text-xs transition" />
                             </div>
                         `;
                     }
@@ -677,10 +705,10 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
                             <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-gray-200 text-sm">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
-                                <div class="flex bg-gray-950 border border-gray-800 rounded-xl p-0.5 text-xs">
-                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'dynamic-bg text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
-                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'dynamic-bg text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
+                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Max Limit: ${t.max})</span></h3>
+                                <div class="flex dynamic-card-solid border rounded-xl p-0.5 text-xs">
+                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">Habit tracker</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">History & Stats</button>
                                 </div>
                             </div>
                             <button class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1 rounded-xl text-xs transition duration-200" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
@@ -690,45 +718,45 @@
                             ${t.activeTab === 'graph' ? `
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                                     <div class="md:col-span-3 space-y-3">
-                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] bg-gray-950 border border-gray-800/80 rounded-xl block shadow-inner"></canvas>
-                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 bg-gray-950 border border-gray-800/80 rounded-xl shadow-inner">${inputsHtml}</div>
+                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block shadow-inner"></canvas>
+                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl shadow-inner">${inputsHtml}</div>
                                     </div>
-                                    <div class="flex flex-col items-center justify-center bg-gray-950 border border-gray-800/80 rounded-xl p-4 h-full shadow-inner">
-                                        <span class="text-xs text-gray-400 mb-2 font-medium">Monthly Progress</span>
+                                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4 h-full shadow-inner">
+                                        <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Monthly Progress</span>
                                         <div class="relative w-28 h-28 flex items-center justify-center">
                                             <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
                                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                                 <span class="text-sm font-bold dynamic-text">${percentage}%</span>
-                                                <span class="text-[10px] text-gray-500">Achieved</span>
+                                                <span class="text-[10px] text-[var(--text-muted)]">Achieved</span>
                                             </div>
                                         </div>
-                                        <span class="text-[11px] text-gray-400 mt-2 font-mono">Total: ${totalVal} /${maxPossible}</span>
+                                        <span class="text-[11px] text-[var(--text-muted)] mt-2 font-mono">Total: ${totalVal} /${maxPossible}</span>
                                     </div>
                                 </div>
                             ` : `
-                                <div class="bg-gray-950 border border-gray-800/80 rounded-xl p-5 space-y-4 shadow-inner">
+                                <div class="dynamic-card-solid border rounded-xl p-5 space-y-4 shadow-inner">
                                     <h4 class="text-xs font-bold dynamic-text tracking-wider uppercase">Monthly History & Performance Analytics</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-                                            <p class="text-xs text-gray-400">Consistency Score</p>
+                                        <div class="dynamic-card border rounded-xl p-3 text-center">
+                                            <p class="text-xs text-[var(--text-muted)]">Consistency Score</p>
                                             <p class="text-lg font-bold dynamic-text mt-1">${consistency}%</p>
-                                            <p class="text-[10px] text-gray-500 mt-0.5">${activeDays} active days out of 30</p>
+                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">${activeDays} active days out of 30</p>
                                         </div>
-                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-                                            <p class="text-xs text-gray-400">Period Difference</p>
+                                        <div class="dynamic-card border rounded-xl p-3 text-center">
+                                            <p class="text-xs text-[var(--text-muted)]">Period Difference</p>
                                             <p class="text-lg font-bold ${diff >= 0 ? 'dynamic-text' : 'text-red-400'} mt-1">${diffText}</p>
-                                            <p class="text-[10px] text-gray-500 mt-0.5">H2 vs H1 progress change</p>
+                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">H2 vs H1 progress change</p>
                                         </div>
-                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-                                            <p class="text-xs text-gray-400">Total Monthly Output</p>
+                                        <div class="dynamic-card border rounded-xl p-3 text-center">
+                                            <p class="text-xs text-[var(--text-muted)]">Total Monthly Output</p>
                                             <p class="text-lg font-bold text-blue-400 mt-1">${totalVal}</p>
-                                            <p class="text-[10px] text-gray-500 mt-0.5">Sum of all recorded days</p>
+                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Sum of all recorded days</p>
                                         </div>
                                     </div>
                                     <div class="space-y-2">
-                                        <p class="text-xs font-semibold text-gray-300">30-Day Recorded Values Breakdown:</p>
-                                        <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-xs font-mono text-gray-300">
-                                            ${t.data.map((v, idx) => `<span class="bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">Day ${idx+1}: <strong class="dynamic-text">${v || 0}</strong></span>`).join('')}
+                                        <p class="text-xs font-semibold text-[var(--text-main)]">30-Day Recorded Values Breakdown:</p>
+                                        <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 dynamic-card border rounded-xl text-xs font-mono text-[var(--text-main)]">
+                                            ${t.data.map((v, idx) => `<span class="dynamic-card-solid px-2.5 py-1 rounded-lg border">Day ${idx+1}: <strong class="dynamic-text">${v || 0}</strong></span>`).join('')}
                                         </div>
                                     </div>
                                 </div>
@@ -755,7 +783,11 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.strokeStyle = '#111827';
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
+            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
+
+            ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
             const rows = 4;
             for (let i = 0; i <= rows; i++) {
@@ -765,7 +797,7 @@
                 ctx.lineTo(canvas.width, y);
                 ctx.stroke();
                 
-                ctx.fillStyle = '#4b5563';
+                ctx.fillStyle = textColor;
                 ctx.font = '10px monospace';
                 let labelVal = Math.round(t.max - (t.max / rows) * i);
                 ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
@@ -798,9 +830,12 @@
             const radius = 42;
             const holeRadius = 28;
 
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
+
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#111827';
+            ctx.strokeStyle = gridColor;
             ctx.lineWidth = 8;
             ctx.stroke();
 
@@ -813,7 +848,7 @@
 
             ctx.beginPath();
             ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
-            ctx.fillStyle = '#030712';
+            ctx.fillStyle = holeBg;
             ctx.fill();
         }
 
@@ -868,7 +903,7 @@
         }
 
         function deleteTracker(id, title) {
-            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"? This cannot be undone.`);
+            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"?`);
             if (confirmed) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
