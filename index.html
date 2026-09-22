@@ -18,56 +18,82 @@
         .input-cell input[type=number] { 
             -moz-appearance: textfield; 
         }
+        /* Custom scrollbar for minimalist clean look */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-gray-950">
 
-    <div class="w-full max-w-4xl mx-auto">
+    <!-- Ambient Background Glow -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
+        <div class="w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px]"></div>
+    </div>
+
+    <div class="w-full max-w-4xl mx-auto relative z-10">
         
         <!-- Auth Screen -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl mt-16">
-            <div class="text-center mb-6">
-                <h1 class="text-2xl font-bold tracking-wider text-emerald-400">GHOST TRACKER</h1>
-                <p class="text-xs text-gray-400 mt-1">Embrace Yourself (Create / Log In)</p>
+        <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-3 shadow-inner">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-widest text-emerald-400">GHOST TRACKER</h1>
+                <p class="text-xs text-gray-400 mt-1">Cloud-Synced Minimalist Habit & Goal Matrix</p>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Username</label>
-                    <input type="text" id="auth-user" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Username</label>
+                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
-                    <input type="password" id="auth-pass" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Password</label>
+                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold py-2 rounded-lg text-sm transition">Access Cloud Matrix</button>
-                <p id="auth-error" class="text-xs text-center text-red-400 h-4"></p>
+                <button onclick="handleLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold py-2.5 rounded-xl text-sm shadow-lg shadow-emerald-500/10 transition-all duration-200 mt-2">Access Cloud Matrix</button>
+                <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
 
         <!-- App Screen -->
         <div id="app-screen" class="hidden space-y-6">
-            <div class="text-center">
-                <h1 class="text-3xl font-bold tracking-wider text-emerald-400">Ghost Mode</h1>
-                <p class="text-xs text-gray-400 mt-1">Cloud-Synced System-Monitor Habit & Goal Tracker</p>
+            <div class="text-center pt-2">
+                <h1 class="text-2xl font-bold tracking-wider text-emerald-400">Ghost Mode</h1>
+                <p class="text-xs text-gray-400 mt-0.5">Cloud-Synced System-Monitor Habit & Goal Tracker</p>
             </div>
 
             <!-- Profile Bar -->
-            <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-xl flex justify-between items-center">
-                <span class="text-sm text-gray-400">Logged in as: <strong id="display-user" class="text-emerald-400"></strong></span>
-                <button onclick="handleLogout()" class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 text-xs px-3 py-1.5 rounded-lg transition">Logout</button>
+            <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-4 shadow-xl flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs text-gray-400">Logged in as: <strong id="display-user" class="text-emerald-400 font-semibold"></strong></span>
+                </div>
+                <button onclick="handleLogout()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200">Logout</button>
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
-            <div id="admin-section" class="bg-gray-900 border border-emerald-500/50 rounded-xl p-5 shadow-xl hidden space-y-4">
-                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-gray-800 pb-3">
+            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-6 shadow-2xl hidden space-y-5">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-gray-800/80 pb-4">
                     <div>
-                        <h3 class="text-emerald-400 font-bold text-sm tracking-wider flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-gray-400 mt-1">Manage platform users, reset passwords, or delete accounts securely.</p>
+                        <h3 class="text-emerald-400 font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                        <p class="text-xs text-gray-400 mt-1">Manage platform users, reset credentials, or inspect activity securely.</p>
                     </div>
                     <!-- Navigation Tabs -->
-                    <div class="flex bg-gray-950 border border-gray-800 rounded-lg p-0.5 text-xs">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3 py-1.5 rounded-md transition font-semibold bg-emerald-600 text-gray-950">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3 py-1.5 rounded-md transition text-gray-400 hover:text-gray-200">Users</button>
+                    <div class="flex bg-gray-950/80 border border-gray-800 rounded-xl p-1 text-xs shadow-inner">
+                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium bg-emerald-500 text-gray-950 shadow-sm">Tracker & Donut</button>
+                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200">Users</button>
                     </div>
                 </div>
 
@@ -77,18 +103,18 @@
                     <div id="trackers-container" class="space-y-6"></div>
 
                     <!-- Add New Custom Graph Card -->
-                    <div class="bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl">
-                        <h3 class="text-sm font-semibold text-gray-200 mb-3">+ Add New Custom Graph</h3>
+                    <div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-5 shadow-xl">
+                        <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3">+ Add New Custom Graph</h3>
                         <div class="flex flex-wrap gap-3 items-center">
-                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                            <input type="number" id="new-max" placeholder="Max Daily Target / Limit (e.g. 12)" class="w-56 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                            <select id="new-color" class="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500">
+                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
+                            <input type="number" id="new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
+                            <select id="new-color" class="bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-emerald-500 transition">
                                 <option value="#34d399">Green Line</option>
                                 <option value="#f87171">Red Line</option>
                                 <option value="#60a5fa">Blue Line</option>
                                 <option value="#fbbf24">Yellow Line</option>
                             </select>
-                            <button onclick="addNewTracker()" class="bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold px-4 py-2 rounded-lg text-sm transition">Create Graph</button>
+                            <button onclick="addNewTracker()" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold px-4 py-2 rounded-xl text-xs transition duration-200 shadow-md shadow-emerald-500/10">Create Graph</button>
                         </div>
                     </div>
                 </div>
@@ -97,9 +123,9 @@
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
                         <p class="text-xs text-gray-400">Complete registered user directory, credentials, and last graph update metrics.</p>
-                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500 w-56" />
+                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 w-56 transition" />
                     </div>
-                    <div class="max-h-96 overflow-y-auto border border-gray-800 rounded-lg p-2 bg-gray-950">
+                    <div class="max-h-96 overflow-y-auto border border-gray-800 rounded-xl p-2 bg-gray-950/80 shadow-inner">
                         <div id="users-list-container" class="text-xs">Loading users...</div>
                     </div>
                 </div>
@@ -109,18 +135,18 @@
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <!-- Add New Custom Graph Card for Regular Users -->
-                <div class="bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl">
-                    <h3 class="text-sm font-semibold text-gray-200 mb-3">+ Add New Custom Graph</h3>
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3">+ Add New Custom Graph</h3>
                     <div class="flex flex-wrap gap-3 items-center">
-                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                        <input type="number" id="reg-new-max" placeholder="Max Daily Target / Limit (e.g. 12)" class="w-56 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                        <select id="reg-new-color" class="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500">
+                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
+                        <input type="number" id="reg-new-max" placeholder="Max Target / Limit (e.g. 12)" class="w-48 bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 transition" />
+                        <select id="reg-new-color" class="bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-300 focus:outline-none focus:border-emerald-500 transition">
                             <option value="#34d399">Green Line</option>
                             <option value="#f87171">Red Line</option>
                             <option value="#60a5fa">Blue Line</option>
                             <option value="#fbbf24">Yellow Line</option>
                         </select>
-                        <button onclick="addNewTrackerRegular()" class="bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold px-4 py-2 rounded-lg text-sm transition">Create Graph</button>
+                        <button onclick="addNewTrackerRegular()" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md shadow-emerald-500/10">Create Graph</button>
                     </div>
                 </div>
             </div>
@@ -140,7 +166,6 @@
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
 
-        // Check for persisted session on page load
         window.addEventListener('DOMContentLoaded', async () => {
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
@@ -159,8 +184,6 @@
                 currentUser = username;
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
                 document.getElementById('display-user').innerText = currentUser;
-                
-                // Note: We removed updating last_action on login/refresh so it strictly tracks graph updates!
 
                 if (currentUser === MASTER_ADMIN) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -245,13 +268,13 @@
             const usersContent = document.getElementById('admin-content-users');
 
             if (tab === 'tracker') {
-                trackerTabBtn.className = 'px-3 py-1.5 rounded-md transition font-semibold bg-emerald-600 text-gray-950';
-                usersTabBtn.className = 'px-3 py-1.5 rounded-md transition text-gray-400 hover:text-gray-200';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium bg-emerald-500 text-gray-950 shadow-sm';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
                 trackerContent.classList.remove('hidden');
                 usersContent.classList.add('hidden');
             } else {
-                usersTabBtn.className = 'px-3 py-1.5 rounded-md transition font-semibold bg-emerald-600 text-gray-950';
-                trackerTabBtn.className = 'px-3 py-1.5 rounded-md transition text-gray-400 hover:text-gray-200';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium bg-emerald-500 text-gray-950 shadow-sm';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
                 usersContent.classList.remove('hidden');
                 trackerContent.classList.add('hidden');
                 renderAdminPanel();
@@ -260,12 +283,12 @@
 
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
-            container.innerHTML = '<p class="text-gray-400 py-2 px-2">Loading user matrix from cloud...</p>';
+            container.innerHTML = '<p class="text-gray-400 py-3 px-3">Loading user matrix from cloud...</p>';
             
             const { data: users, error } = await client.from('profiles').select('username, password, last_action');
             
             if (error) {
-                container.innerHTML = `<p class="text-red-400 py-2 px-2">Error loading users from cloud: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users from cloud: ${error.message}</p>`;
                 return;
             }
             
@@ -296,22 +319,22 @@
         function displayAdminTable(users) {
             const container = document.getElementById('users-list-container');
             if (!users || users.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 py-2 px-2">No users found.</p>';
+                container.innerHTML = '<p class="text-gray-500 py-3 px-3">No users found.</p>';
                 return;
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Password</th><th class="py-2.5 px-3">Last Graph Update</th><th class="py-2.5 px-3 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-gray-800 text-gray-400 text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Graph Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
-                html += `<tr class="border-b border-gray-800/50 hover:bg-gray-900/40">
-                    <td class="py-2.5 px-3 text-emerald-400 font-medium">${u.username}</td>
-                    <td class="py-2.5 px-3 text-gray-400 font-mono">${u.password}</td>
-                    <td class="py-2.5 px-3 text-gray-300 font-mono text-[11px]">${timeAgoStr}</td>
-                    <td class="py-2.5 px-3 flex gap-2 justify-end">
-                        <button onclick="adminResetPassword('${u.username}')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1 rounded text-xs transition">Reset Pass</button>
-                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-2.5 py-1 rounded text-xs transition">Delete</button>` : ''}
+                html += `<tr class="border-b border-gray-800/40 hover:bg-gray-900/60 transition">
+                    <td class="py-3 px-3.5 text-emerald-400 font-medium">${u.username}</td>
+                    <td class="py-3 px-3.5 text-gray-400 font-mono text-[11px]">${u.password}</td>
+                    <td class="py-3 px-3.5 text-gray-300 font-mono text-[11px]">${timeAgoStr}</td>
+                    <td class="py-3 px-3.5 flex gap-2 justify-end">
+                        <button onclick="adminResetPassword('${u.username}')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1 rounded-lg text-[11px] transition">Reset Pass</button>
+                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg text-[11px] transition">Delete</button>` : ''}
                     </td>
                 </tr>`;
             });
@@ -371,8 +394,6 @@
         }
 
         async function saveAndCloudSync() {
-            // This function runs exclusively when a graph value is changed, added, or deleted.
-            // It stamps the exact time they last updated their graph data.
             await client
                 .from('profiles')
                 .update({ 
@@ -415,7 +436,7 @@
                 container.innerHTML = '';
 
                 if(trackers.length === 0) {
-                    container.innerHTML = `<div class="bg-gray-950 border border-gray-800 rounded-xl p-8 text-center text-gray-500 text-sm">No graphs created yet. Use the builder below to add your first graph!</div>`;
+                    container.innerHTML = `<div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-8 text-center text-gray-500 text-xs">No graphs created yet. Use the builder below to add your first graph!</div>`;
                     return;
                 }
 
@@ -423,7 +444,7 @@
                     if (!t.activeTab) t.activeTab = 'graph';
 
                     const card = document.createElement('div');
-                    card.className = 'bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl space-y-4';
+                    card.className = 'bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-5 shadow-xl space-y-4';
                     
                     let inputsHtml = '';
                     for(let i = 0; i < 30; i++) {
@@ -437,7 +458,7 @@
                                        min="0" 
                                        max="${t.max}" 
                                        onchange="updateValue('${t.id}', ${i}, this.value)" 
-                                       class="w-10 bg-gray-900 border border-gray-800 text-gray-200 text-center rounded p-1 focus:outline-none focus:border-emerald-500 font-mono text-xs placeholder:text-gray-700" />
+                                       class="w-10 bg-gray-950 border border-gray-800/80 text-gray-200 text-center rounded-lg p-1.5 focus:outline-none focus:border-emerald-500 font-mono text-xs placeholder:text-gray-700 transition" />
                             </div>
                         `;
                     }
@@ -456,23 +477,23 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
                             <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-gray-200">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
-                                <div class="flex bg-gray-900 border border-gray-800 rounded-lg p-0.5 text-xs">
-                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'graph' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
-                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'history' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
+                                <h3 class="font-semibold text-gray-200 text-sm">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
+                                <div class="flex bg-gray-950 border border-gray-800 rounded-xl p-0.5 text-xs">
+                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'bg-emerald-500 text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'bg-emerald-500 text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
                                 </div>
                             </div>
-                            <button class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-3 py-1 rounded text-xs transition" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                            <button class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1 rounded-xl text-xs transition duration-200" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
                         </div>
 
                         <div id="tab-content-${t.id}">
                             ${t.activeTab === 'graph' ? `
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                                     <div class="md:col-span-3 space-y-3">
-                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] bg-gray-900 border border-gray-800 rounded-lg block"></canvas>
-                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-900 border border-gray-800 rounded-lg">${inputsHtml}</div>
+                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] bg-gray-950 border border-gray-800/80 rounded-xl block shadow-inner"></canvas>
+                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 bg-gray-950 border border-gray-800/80 rounded-xl shadow-inner">${inputsHtml}</div>
                                     </div>
-                                    <div class="flex flex-col items-center justify-center bg-gray-900 border border-gray-800 rounded-lg p-4 h-full">
+                                    <div class="flex flex-col items-center justify-center bg-gray-950 border border-gray-800/80 rounded-xl p-4 h-full shadow-inner">
                                         <span class="text-xs text-gray-400 mb-2 font-medium">Monthly Progress</span>
                                         <div class="relative w-28 h-28 flex items-center justify-center">
                                             <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
@@ -481,24 +502,24 @@
                                                 <span class="text-[10px] text-gray-500">Achieved</span>
                                             </div>
                                         </div>
-                                        <span class="text-[11px] text-gray-400 mt-2">Total: ${totalVal} /${maxPossible}</span>
+                                        <span class="text-[11px] text-gray-400 mt-2 font-mono">Total: ${totalVal} /${maxPossible}</span>
                                     </div>
                                 </div>
                             ` : `
-                                <div class="bg-gray-900 border border-gray-800 rounded-lg p-5 space-y-4">
+                                <div class="bg-gray-950 border border-gray-800/80 rounded-xl p-5 space-y-4 shadow-inner">
                                     <h4 class="text-xs font-bold text-emerald-400 tracking-wider uppercase">Monthly History & Performance Analytics</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                                             <p class="text-xs text-gray-400">Consistency Score</p>
                                             <p class="text-lg font-bold text-emerald-400 mt-1">${consistency}%</p>
                                             <p class="text-[10px] text-gray-500 mt-0.5">${activeDays} active days out of 30</p>
                                         </div>
-                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                                             <p class="text-xs text-gray-400">Period Difference</p>
                                             <p class="text-lg font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'} mt-1">${diffText}</p>
                                             <p class="text-[10px] text-gray-500 mt-0.5">H2 vs H1 progress change</p>
                                         </div>
-                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                                             <p class="text-xs text-gray-400">Total Monthly Output</p>
                                             <p class="text-lg font-bold text-blue-400 mt-1">${totalVal}</p>
                                             <p class="text-[10px] text-gray-500 mt-0.5">Sum of all recorded days</p>
@@ -506,8 +527,8 @@
                                     </div>
                                     <div class="space-y-2">
                                         <p class="text-xs font-semibold text-gray-300">30-Day Recorded Values Breakdown:</p>
-                                        <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-gray-950 border border-gray-800 rounded text-xs font-mono text-gray-300">
-                                            ${t.data.map((v, idx) => `<span class="bg-gray-900 px-2 py-1 rounded border border-gray-800">Day ${idx+1}: <strong class="text-emerald-400">${v || 0}</strong></span>`).join('')}
+                                        <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-xs font-mono text-gray-300">
+                                            ${t.data.map((v, idx) => `<span class="bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">Day ${idx+1}: <strong class="text-emerald-400">${v || 0}</strong></span>`).join('')}
                                         </div>
                                     </div>
                                 </div>
@@ -534,7 +555,7 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.strokeStyle = '#1f2937';
+            ctx.strokeStyle = '#111827';
             ctx.lineWidth = 1;
             const rows = 4;
             for (let i = 0; i <= rows; i++) {
@@ -544,7 +565,7 @@
                 ctx.lineTo(canvas.width, y);
                 ctx.stroke();
                 
-                ctx.fillStyle = '#6b7280';
+                ctx.fillStyle = '#4b5563';
                 ctx.font = '10px monospace';
                 let labelVal = Math.round(t.max - (t.max / rows) * i);
                 ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
@@ -579,7 +600,7 @@
 
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#1f2937';
+            ctx.strokeStyle = '#111827';
             ctx.lineWidth = 8;
             ctx.stroke();
 
