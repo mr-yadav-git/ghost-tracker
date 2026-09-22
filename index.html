@@ -105,8 +105,25 @@
                 </div>
             </div>
 
-            <!-- Non-Admin Trackers Container (if logged in as regular user) -->
-            <div id="regular-trackers-container" class="space-y-6"></div>
+            <!-- Regular Trackers Container (if logged in as regular user) -->
+            <div id="regular-trackers-wrapper" class="space-y-6 hidden">
+                <div id="regular-trackers-container" class="space-y-6"></div>
+                <!-- Add New Custom Graph Card for Regular Users -->
+                <div class="bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl">
+                    <h3 class="text-sm font-semibold text-gray-200 mb-3">+ Add New Custom Graph</h3>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <input type="text" id="reg-new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                        <input type="number" id="reg-new-max" placeholder="Max Daily Target / Limit (e.g. 12)" class="w-56 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                        <select id="reg-new-color" class="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500">
+                            <option value="#34d399">Green Line</option>
+                            <option value="#f87171">Red Line</option>
+                            <option value="#60a5fa">Blue Line</option>
+                            <option value="#fbbf24">Yellow Line</option>
+                        </select>
+                        <button onclick="addNewTrackerRegular()" class="bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold px-4 py-2 rounded-lg text-sm transition">Create Graph</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -120,8 +137,45 @@
         let currentUser = null;
         let trackers = [];
         let adminUsersCache = [];
-        let currentAdminTab = 'tracker'; // 'tracker' or 'users'
+        let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
+
+        // Check for persisted session on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedUser = localStorage.getItem('ghost_current_user');
+            if (savedUser) {
+                await restoreSession(savedUser);
+            }
+        });
+
+        async function restoreSession(username) {
+            const { data: existingUser, error } = await client
+                .from('profiles')
+                .select('*')
+                .eq('username', username)
+                .maybeSingle();
+
+            if (!error && existingUser) {
+                currentUser = username;
+                trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
+                document.getElementById('display-user').innerText = currentUser;
+                
+                if (currentUser === MASTER_ADMIN) {
+                    document.getElementById('admin-section').classList.remove('hidden');
+                    document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+                    renderAdminPanel();
+                } else {
+                    document.getElementById('admin-section').classList.add('hidden');
+                    document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
+                }
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                render();
+            } else {
+                localStorage.removeItem('ghost_current_user');
+            }
+        }
 
         async function handleLogin() {
             const user = document.getElementById('auth-user').value.trim();
@@ -164,13 +218,16 @@
             }
 
             currentUser = user;
+            localStorage.setItem('ghost_current_user', currentUser);
             document.getElementById('display-user').innerText = currentUser;
             
             if (currentUser === MASTER_ADMIN) {
                 document.getElementById('admin-section').classList.remove('hidden');
+                document.getElementById('regular-trackers-wrapper').classList.add('hidden');
                 renderAdminPanel();
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
+                document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
             }
 
             document.getElementById('auth-screen').classList.add('hidden');
@@ -283,6 +340,7 @@
         }
 
         function handleLogout() {
+            localStorage.removeItem('ghost_current_user');
             currentUser = null;
             trackers = [];
             adminUsersCache = [];
@@ -327,136 +385,126 @@
         }
 
         function render() {
-            const container = document.getElementById('trackers-container');
-            container.innerHTML = '';
+            const containers = currentUser === MASTER_ADMIN 
+                ? [document.getElementById('trackers-container')] 
+                : [document.getElementById('trackers-container'), document.getElementById('regular-trackers-container')];
 
-            if(trackers.length === 0) {
-                container.innerHTML = `<div class="bg-gray-950 border border-gray-800 rounded-xl p-8 text-center text-gray-500 text-sm">No graphs created yet. Use the builder below to add your first graph!</div>`;
-                container.innerHTML += `
-                    <div class="bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl mt-4">
-                        <h3 class="text-sm font-semibold text-gray-200 mb-3">+ Add New Custom Graph</h3>
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <input type="text" id="new-title" placeholder="Tracker Name (e.g. Study Hours)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                            <input type="number" id="new-max" placeholder="Max Daily Target / Limit (e.g. 12)" class="w-56 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                            <select id="new-color" class="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-emerald-500">
-                                <option value="#34d399">Green Line</option>
-                                <option value="#f87171">Red Line</option>
-                                <option value="#60a5fa">Blue Line</option>
-                                <option value="#fbbf24">Yellow Line</option>
-                            </select>
-                            <button onclick="addNewTracker()" class="bg-emerald-600 hover:bg-emerald-500 text-gray-950 font-semibold px-4 py-2 rounded-lg text-sm transition">Create Graph</button>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
+            containers.forEach(container => {
+                if (!container) return;
+                container.innerHTML = '';
 
-            trackers.forEach(t => {
-                if (!t.activeTab) t.activeTab = 'graph';
-
-                const card = document.createElement('div');
-                card.className = 'bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl space-y-4';
-                
-                let inputsHtml = '';
-                for(let i = 0; i < 30; i++) {
-                    const displayVal = (t.data[i] === 0 || t.data[i] === undefined) ? '' : t.data[i];
-                    inputsHtml += `
-                        <div class="flex flex-col items-center text-[10px] text-gray-500 input-cell">
-                            <span class="mb-1">${i+1}</span>
-                            <input type="number" 
-                                   value="${displayVal}" 
-                                   placeholder="0" 
-                                   min="0" 
-                                   max="${t.max}" 
-                                   onchange="updateValue('${t.id}', ${i}, this.value)" 
-                                   class="w-10 bg-gray-900 border border-gray-800 text-gray-200 text-center rounded p-1 focus:outline-none focus:border-emerald-500 font-mono text-xs placeholder:text-gray-700" />
-                        </div>
-                    `;
+                if(trackers.length === 0) {
+                    container.innerHTML = `<div class="bg-gray-950 border border-gray-800 rounded-xl p-8 text-center text-gray-500 text-sm">No graphs created yet. Use the builder below to add your first graph!</div>`;
+                    return;
                 }
 
-                const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                const maxPossible = t.max * 30;
-                const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                const activeDays = t.data.filter(v => v > 0).length;
-                const consistency = Math.round((activeDays / 30) * 100);
+                trackers.forEach(t => {
+                    if (!t.activeTab) t.activeTab = 'graph';
 
-                const firstHalf = t.data.slice(0, 15).reduce((a, b) => a + (b || 0), 0);
-                const secondHalf = t.data.slice(15, 30).reduce((a, b) => a + (b || 0), 0);
-                const diff = secondHalf - firstHalf;
-                const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-center flex-wrap gap-2">
-                        <div class="flex items-center gap-3">
-                            <h3 class="font-semibold text-gray-200">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
-                            <div class="flex bg-gray-900 border border-gray-800 rounded-lg p-0.5 text-xs">
-                                <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'graph' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
-                                <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'history' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-950 border border-gray-800 rounded-xl p-5 shadow-xl space-y-4';
+                    
+                    let inputsHtml = '';
+                    for(let i = 0; i < 30; i++) {
+                        const displayVal = (t.data[i] === 0 || t.data[i] === undefined) ? '' : t.data[i];
+                        inputsHtml += `
+                            <div class="flex flex-col items-center text-[10px] text-gray-500 input-cell">
+                                <span class="mb-1">${i+1}</span>
+                                <input type="number" 
+                                       value="${displayVal}" 
+                                       placeholder="0" 
+                                       min="0" 
+                                       max="${t.max}" 
+                                       onchange="updateValue('${t.id}', ${i}, this.value)" 
+                                       class="w-10 bg-gray-900 border border-gray-800 text-gray-200 text-center rounded p-1 focus:outline-none focus:border-emerald-500 font-mono text-xs placeholder:text-gray-700" />
                             </div>
-                        </div>
-                        <button class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-3 py-1 rounded text-xs transition" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
-                    </div>
+                        `;
+                    }
 
-                    <div id="tab-content-${t.id}">
-                        ${t.activeTab === 'graph' ? `
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                                <div class="md:col-span-3 space-y-3">
-                                    <canvas id="canvas-${t.id}" class="w-full h-[140px] bg-gray-900 border border-gray-800 rounded-lg block"></canvas>
-                                    <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-900 border border-gray-800 rounded-lg">${inputsHtml}</div>
+                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
+                    const maxPossible = t.max * 30;
+                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
+                    const activeDays = t.data.filter(v => v > 0).length;
+                    const consistency = Math.round((activeDays / 30) * 100);
+
+                    const firstHalf = t.data.slice(0, 15).reduce((a, b) => a + (b || 0), 0);
+                    const secondHalf = t.data.slice(15, 30).reduce((a, b) => a + (b || 0), 0);
+                    const diff = secondHalf - firstHalf;
+                    const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center flex-wrap gap-2">
+                            <div class="flex items-center gap-3">
+                                <h3 class="font-semibold text-gray-200">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
+                                <div class="flex bg-gray-900 border border-gray-800 rounded-lg p-0.5 text-xs">
+                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'graph' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-md transition ${t.activeTab === 'history' ? 'bg-emerald-600 text-gray-950 font-semibold' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
                                 </div>
-                                <div class="flex flex-col items-center justify-center bg-gray-900 border border-gray-800 rounded-lg p-4 h-full">
-                                    <span class="text-xs text-gray-400 mb-2 font-medium">Monthly Progress</span>
-                                    <div class="relative w-28 h-28 flex items-center justify-center">
-                                        <canvas id="donut-${t.id}" width="112" height="112" class="w-28 h-28"></canvas>
-                                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span class="text-sm font-bold text-emerald-400">${percentage}%</span>
-                                            <span class="text-[10px] text-gray-500">Achieved</span>
+                            </div>
+                            <button class="bg-red-900/40 hover:bg-red-900/70 text-red-400 border border-red-800 px-3 py-1 rounded text-xs transition" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                        </div>
+
+                        <div id="tab-content-${t.id}">
+                            ${t.activeTab === 'graph' ? `
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                    <div class="md:col-span-3 space-y-3">
+                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] bg-gray-900 border border-gray-800 rounded-lg block"></canvas>
+                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-900 border border-gray-800 rounded-lg">${inputsHtml}</div>
+                                    </div>
+                                    <div class="flex flex-col items-center justify-center bg-gray-900 border border-gray-800 rounded-lg p-4 h-full">
+                                        <span class="text-xs text-gray-400 mb-2 font-medium">Monthly Progress</span>
+                                        <div class="relative w-28 h-28 flex items-center justify-center">
+                                            <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <span class="text-sm font-bold text-emerald-400">${percentage}%</span>
+                                                <span class="text-[10px] text-gray-500">Achieved</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-[11px] text-gray-400 mt-2">Total: ${totalVal} /${maxPossible}</span>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="bg-gray-900 border border-gray-800 rounded-lg p-5 space-y-4">
+                                    <h4 class="text-xs font-bold text-emerald-400 tracking-wider uppercase">Monthly History & Performance Analytics</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                            <p class="text-xs text-gray-400">Consistency Score</p>
+                                            <p class="text-lg font-bold text-emerald-400 mt-1">${consistency}%</p>
+                                            <p class="text-[10px] text-gray-500 mt-0.5">${activeDays} active days out of 30</p>
+                                        </div>
+                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                            <p class="text-xs text-gray-400">Period Difference</p>
+                                            <p class="text-lg font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'} mt-1">${diffText}</p>
+                                            <p class="text-[10px] text-gray-500 mt-0.5">H2 vs H1 progress change</p>
+                                        </div>
+                                        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
+                                            <p class="text-xs text-gray-400">Total Monthly Output</p>
+                                            <p class="text-lg font-bold text-blue-400 mt-1">${totalVal}</p>
+                                            <p class="text-[10px] text-gray-500 mt-0.5">Sum of all recorded days</p>
                                         </div>
                                     </div>
-                                    <span class="text-[11px] text-gray-400 mt-2">Total: ${totalVal} /${maxPossible}</span>
-                                </div>
-                            </div>
-                        ` : `
-                            <div class="bg-gray-900 border border-gray-800 rounded-lg p-5 space-y-4">
-                                <h4 class="text-xs font-bold text-emerald-400 tracking-wider uppercase">Monthly History & Performance Analytics</h4>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
-                                        <p class="text-xs text-gray-400">Consistency Score</p>
-                                        <p class="text-lg font-bold text-emerald-400 mt-1">${consistency}%</p>
-                                        <p class="text-[10px] text-gray-500 mt-0.5">${activeDays} active days out of 30</p>
-                                    </div>
-                                    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
-                                        <p class="text-xs text-gray-400">Period Difference</p>
-                                        <p class="text-lg font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'} mt-1">${diffText}</p>
-                                        <p class="text-[10px] text-gray-500 mt-0.5">H2 vs H1 progress change</p>
-                                    </div>
-                                    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-center">
-                                        <p class="text-xs text-gray-400">Total Monthly Output</p>
-                                        <p class="text-lg font-bold text-blue-400 mt-1">${totalVal}</p>
-                                        <p class="text-[10px] text-gray-500 mt-0.5">Sum of all recorded days</p>
+                                    <div class="space-y-2">
+                                        <p class="text-xs font-semibold text-gray-300">30-Day Recorded Values Breakdown:</p>
+                                        <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-gray-950 border border-gray-800 rounded text-xs font-mono text-gray-300">
+                                            ${t.data.map((v, idx) => `<span class="bg-gray-900 px-2 py-1 rounded border border-gray-800">Day ${idx+1}: <strong class="text-emerald-400">${v || 0}</strong></span>`).join('')}
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <p class="text-xs font-semibold text-gray-300">30-Day Recorded Values Breakdown:</p>
-                                    <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-gray-950 border border-gray-800 rounded text-xs font-mono text-gray-300">
-                                        ${t.data.map((v, idx) => `<span class="bg-gray-900 px-2 py-1 rounded border border-gray-800">Day ${idx+1}: <strong class="text-emerald-400">${v || 0}</strong></span>`).join('')}
-                                    </div>
-                                </div>
-                            </div>
-                        `}
-                    </div>
-                `;
-                container.appendChild(card);
-                
-                if (t.activeTab === 'graph') {
-                    drawGraph(t);
-                    drawDonutChart(t, percentage);
-                }
+                            `}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                    
+                    if (t.activeTab === 'graph') {
+                        drawGraph(t, container === document.getElementById('trackers-container') ? '1' : '2');
+                        drawDonutChart(t, percentage, container === document.getElementById('trackers-container') ? '1' : '2');
+                    }
+                });
             });
         }
 
-        function drawGraph(t) {
-            const canvas = document.getElementById(`canvas-${t.id}`);
+        function drawGraph(t, suffix) {
+            const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
@@ -497,8 +545,8 @@
             ctx.stroke();
         }
 
-        function drawDonutChart(t, percentage) {
-            const canvas = document.getElementById(`donut-${t.id}`);
+        function drawDonutChart(t, percentage, suffix) {
+            const canvas = document.getElementById(`donut-${t.id}-${suffix}`);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -552,6 +600,31 @@
             saveAndCloudSync();
         }
 
+        function addNewTrackerRegular() {
+            const titleInput = document.getElementById('reg-new-title');
+            const maxInput = document.getElementById('reg-new-max');
+            const colorInput = document.getElementById('reg-new-color');
+            
+            if(!titleInput.value || !maxInput.value) {
+                alert('Please fill in both the title and max daily target value.');
+                return;
+            }
+
+            const newId = 'tracker_' + Date.now();
+            trackers.push({
+                id: newId,
+                title: titleInput.value,
+                color: colorInput.value,
+                data: Array(30).fill(0),
+                max: parseFloat(maxInput.value) || 100,
+                activeTab: 'graph'
+            });
+
+            titleInput.value = '';
+            maxInput.value = '';
+            saveAndCloudSync();
+        }
+
         function deleteTracker(id, title) {
             const confirmed = confirm(`Are you sure you want to delete the graph "${title}"? This cannot be undone.`);
             if (confirmed) {
@@ -562,11 +635,13 @@
 
         window.onresize = () => trackers.forEach(t => {
             if (t.activeTab === 'graph') {
-                drawGraph(t);
+                drawGraph(t, '1');
+                drawGraph(t, '2');
                 const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                 const maxPossible = t.max * 30;
                 const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                drawDonutChart(t, percentage);
+                drawDonutChart(t, percentage, '1');
+                drawDonutChart(t, percentage, '2');
             }
         });
     </script>
