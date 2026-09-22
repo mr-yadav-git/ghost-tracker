@@ -9,6 +9,29 @@
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* Dynamic Theme Variables Root */
+        :root {
+            --theme-primary: #34d399; /* Emerald 400 default */
+            --theme-primary-bg: #10b981; /* Emerald 500 default */
+            --theme-primary-hover: #34d399; /* Emerald 400 default */
+            --theme-border: rgba(52, 211, 153, 0.3);
+            --theme-glow: rgba(52, 211, 153, 0.05);
+            --theme-selection-bg: #34d399;
+            --theme-selection-text: #030712;
+        }
+
+        /* Apply theme variables to custom utility classes */
+        .dynamic-text { color: var(--theme-primary) !important; }
+        .dynamic-bg { background-color: var(--theme-primary-bg) !important; color: #030712 !important; }
+        .dynamic-bg:hover { background-color: var(--theme-primary-hover) !important; }
+        .dynamic-border { border-color: var(--theme-border) !important; }
+        .dynamic-glow { background-color: var(--theme-glow) !important; }
+        
+        ::selection {
+            background-color: var(--theme-selection-bg);
+            color: var(--theme-selection-text);
+        }
+
         /* Completely remove up/down spinner arrows from number inputs */
         .input-cell input::-webkit-inner-spin-button, 
         .input-cell input::-webkit-outer-spin-button { 
@@ -35,11 +58,11 @@
         }
     </style>
 </head>
-<body id="app-body" class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-gray-950 transition-colors duration-300">
+<body id="app-body" class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
 
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
-        <div id="ambient-glow" class="w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] transition-colors duration-300"></div>
+        <div id="ambient-glow" class="w-[600px] h-[600px] dynamic-glow rounded-full blur-[140px] transition-colors duration-300"></div>
     </div>
 
     <div class="w-full max-w-4xl mx-auto relative z-10">
@@ -47,11 +70,11 @@
         <!-- Auth Screen -->
         <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
             <div class="text-center mb-8">
-                <div id="auth-logo-box" class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 mb-3 shadow-inner transition-colors duration-300">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-950 border dynamic-border dynamic-text mb-3 shadow-inner transition-colors duration-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
-                <h1 id="auth-title-text" class="text-xl font-bold tracking-widest text-emerald-400 transition-colors duration-300">GHOST TRACKER</h1>
-                <p class="text-xs text-gray-400 mt-1">SECURE TELEMETRY & HABIT MATRIX</p>
+                <h1 class="text-xl font-bold tracking-widest dynamic-text transition-colors duration-300">GHOST TRACKER</h1>
+                <p class="text-xs text-gray-400 mt-1">Minimalist Tracker</p>
             </div>
             <div class="space-y-4">
                 <div>
@@ -62,7 +85,7 @@
                     <label class="block text-xs font-medium text-gray-400 mb-1.5">Password</label>
                     <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
-                <button id="auth-btn" onclick="handleLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold py-2.5 rounded-xl text-sm shadow-lg shadow-emerald-500/10 transition-all duration-200 mt-2">Access Cloud Matrix</button>
+                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Access Your Matrix</button>
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
@@ -73,12 +96,12 @@
             <!-- Header Row with Live Clock -->
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
                 <div class="text-center sm:text-left">
-                    <h1 id="app-header-title" class="text-2xl font-bold tracking-wider text-emerald-400 transition-colors duration-300">Ghost Mode</h1>
+                    <h1 class="text-2xl font-bold tracking-wider dynamic-text transition-colors duration-300">Ghost Mode</h1>
                     <p class="text-xs text-gray-400 mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
                 </div>
                 <!-- Live Date/Time Badge -->
-                <div id="live-clock-container" class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
-                    <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse transition-colors duration-300"></span>
+                <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse transition-colors duration-300"></span>
                     <span id="live-clock" class="text-xs font-mono text-gray-300"></span>
                 </div>
             </div>
@@ -86,22 +109,22 @@
             <!-- Profile Bar -->
             <div class="bg-gray-900/60 backdrop-blur-md border border-gray-800/80 rounded-2xl p-4 shadow-xl flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <span id="profile-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse transition-colors duration-300"></span>
-                    <span class="text-xs text-gray-400">Logged in as: <strong id="display-user" class="text-emerald-400 font-semibold transition-colors duration-300"></strong></span>
+                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse transition-colors duration-300"></span>
+                    <span class="text-xs text-gray-400">Logged in as: <strong id="display-user" class="dynamic-text font-semibold transition-colors duration-300"></strong></span>
                 </div>
                 <button onclick="handleLogout()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200">Logout</button>
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
-            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
+            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border dynamic-border rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
                 <div class="flex flex-wrap justify-between items-center gap-3 border-b border-gray-800/80 pb-4">
                     <div>
-                        <h3 id="admin-panel-heading" class="text-emerald-400 font-bold text-xs tracking-widest uppercase flex items-center gap-2 transition-colors duration-300">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                        <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2 transition-colors duration-300">⚡ GLOBAL ADMIN USER MATRIX</h3>
                         <p class="text-xs text-gray-400 mt-1">Manage platform users, themes, reset credentials, or inspect activity securely.</p>
                     </div>
                     <!-- Navigation Tabs -->
                     <div class="flex bg-gray-950/80 border border-gray-800 rounded-xl p-1 text-xs shadow-inner">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium bg-emerald-500 text-gray-950 shadow-sm">Tracker & Donut</button>
+                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm">Tracker & Donut</button>
                         <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200">Users</button>
                     </div>
                 </div>
@@ -116,7 +139,7 @@
                                 <h3 class="text-xs font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">🎨 Global Site Theme Control</h3>
                                 <p class="text-[11px] text-gray-400 mt-0.5">Select a theme to instantly update accent colors across all user screens persistently.</p>
                             </div>
-                            <select id="global-theme-select" onchange="applyAndSaveTheme(this.value)" class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-xs text-emerald-400 font-semibold focus:outline-none focus:border-emerald-500 transition">
+                            <select id="global-theme-select" onchange="applyAndSaveTheme(this.value)" class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-xs dynamic-text font-semibold focus:outline-none focus:border-emerald-500 transition">
                                 <option value="emerald">Emerald Night (Default)</option>
                                 <option value="cyan">Cyber Neon (Cyan)</option>
                                 <option value="amber">Matrix Amber</option>
@@ -141,7 +164,7 @@
                                 <option value="#60a5fa">Blue Line</option>
                                 <option value="#fbbf24">Yellow Line</option>
                             </select>
-                            <button id="admin-create-btn" onclick="addNewTracker()" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold px-4 py-2 rounded-xl text-xs transition duration-200 shadow-md shadow-emerald-500/10">Create Graph</button>
+                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs transition duration-200 shadow-md">Create Graph</button>
                         </div>
                     </div>
                 </div>
@@ -173,7 +196,7 @@
                             <option value="#60a5fa">Blue Line</option>
                             <option value="#fbbf24">Yellow Line</option>
                         </select>
-                        <button id="reg-create-btn" onclick="addNewTrackerRegular()" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md shadow-emerald-500/10">Create Graph</button>
+                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md">Create Graph</button>
                     </div>
                 </div>
             </div>
@@ -193,40 +216,77 @@
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
 
-        // Theme Definitions (5 Cyberpunk / Minimalist Themes)
+        // 5 Fully Configured Cyberpunk / Minimalist Themes
         const THEMES = {
-            emerald: { name: 'Emerald Night', textClass: 'text-emerald-400', tailwindBg: 'bg-emerald-500', tailwindHover: 'hover:bg-emerald-400', borderClass: 'border-emerald-500/30' },
-            cyan: { name: 'Cyber Neon', textClass: 'text-cyan-400', tailwindBg: 'bg-cyan-500', tailwindHover: 'hover:bg-cyan-400', borderClass: 'border-cyan-500/30' },
-            amber: { name: 'Matrix Amber', textClass: 'text-amber-400', tailwindBg: 'bg-amber-500', tailwindHover: 'hover:bg-amber-400', borderClass: 'border-amber-500/30' },
-            indigo: { name: 'Deep Indigo', textClass: 'text-indigo-400', tailwindBg: 'bg-indigo-500', tailwindHover: 'hover:bg-indigo-400', borderClass: 'border-indigo-500/30' },
-            crimson: { name: 'Crimson Protocol', textClass: 'text-red-400', tailwindBg: 'bg-red-500', tailwindHover: 'hover:bg-red-400', borderClass: 'border-red-500/30' }
+            emerald: { 
+                name: 'Emerald Night', 
+                primary: '#34d399', 
+                primaryBg: '#10b981', 
+                primaryHover: '#34d399', 
+                border: 'rgba(52, 211, 153, 0.3)', 
+                glow: 'rgba(52, 211, 153, 0.05)' 
+            },
+            cyan: { 
+                name: 'Cyber Neon', 
+                primary: '#22d3ee', 
+                primaryBg: '#06b6d4', 
+                primaryHover: '#22d3ee', 
+                border: 'rgba(34, 211, 238, 0.3)', 
+                glow: 'rgba(34, 211, 238, 0.05)' 
+            },
+            amber: { 
+                name: 'Matrix Amber', 
+                primary: '#fbbf24', 
+                primaryBg: '#f59e0b', 
+                primaryHover: '#fbbf24', 
+                border: 'rgba(251, 191, 36, 0.3)', 
+                glow: 'rgba(251, 191, 36, 0.05)' 
+            },
+            indigo: { 
+                name: 'Deep Indigo', 
+                primary: '#818cf8', 
+                primaryBg: '#6366f1', 
+                primaryHover: '#818cf8', 
+                border: 'rgba(129, 140, 248, 0.3)', 
+                glow: 'rgba(129, 140, 248, 0.05)' 
+            },
+            crimson: { 
+                name: 'Crimson Protocol', 
+                primary: '#f87171', 
+                primaryBg: '#ef4444', 
+                primaryHover: '#f87171', 
+                border: 'rgba(248, 113, 113, 0.3)', 
+                glow: 'rgba(248, 113, 113, 0.05)' 
+            }
         };
         let currentThemeKey = 'emerald';
 
+        // IMMEDIATELY fetch theme from cloud before user interacts to prevent any flash of emerald on refresh
+        (async function initThemeOnLoad() {
+            try {
+                const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
+                if (data && data.theme && THEMES[data.theme]) {
+                    currentThemeKey = data.theme;
+                }
+            } catch (e) {
+                // fallback to default
+            }
+            applyThemeUI(currentThemeKey);
+        })();
+
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
-            await fetchGlobalTheme(); // Load saved theme from cloud immediately upon app load/refresh
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
                 await restoreSession(savedUser);
             }
         });
 
-        // Fetch global theme stored in master admin row in database
-        async function fetchGlobalTheme() {
-            const { data, error } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (!error && data && data.theme && THEMES[data.theme]) {
-                currentThemeKey = data.theme;
-            }
-            applyThemeUI(currentThemeKey);
-        }
-
-        // Save theme to Supabase so it persists for everyone until changed
         async function applyAndSaveTheme(themeKey) {
             currentThemeKey = themeKey;
             applyThemeUI(themeKey);
 
-            // Update database row for MASTER_ADMIN to store global site theme
+            // Save globally in Master Admin row so it persists permanently for all visitors/users
             await client.from('profiles').update({ theme: themeKey }).eq('username', MASTER_ADMIN);
             
             render();
@@ -235,35 +295,17 @@
         function applyThemeUI(themeKey) {
             const theme = THEMES[themeKey] || THEMES['emerald'];
             
+            // Set CSS root variables so the entire page transforms instantly
+            const root = document.documentElement;
+            root.style.setProperty('--theme-primary', theme.primary);
+            root.style.setProperty('--theme-primary-bg', theme.primaryBg);
+            root.style.setProperty('--theme-primary-hover', theme.primaryHover);
+            root.style.setProperty('--theme-border', theme.border);
+            root.style.setProperty('--theme-glow', theme.glow);
+            root.style.setProperty('--theme-selection-bg', theme.primary);
+
             const themeSelect = document.getElementById('global-theme-select');
             if (themeSelect) themeSelect.value = themeKey;
-
-            // Update UI elements dynamically
-            const elementsToRecolor = [
-                'auth-logo-box', 'auth-title-text', 'auth-btn',
-                'app-header-title', 'live-dot', 'profile-dot', 'display-user',
-                'admin-panel-heading', 'admin-create-btn', 'reg-create-btn'
-            ];
-
-            elementsToRecolor.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                if (id.includes('title') || id.includes('heading') || id.includes('user') || id.includes('dot')) {
-                    el.className = el.className.replace(/text-(emerald|cyan|amber|indigo|red)-400/g, theme.textClass);
-                    if(!el.className.includes(theme.textClass)) el.classList.add(theme.textClass);
-                }
-                if (id.includes('btn') || id.includes('box')) {
-                    el.className = el.className.replace(/bg-(emerald|cyan|amber|indigo|red)-500/g, theme.tailwindBg);
-                    el.className = el.className.replace(/hover:bg-(emerald|cyan|amber|indigo|red)-400/g, theme.tailwindHover);
-                    if(!el.className.includes(theme.tailwindBg)) el.classList.add(theme.tailwindBg);
-                }
-            });
-
-            const adminSec = document.getElementById('admin-section');
-            if (adminSec) {
-                adminSec.className = adminSec.className.replace(/border-(emerald|cyan|amber|indigo|red)-500\/30/g, theme.borderClass);
-                if(!adminSec.className.includes(theme.borderClass)) adminSec.classList.add(theme.borderClass);
-            }
         }
 
         function startLiveClock() {
@@ -278,8 +320,11 @@
         }
 
         async function restoreSession(username) {
-            // Also sync global theme on every session check
-            await fetchGlobalTheme();
+            const { data, error: themeError } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
+            if (!themeError && data && data.theme && THEMES[data.theme]) {
+                currentThemeKey = data.theme;
+                applyThemeUI(currentThemeKey);
+            }
 
             const { data: existingUser, error } = await client
                 .from('profiles')
@@ -360,7 +405,12 @@
             localStorage.setItem('ghost_current_user', currentUser);
             document.getElementById('display-user').innerText = currentUser;
             
-            await fetchGlobalTheme();
+            // Sync theme
+            const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
+            if (adminData && adminData.theme) {
+                currentThemeKey = adminData.theme;
+                applyThemeUI(currentThemeKey);
+            }
 
             if (currentUser === MASTER_ADMIN) {
                 document.getElementById('admin-section').classList.remove('hidden');
@@ -382,15 +432,14 @@
             const usersTabBtn = document.getElementById('admin-tab-users');
             const trackerContent = document.getElementById('admin-content-tracker');
             const usersContent = document.getElementById('admin-content-users');
-            const theme = THEMES[currentThemeKey];
 
             if (tab === 'tracker') {
-                trackerTabBtn.className = `px-3.5 py-1.5 rounded-lg transition font-medium ${theme.tailwindBg} text-gray-950 shadow-sm`;
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm';
                 usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
                 trackerContent.classList.remove('hidden');
                 usersContent.classList.add('hidden');
             } else {
-                usersTabBtn.className = `px-3.5 py-1.5 rounded-lg transition font-medium ${theme.tailwindBg} text-gray-950 shadow-sm`;
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg text-gray-950 shadow-sm';
                 trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-gray-400 hover:text-gray-200';
                 usersContent.classList.remove('hidden');
                 trackerContent.classList.add('hidden');
@@ -440,14 +489,13 @@
                 return;
             }
 
-            const theme = THEMES[currentThemeKey];
             let html = '<table class="w-full border-collapse text-left">';
             html += '<tr class="border-b border-gray-800 text-gray-400 text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Graph Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
                 html += `<tr class="border-b border-gray-800/40 hover:bg-gray-900/60 transition">
-                    <td class="py-3 px-3.5 ${theme.textClass} font-medium">${u.username}</td>
+                    <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
                     <td class="py-3 px-3.5 text-gray-400 font-mono text-[11px]">${u.password}</td>
                     <td class="py-3 px-3.5 text-gray-300 font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end">
@@ -562,9 +610,9 @@
         }
 
         function render() {
-            // Live background sync check for regular users (force logout or theme changes)
+            // Live background sync check for regular users (theme and force logout)
             if (currentUser && currentUser !== MASTER_ADMIN) {
-                client.from('profiles').select('force_logout, theme').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
+                client.from('profiles').select('theme, force_logout').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
                     if (adminData && adminData.theme && adminData.theme !== currentThemeKey) {
                         currentThemeKey = adminData.theme;
                         applyThemeUI(currentThemeKey);
@@ -582,8 +630,6 @@
             const containers = currentUser === MASTER_ADMIN 
                 ? [document.getElementById('trackers-container')] 
                 : [document.getElementById('trackers-container'), document.getElementById('regular-trackers-container')];
-
-            const theme = THEMES[currentThemeKey];
 
             containers.forEach(container => {
                 if (!container) return;
@@ -633,8 +679,8 @@
                             <div class="flex items-center gap-3">
                                 <h3 class="font-semibold text-gray-200 text-sm">${t.title} <span class="text-xs text-gray-500 font-normal">(Max Limit: ${t.max})</span></h3>
                                 <div class="flex bg-gray-950 border border-gray-800 rounded-xl p-0.5 text-xs">
-                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? `${theme.tailwindBg} text-gray-950 font-semibold shadow-sm` : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
-                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? `${theme.tailwindBg} text-gray-950 font-semibold shadow-sm` : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'dynamic-bg text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">Habit tracker</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'dynamic-bg text-gray-950 font-semibold shadow-sm' : 'text-gray-400 hover:text-gray-200'}">History & Stats</button>
                                 </div>
                             </div>
                             <button class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1 rounded-xl text-xs transition duration-200" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
@@ -652,7 +698,7 @@
                                         <div class="relative w-28 h-28 flex items-center justify-center">
                                             <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
                                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                <span class="text-sm font-bold ${theme.textClass}">${percentage}%</span>
+                                                <span class="text-sm font-bold dynamic-text">${percentage}%</span>
                                                 <span class="text-[10px] text-gray-500">Achieved</span>
                                             </div>
                                         </div>
@@ -661,16 +707,16 @@
                                 </div>
                             ` : `
                                 <div class="bg-gray-950 border border-gray-800/80 rounded-xl p-5 space-y-4 shadow-inner">
-                                    <h4 class="text-xs font-bold ${theme.textClass} tracking-wider uppercase">Monthly History & Performance Analytics</h4>
+                                    <h4 class="text-xs font-bold dynamic-text tracking-wider uppercase">Monthly History & Performance Analytics</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                                             <p class="text-xs text-gray-400">Consistency Score</p>
-                                            <p class="text-lg font-bold ${theme.textClass} mt-1">${consistency}%</p>
+                                            <p class="text-lg font-bold dynamic-text mt-1">${consistency}%</p>
                                             <p class="text-[10px] text-gray-500 mt-0.5">${activeDays} active days out of 30</p>
                                         </div>
                                         <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                                             <p class="text-xs text-gray-400">Period Difference</p>
-                                            <p class="text-lg font-bold ${diff >= 0 ? theme.textClass : 'text-red-400'} mt-1">${diffText}</p>
+                                            <p class="text-lg font-bold ${diff >= 0 ? 'dynamic-text' : 'text-red-400'} mt-1">${diffText}</p>
                                             <p class="text-[10px] text-gray-500 mt-0.5">H2 vs H1 progress change</p>
                                         </div>
                                         <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
@@ -682,7 +728,7 @@
                                     <div class="space-y-2">
                                         <p class="text-xs font-semibold text-gray-300">30-Day Recorded Values Breakdown:</p>
                                         <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-xs font-mono text-gray-300">
-                                            ${t.data.map((v, idx) => `<span class="bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">Day ${idx+1}: <strong class="${theme.textClass}">${v || 0}</strong></span>`).join('')}
+                                            ${t.data.map((v, idx) => `<span class="bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">Day ${idx+1}: <strong class="dynamic-text">${v || 0}</strong></span>`).join('')}
                                         </div>
                                     </div>
                                 </div>
