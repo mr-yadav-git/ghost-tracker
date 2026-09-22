@@ -96,7 +96,7 @@
                 <!-- Admin Tab Content: Separate "Users" View -->
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-gray-400">Complete registered user directory, credentials, and last activity metrics.</p>
+                        <p class="text-xs text-gray-400">Complete registered user directory, credentials, and last graph update metrics.</p>
                         <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500 w-56" />
                     </div>
                     <div class="max-h-96 overflow-y-auto border border-gray-800 rounded-lg p-2 bg-gray-950">
@@ -160,11 +160,7 @@
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
                 document.getElementById('display-user').innerText = currentUser;
                 
-                // Update last action timestamp on session restore/refresh
-                await client
-                    .from('profiles')
-                    .update({ last_action: new Date().toISOString() })
-                    .eq('username', currentUser);
+                // Note: We removed updating last_action on login/refresh so it strictly tracks graph updates!
 
                 if (currentUser === MASTER_ADMIN) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -205,21 +201,17 @@
                 return;
             }
 
-            const now = new Date().toISOString();
-
             if (existingUser) {
                 if (existingUser.password !== pass) {
                     errTag.innerText = 'Error: Incorrect password. Username already exists.';
                     return;
                 }
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
-                // Update last action on login
-                await client.from('profiles').update({ last_action: now }).eq('username', user);
             } else {
                 trackers = [];
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers), last_action: now }]);
+                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers) }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -288,7 +280,7 @@
         }
 
         function formatTimeAgo(timestamp) {
-            if (!timestamp) return 'Never';
+            if (!timestamp) return 'Never updated';
             const diffMs = new Date() - new Date(timestamp);
             const diffMins = Math.floor(diffMs / (1000 * 60));
             const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -309,7 +301,7 @@
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Password</th><th class="py-2.5 px-3">Last Active</th><th class="py-2.5 px-3 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-gray-800 text-gray-400"><th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Password</th><th class="py-2.5 px-3">Last Graph Update</th><th class="py-2.5 px-3 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
@@ -379,6 +371,8 @@
         }
 
         async function saveAndCloudSync() {
+            // This function runs exclusively when a graph value is changed, added, or deleted.
+            // It stamps the exact time they last updated their graph data.
             await client
                 .from('profiles')
                 .update({ 
