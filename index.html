@@ -299,11 +299,14 @@
                     <div id="trackers-container" class="space-y-6"></div>
 
                     <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center flex-wrap gap-3">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--border-color)] pb-3">
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                                 <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                             </h3>
-                            <div id="admin-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto py-1">
+                                <span class="text-[11px] text-[var(--text-muted)] shrink-0 font-medium">Saved Presets:</span>
+                                <div id="admin-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                            </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                             <div class="flex flex-col gap-1.5">
@@ -340,7 +343,7 @@
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2">
-                            <button type="button" onclick="saveUserPreset('')" class="dynamic-card border px-3 py-2 rounded-xl text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">💾 Save Current as Preset</button>
+                            <button type="button" onclick="saveUserPreset('')" class="dynamic-card border px-3.5 py-2 rounded-xl text-xs text-[var(--text-main)] hover:text-[var(--theme-primary)] flex items-center gap-1.5 font-medium">💾 Save Current as Preset</button>
                             <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                         </div>
                     </div>
@@ -361,11 +364,14 @@
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center flex-wrap gap-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--border-color)] pb-3">
                         <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                             <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                         </h3>
-                        <div id="reg-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto py-1">
+                            <span class="text-[11px] text-[var(--text-muted)] shrink-0 font-medium">Saved Presets:</span>
+                            <div id="reg-presets-bar" class="flex flex-wrap gap-1.5 items-center"></div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                         <div class="flex flex-col gap-1.5">
@@ -402,7 +408,7 @@
                         </div>
                     </div>
                     <div class="flex justify-between items-center pt-2">
-                        <button type="button" onclick="saveUserPreset('reg-')" class="dynamic-card border px-3 py-2 rounded-xl text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">💾 Save Current as Preset</button>
+                        <button type="button" onclick="saveUserPreset('reg-')" class="dynamic-card border px-3.5 py-2 rounded-xl text-xs text-[var(--text-main)] hover:text-[var(--theme-primary)] flex items-center gap-1.5 font-medium">💾 Save Current as Preset</button>
                         <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                     </div>
                 </div>
@@ -512,6 +518,8 @@
             if (!presetName) return;
 
             let presets = getCustomPresets();
+            // Prevent duplicates
+            presets = presets.filter(p => p.name !== presetName);
             presets.push({ name: presetName, title, max, goal, timeframe, color });
             localStorage.setItem('ghost_user_presets', JSON.stringify(presets));
             renderPresetBars();
@@ -546,15 +554,15 @@
                 if (!bar) return;
                 let presets = getCustomPresets();
                 if (presets.length === 0) {
-                    bar.innerHTML = '<span class="text-[10px] text-[var(--text-muted)] italic">No custom presets yet</span>';
+                    bar.innerHTML = '<span class="text-[10px] text-[var(--text-muted)] italic">No presets yet</span>';
                     return;
                 }
                 let html = '';
                 presets.forEach(p => {
                     html += `
-                        <div class="inline-flex items-center gap-1 dynamic-card border rounded-lg px-2 py-1 text-[10px]">
-                            <button type="button" onclick="loadPreset('${p.name}', '${prefix}')" class="text-[var(--text-main)] hover:text-[var(--theme-primary)]">${p.name}</button>
-                            <button type="button" onclick="deletePreset('${p.name}', event)" class="text-red-400 hover:text-red-300 font-bold ml-1">×</button>
+                        <div class="inline-flex items-center gap-1.5 dynamic-card-solid border dynamic-border rounded-lg px-2 py-1 text-[11px] shadow-sm">
+                            <button type="button" onclick="loadPreset('${p.name}', '${prefix}')" class="text-[var(--text-main)] hover:text-[var(--theme-primary)] font-medium cursor-pointer">${p.name}</button>
+                            <button type="button" onclick="deletePreset('${p.name}', event)" class="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer">×</button>
                         </div>
                     `;
                 });
