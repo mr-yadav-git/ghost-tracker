@@ -24,14 +24,14 @@
             height: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: var(--bg-track, #030712);
+            background: #030712;
         }
         ::-webkit-scrollbar-thumb {
-            background: var(--bg-thumb, #1f2937);
+            background: #1f2937;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--bg-thumb-hover, #374151);
+            background: #374151;
         }
     </style>
 </head>
@@ -47,7 +47,7 @@
         <!-- Auth Screen -->
         <div id="auth-screen" class="w-full max-w-md mx-auto bg-gray-900/80 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
             <div class="text-center mb-8">
-                <div id="auth-logo-box" class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-3 shadow-inner transition-colors duration-300">
+                <div id="auth-logo-box" class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 mb-3 shadow-inner transition-colors duration-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
                 <h1 id="auth-title-text" class="text-xl font-bold tracking-widest text-emerald-400 transition-colors duration-300">GHOST TRACKER</h1>
@@ -93,11 +93,11 @@
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
-            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-6 shadow-2xl hidden space-y-5">
+            <div id="admin-section" class="bg-gray-900/60 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
                 <div class="flex flex-wrap justify-between items-center gap-3 border-b border-gray-800/80 pb-4">
                     <div>
                         <h3 id="admin-panel-heading" class="text-emerald-400 font-bold text-xs tracking-widest uppercase flex items-center gap-2 transition-colors duration-300">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-gray-400 mt-1">Manage platform users, reset credentials, or inspect activity securely.</p>
+                        <p class="text-xs text-gray-400 mt-1">Manage platform users, themes, reset credentials, or inspect activity securely.</p>
                     </div>
                     <!-- Navigation Tabs -->
                     <div class="flex bg-gray-950/80 border border-gray-800 rounded-xl p-1 text-xs shadow-inner">
@@ -109,12 +109,12 @@
                 <!-- Admin Tab Content: Tracker & Donut View -->
                 <div id="admin-content-tracker" class="space-y-6">
                     
-                    <!-- NEW FEATURE 1: Global Theme Selector Card -->
+                    <!-- Global Theme Selector Card -->
                     <div class="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-5 shadow-xl space-y-3">
-                        <div class="flex justify-between items-center flex-wrap gap-2">
+                        <div class="flex justify-between items-center flex-wrap gap-3">
                             <div>
                                 <h3 class="text-xs font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">🎨 Global Site Theme Control</h3>
-                                <p class="text-[11px] text-gray-400 mt-0.5">Select a theme to instantly update the accent colors and mood across all active user screens.</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">Select a theme to instantly update accent colors across all user screens persistently.</p>
                             </div>
                             <select id="global-theme-select" onchange="applyAndSaveTheme(this.value)" class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-xs text-emerald-400 font-semibold focus:outline-none focus:border-emerald-500 transition">
                                 <option value="emerald">Emerald Night (Default)</option>
@@ -193,53 +193,52 @@
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
 
-        // Theme Presets Configuration
+        // Theme Definitions (5 Cyberpunk / Minimalist Themes)
         const THEMES = {
-            emerald: { name: 'Emerald Night', primaryHex: '#34d399', tailwindBg: 'bg-emerald-500', tailwindHover: 'hover:bg-emerald-400', textClass: 'text-emerald-400', borderClass: 'border-emerald-500/30' },
-            cyan: { name: 'Cyber Neon', primaryHex: '#22d3ee', tailwindBg: 'bg-cyan-500', tailwindHover: 'hover:bg-cyan-400', textClass: 'text-cyan-400', borderClass: 'border-cyan-500/30' },
-            amber: { name: 'Matrix Amber', primaryHex: '#fbbf24', tailwindBg: 'bg-amber-500', tailwindHover: 'hover:bg-amber-400', textClass: 'text-amber-400', borderClass: 'border-amber-500/30' },
-            indigo: { name: 'Deep Indigo', primaryHex: '#818cf8', tailwindBg: 'bg-indigo-500', tailwindHover: 'hover:bg-indigo-400', textClass: 'text-indigo-400', borderClass: 'border-indigo-500/30' },
-            crimson: { name: 'Crimson Protocol', primaryHex: '#f87171', tailwindBg: 'bg-red-500', tailwindHover: 'hover:bg-red-400', textClass: 'text-red-400', borderClass: 'border-red-500/30' }
+            emerald: { name: 'Emerald Night', textClass: 'text-emerald-400', tailwindBg: 'bg-emerald-500', tailwindHover: 'hover:bg-emerald-400', borderClass: 'border-emerald-500/30' },
+            cyan: { name: 'Cyber Neon', textClass: 'text-cyan-400', tailwindBg: 'bg-cyan-500', tailwindHover: 'hover:bg-cyan-400', borderClass: 'border-cyan-500/30' },
+            amber: { name: 'Matrix Amber', textClass: 'text-amber-400', tailwindBg: 'bg-amber-500', tailwindHover: 'hover:bg-amber-400', borderClass: 'border-amber-500/30' },
+            indigo: { name: 'Deep Indigo', textClass: 'text-indigo-400', tailwindBg: 'bg-indigo-500', tailwindHover: 'hover:bg-indigo-400', borderClass: 'border-indigo-500/30' },
+            crimson: { name: 'Crimson Protocol', textClass: 'text-red-400', tailwindBg: 'bg-red-500', tailwindHover: 'hover:bg-red-400', borderClass: 'border-red-500/30' }
         };
         let currentThemeKey = 'emerald';
 
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
-            await fetchGlobalTheme();
+            await fetchGlobalTheme(); // Load saved theme from cloud immediately upon app load/refresh
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
                 await restoreSession(savedUser);
             }
         });
 
-        // Fetch global theme from Cloud settings table (or fallback to profile)
+        // Fetch global theme stored in master admin row in database
         async function fetchGlobalTheme() {
-            const { data } = await client.from('profiles').select('data, theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (data && data.theme && THEMES[data.theme]) {
+            const { data, error } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
+            if (!error && data && data.theme && THEMES[data.theme]) {
                 currentThemeKey = data.theme;
             }
             applyThemeUI(currentThemeKey);
         }
 
+        // Save theme to Supabase so it persists for everyone until changed
         async function applyAndSaveTheme(themeKey) {
             currentThemeKey = themeKey;
             applyThemeUI(themeKey);
 
-            // Save selected theme in Master Admin's row in Supabase
+            // Update database row for MASTER_ADMIN to store global site theme
             await client.from('profiles').update({ theme: themeKey }).eq('username', MASTER_ADMIN);
             
-            // Broadcast update locally
             render();
         }
 
         function applyThemeUI(themeKey) {
             const theme = THEMES[themeKey] || THEMES['emerald'];
             
-            // Update dropdown if present
             const themeSelect = document.getElementById('global-theme-select');
             if (themeSelect) themeSelect.value = themeKey;
 
-            // Apply dynamic colors to key UI components
+            // Update UI elements dynamically
             const elementsToRecolor = [
                 'auth-logo-box', 'auth-title-text', 'auth-btn',
                 'app-header-title', 'live-dot', 'profile-dot', 'display-user',
@@ -260,7 +259,6 @@
                 }
             });
 
-            // Update admin section border theme
             const adminSec = document.getElementById('admin-section');
             if (adminSec) {
                 adminSec.className = adminSec.className.replace(/border-(emerald|cyan|amber|indigo|red)-500\/30/g, theme.borderClass);
@@ -280,6 +278,9 @@
         }
 
         async function restoreSession(username) {
+            // Also sync global theme on every session check
+            await fetchGlobalTheme();
+
             const { data: existingUser, error } = await client
                 .from('profiles')
                 .select('*')
@@ -287,10 +288,8 @@
                 .maybeSingle();
 
             if (!error && existingUser) {
-                // Check if user was remotely forced to logout by admin
                 if (existingUser.force_logout === true) {
                     localStorage.removeItem('ghost_current_user');
-                    // Reset flag in DB so they can log back in normally afterwards
                     await client.from('profiles').update({ force_logout: false }).eq('username', username);
                     return;
                 }
@@ -344,7 +343,6 @@
                     return;
                 }
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
-                // Clear any leftover force_logout flag upon successful fresh login
                 await client.from('profiles').update({ force_logout: false }).eq('username', user);
             } else {
                 trackers = [];
@@ -362,6 +360,8 @@
             localStorage.setItem('ghost_current_user', currentUser);
             document.getElementById('display-user').innerText = currentUser;
             
+            await fetchGlobalTheme();
+
             if (currentUser === MASTER_ADMIN) {
                 document.getElementById('admin-section').classList.remove('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -461,7 +461,6 @@
             container.innerHTML = html;
         }
 
-        // NEW FEATURE 2: Remote Force Logout Action
         async function adminForceLogout(targetUser) {
             if (confirm(`Are you sure you want to force logout user "${targetUser}"? They will be immediately disconnected on their device and required to re-enter credentials.`)) {
                 const { error } = await client
@@ -563,18 +562,19 @@
         }
 
         function render() {
-            // Continuously check session and live theme sync in background for regular users
+            // Live background sync check for regular users (force logout or theme changes)
             if (currentUser && currentUser !== MASTER_ADMIN) {
-                client.from('profiles').select('force_logout, theme').eq('username', currentUser).maybeSingle().then(({data}) => {
-                    if (data) {
-                        if (data.force_logout === true) {
-                            alert('Session terminated by administrator. Please log back in.');
-                            handleLogout();
-                        }
-                        if (data.theme && data.theme !== currentThemeKey) {
-                            currentThemeKey = data.theme;
-                            applyThemeUI(currentThemeKey);
-                        }
+                client.from('profiles').select('force_logout, theme').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
+                    if (adminData && adminData.theme && adminData.theme !== currentThemeKey) {
+                        currentThemeKey = adminData.theme;
+                        applyThemeUI(currentThemeKey);
+                    }
+                });
+
+                client.from('profiles').select('force_logout').eq('username', currentUser).maybeSingle().then(({data}) => {
+                    if (data && data.force_logout === true) {
+                        alert('Session terminated by administrator. Please log back in.');
+                        handleLogout();
                     }
                 });
             }
