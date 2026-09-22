@@ -91,6 +91,14 @@
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.96); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
@@ -98,6 +106,50 @@
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
         <div id="ambient-glow" class="w-[600px] h-[600px] dynamic-glow rounded-full blur-[140px] transition-colors duration-300"></div>
+    </div>
+
+    <!-- WELCOME LANDING PAGE OVERLAY -->
+    <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-opacity duration-300 hidden">
+        <div class="w-full max-w-2xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in space-y-6 relative overflow-hidden">
+            <!-- Decorative Accent Flare -->
+            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-3xl opacity-25 pointer-events-none"></div>
+
+            <div class="text-center space-y-2">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl dynamic-card-solid border dynamic-border dynamic-text mb-1 shadow-inner relative">
+                    <span class="absolute inset-0 rounded-2xl dynamic-bg opacity-20 animate-ping"></span>
+                    <svg class="w-7 h-7 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-black tracking-widest dynamic-text">WELCOME TO GHOST TRACKER</h2>
+                <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto">Your high-performance secure telemetry, habit matrix, and synchronized progress command center.</p>
+            </div>
+
+            <!-- 3 Step Interactive / Visual Guide -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 text-center shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                    <div class="w-8 h-8 mx-auto rounded-xl dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
+                    <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Secure Access</h3>
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Sign in with your private handle or sync seamlessly across all cloud devices.</p>
+                </div>
+                <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 text-center shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                    <div class="w-8 h-8 mx-auto rounded-xl dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
+                    <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Build Custom Graphs</h3>
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Create dynamic 30-day target trackers, monitor progress, and review live donut metrics.</p>
+                </div>
+                <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 text-center shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                    <div class="w-8 h-8 mx-auto rounded-xl dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">03</div>
+                    <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Matrix Engine</h3>
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Switch between themes on the fly and monitor real-time user telemetry securely.</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex flex-col sm:flex-row items-center gap-3 justify-between">
+                <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
+                    <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
+                    <span>Don't show this introductory splash again</span>
+                </label>
+                <button onclick="dismissWelcome()" class="w-full sm:w-auto dynamic-bg font-bold px-6 py-3 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase">Launch Matrix &rarr;</button>
+            </div>
+        </div>
     </div>
 
     <div class="w-full max-w-4xl mx-auto relative z-10">
@@ -109,7 +161,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
                 <h1 class="text-xl font-bold tracking-widest dynamic-text">GHOST TRACKER</h1>
-                <p class="text-xs text-[var(--text-muted)] mt-1">Make Your Own Matrix for Life</p>
+                <p class="text-xs text-[var(--text-muted)] mt-1">SECURE TELEMETRY & HABIT MATRIX</p>
             </div>
             <div class="space-y-4">
                 <div>
@@ -120,7 +172,7 @@
                     <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Password</label>
                     <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition">
                 </div>
-                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Enter Your Matrix</button>
+                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Access Cloud Matrix</button>
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
@@ -288,7 +340,24 @@
                 // fallback
             }
             applyThemeUI(currentAccentKey, currentModeKey);
+            
+            // Check if user has previously dismissed welcome page
+            const dismissed = localStorage.getItem('ghost_welcome_dismissed');
+            if (!dismissed) {
+                document.getElementById('welcome-overlay').classList.remove('hidden');
+            }
         })();
+
+        function dismissWelcome() {
+            const dontShowCheckbox = document.getElementById('dont-show-welcome');
+            if (dontShowCheckbox && dontShowCheckbox.checked) {
+                localStorage.setItem('ghost_welcome_dismissed', 'true');
+            }
+            document.getElementById('welcome-overlay').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('welcome-overlay').classList.add('hidden');
+            }, 300);
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
@@ -791,7 +860,6 @@
 
             const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
             const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
-            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
 
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
