@@ -28,93 +28,108 @@
     <!-- Main Container -->
     <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
 
-        <!-- AUTH SECTION (Login / Register) -->
+        <!-- AUTH SECTION (Restored to original layout) -->
         <section id="auth-section" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl mt-12">
             <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Welcome Back</h2>
-                <p class="text-xs text-slate-400 mt-1">Access your secure tracking suite</p>
+                <h2 class="text-2xl font-bold text-white">GHOST Tracker Login</h2>
+                <p class="text-xs text-slate-400 mt-1">Enter your credentials to access your secure sandbox</p>
             </div>
 
             <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Username</label>
-                    <input type="text" id="username-input" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm transition" placeholder="Enter your username">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Username ID</label>
+                    <input type="text" id="username-input" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm transition" placeholder="Enter username">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
                     <input type="password" id="password-input" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm transition" placeholder="••••••••">
                 </div>
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-900/20">
-                    Sign In / Register
+                    Access Dashboard
                 </button>
             </form>
             <p id="auth-error" class="text-red-400 text-xs text-center mt-4 hidden"></p>
         </section>
 
-        <!-- DASHBOARD SECTION (Hidden by default until logged in) -->
+        <!-- DASHBOARD SECTION -->
         <section id="dashboard-section" class="hidden space-y-6">
-            <!-- Welcome Header -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-white">Dashboard Overview</h1>
-                    <p class="text-sm text-slate-400">Securely tracking and analyzing your workflow metrics.</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button onclick="refreshDashboardData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-4 py-2 rounded-xl border border-slate-700 transition">
-                        Refresh Stats
-                    </button>
-                </div>
-            </div>
-
-            <!-- Grid Layout for Charts & Stats -->
+            
+            <!-- Top Grid: Trend Analysis & Live Monthly Pie Chart -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- Existing Metrics / Line Tracker Placeholder -->
+                <!-- Trend Analysis Card -->
                 <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-base font-semibold text-white">Activity Progress Trend</h3>
                             <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg">Live Sync</span>
                         </div>
-                        <!-- Graph Container Area -->
                         <div class="h-48 flex items-end justify-between gap-2 pt-6 border-b border-slate-800 pb-2">
-                            <!-- Visual placeholder bars representing past timeline data -->
                             <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[40%]"></div>
                             <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[65%]"></div>
                             <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[50%]"></div>
                             <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[80%]"></div>
                             <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[95%]"></div>
-                            <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[70%]" id="latest-bar"></div>
+                            <div class="w-full bg-slate-800/50 rounded-t hover:bg-emerald-500/40 transition h-[70%]"></div>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-500 mt-4">Note: Y-axis measures normalized intensity indexes relative to baseline records.</p>
+                    <p class="text-xs text-slate-500 mt-4">Note: Visualizing performance vectors across active parameters.</p>
                 </div>
 
-                <!-- NEW FEATURE: Monthly Percentage Pie Chart Component -->
+                <!-- LIVE MONTHLY WORK DISTRIBUTION PIE CHART -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
                     <div>
-                        <h3 class="text-base font-semibold text-white mb-2">Monthly Work Share</h3>
-                        <p class="text-xs text-slate-400 mb-6">Completed output relative to your 100% monthly target threshold.</p>
+                        <h3 class="text-base font-semibold text-white mb-1">Monthly Work Share</h3>
+                        <p class="text-xs text-slate-400">Updates live based on your daily tracker inputs out of a 100% target.</p>
                     </div>
                     
-                    <!-- Pie / Donut Visualizer -->
-                    <div class="flex flex-col items-center justify-center my-auto">
-                        <div class="relative w-36 h-36 flex items-center justify-center">
-                            <!-- Dynamic Conic Gradient Ring -->
-                            <div id="pie-chart-ring" class="w-full h-full rounded-full flex items-center justify-center shadow-inner border-4 border-slate-800" style="background: conic-gradient(#10b981 0% 78%, #1e293b 78% 100%);">
-                                <div class="w-24 h-24 bg-slate-900 rounded-full flex flex-col items-center justify-center shadow">
-                                    <span id="pie-percentage-label" class="text-xl font-bold text-white">78%</span>
-                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">Completed</span>
+                    <!-- Dynamic Donut Ring -->
+                    <div class="flex flex-col items-center justify-center my-auto py-4">
+                        <div class="relative w-32 h-32 flex items-center justify-center">
+                            <div id="live-pie-ring" class="w-full h-full rounded-full flex items-center justify-center shadow-inner border-4 border-slate-800 transition-all duration-300" style="background: conic-gradient(#10b981 0% 0%, #1e293b 0% 100%);">
+                                <div class="w-20 h-20 bg-slate-900 rounded-full flex flex-col items-center justify-center shadow">
+                                    <span id="live-pie-label" class="text-lg font-bold text-white">0%</span>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-wider">Achieved</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-4 pt-4 border-t border-slate-800/60 text-center">
-                        <p id="pie-stat-text" class="text-xs text-slate-300 font-medium">78 out of 100 benchmark units fulfilled.</p>
+                    <div class="border-t border-slate-800/60 pt-3 text-center">
+                        <p id="pie-stat-text" class="text-xs text-slate-300">Total accumulated: 0 units</p>
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Dynamic Tracker Section Container (Where user adds/fills daily boxes) -->
+            <div id="trackers-container" class="space-y-6">
+                <!-- Example Mock Tracker Card matching your structure -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-white">Sample Tracker (djiw)</h3>
+                        <span class="text-xs text-slate-400">Max Y: 233</span>
+                    </div>
+                    <!-- Days input grid simulation -->
+                    <div class="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                            <span class="text-[10px] block text-slate-500 mb-1">Day 1</span>
+                            <input type="number" value="0" class="daily-tracker-input w-full bg-slate-900 text-center text-white text-xs py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                            <span class="text-[10px] block text-slate-500 mb-1">Day 2</span>
+                            <input type="number" value="33" class="daily-tracker-input w-full bg-slate-900 text-center text-white text-xs py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                            <span class="text-[10px] block text-slate-500 mb-1">Day 3</span>
+                            <input type="number" value="33" class="daily-tracker-input w-full bg-slate-900 text-center text-white text-xs py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                            <span class="text-[10px] block text-slate-500 mb-1">Day 4</span>
+                            <input type="number" value="0" class="daily-tracker-input w-full bg-slate-900 text-center text-white text-xs py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin Panel Container (Visible only for username: mr_yadav) -->
@@ -137,36 +152,21 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-600">
-        GHOST Tracker Core &copy; 2026. All rights reserved. Developed for secure self-auditing.
+        GHOST Tracker Core &copy; 2026. All rights reserved.
     </footer>
 
     <!-- App Logic Script -->
     <script>
-        // Supabase Configuration 
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
-        
-        // Initialize client safely if credentials exist, otherwise mock gracefully for local testing
-        let supabaseClient = null;
-        try {
-            if (window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch (e) {
-            console.warn("Supabase initialization skipped or pending configuration keys.");
-        }
-
         let currentUser = localStorage.getItem('ghost_user') || null;
 
         window.addEventListener('DOMContentLoaded', () => {
             if (currentUser) {
                 showDashboard(currentUser);
             }
-            // Initialize the Pie Chart with a default or fetched metric value (e.g., 78 units out of 100)
-            updateMonthlyPieChart(78, 100);
+            setupLivePieChartSync();
         });
 
-        // Authentication Handler
+        // Authentication Handler (Original flow style)
         async function handleAuth(event) {
             event.preventDefault();
             const username = document.getElementById('username-input').value.trim();
@@ -175,7 +175,6 @@
 
             if (!username || !password) return;
 
-            // Simplified mock/direct login flow for development robustness
             currentUser = username;
             localStorage.setItem('ghost_user', username);
             errorEl.classList.add('hidden');
@@ -189,12 +188,14 @@
             const navInfo = document.getElementById('user-nav-info');
             const navUser = document.getElementById('nav-username');
             navInfo.classList.remove('hidden');
-            navUser.innerText = `User: ${username}`;
+            navUser.innerText = `User ID: ${username}`;
 
-            // Reveal Admin Panel if master user
             if (username === 'mr_yadav') {
                 document.getElementById('admin-panel').classList.remove('hidden');
             }
+            
+            // Trigger calculation on load
+            updatePieChartMetrics();
         }
 
         function handleLogout() {
@@ -203,7 +204,7 @@
             window.location.reload();
         }
 
-        // Admin Account Deletion Utility (Ensuring proper string encapsulation)
+        // Admin Account Deletion Utility
         function adminDeleteAccount(targetUsername) {
             if (!targetUsername) {
                 alert("Please specify a target username.");
@@ -211,36 +212,49 @@
             }
             const adminPassPrompt = prompt(`Admin verification required. Enter password for mr_yadav:`);
             if (adminPassPrompt) {
-                console.log(`Executing deletion sequence for target: ${targetUsername}`);
-                alert(`Account '${targetUsername}' processing request complete.`);
+                alert(`Account '${targetUsername}' deletion sequence simulated successfully.`);
                 document.getElementById('target-user-delete').value = '';
             }
         }
 
-        // NEW FEATURE FUNCTION: Updates the Monthly Pie Chart dynamically
-        function updateMonthlyPieChart(completedWorkUnits, totalTargetUnits = 100) {
-            let percentage = Math.round((completedWorkUnits / totalTargetUnits) * 100);
+        // LIVE PIE CHART CALCULATION ENGINE
+        function setupLivePieChartSync() {
+            // Listen to input adjustments across any daily tracker fields dynamically
+            document.body.addEventListener('input', (e) => {
+                if (e.target.matches('input[type="number"], .daily-tracker-input')) {
+                    updatePieChartMetrics();
+                }
+            });
+            // Initial run
+            updatePieChartMetrics();
+        }
+
+        function updatePieChartMetrics() {
+            const allInputs = document.querySelectorAll('input[type="number"], .daily-tracker-input');
+            let totalSum = 0;
+
+            allInputs.forEach(input => {
+                const val = parseFloat(input.value) || 0;
+                totalSum += val;
+            });
+
+            // Target max for 100% monthly completion scale
+            const monthlyTargetMax = 300;
+            let percentage = Math.round((totalSum / monthlyTargetMax) * 100);
             if (percentage > 100) percentage = 100;
             if (percentage < 0) percentage = 0;
-            
-            // Apply CSS Conic Gradient dynamically
-            const pieRing = document.getElementById('pie-chart-ring');
+
+            // Apply conic gradient background ring update
+            const pieRing = document.getElementById('live-pie-ring');
             if (pieRing) {
                 pieRing.style.background = `conic-gradient(#10b981 0% ${percentage}%, #1e293b ${percentage}% 100%)`;
             }
-            
-            // Update labels text
-            const label = document.getElementById('pie-percentage-label');
+
+            // Update text output labels
+            const label = document.getElementById('live-pie-label');
             const statText = document.getElementById('pie-stat-text');
             if (label) label.innerText = `${percentage}%`;
-            if (statText) statText.innerText = `${completedWorkUnits} out of ${totalTargetUnits} benchmark units fulfilled.`;
-        }
-
-        function refreshDashboardData() {
-            // Simulated live refresh trigger for user feedback workflow
-            const randomProgress = Math.floor(Math.random() * 30) + 70; // Generates between 70-100%
-            updateMonthlyPieChart(randomProgress, 100);
-            alert("Dashboard metrics successfully resynced.");
+            if (statText) statText.innerText = `Total accumulated: ${totalSum} units (${percentage}% of 100% goal)`;
         }
     </script>
 </body>
