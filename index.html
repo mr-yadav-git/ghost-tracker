@@ -108,33 +108,28 @@
         <div id="ambient-glow" class="w-[600px] h-[600px] dynamic-glow rounded-full blur-[140px] transition-colors duration-300"></div>
     </div>
 
-    <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY -->
+    <!-- WELCOME OVERLAY MODAL -->
     <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300 hidden">
-        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden">
+        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden space-y-5">
             <!-- Decorative Accent Flare -->
             <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-3xl opacity-25 pointer-events-none"></div>
 
-            <!-- Step Indicator Header -->
-            <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs shadow-inner">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER WIZARD</span>
+            <!-- Header -->
+            <div class="flex items-center gap-2.5 border-b border-[var(--border-color)] pb-4">
+                <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs shadow-inner">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <div class="flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)]">
-                    Step <span id="wizard-step-num" class="dynamic-text font-bold">1</span> of 2
-                </div>
+                <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER COMMAND BRIEFING</span>
             </div>
 
-            <!-- WIZARD STEP 1: Mission & Absolute Privacy -->
-            <div id="wizard-step-1" class="space-y-5 animate-fade-in">
-                <div class="text-center space-y-2">
+            <!-- Content Area -->
+            <div class="space-y-4">
+                <div class="text-center space-y-1.5">
                     <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">Your Sanctuary for Deep Focus & Growth</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your 30-day habits, review consistency metrics, and command your discipline without noise.</p>
+                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your 30-day habits, review consistency scores, and command your discipline.</p>
                 </div>
 
-                <!-- 2 Pillars / Features (No 3rd box) -->
+                <!-- 2 Pillars / Features -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
                         <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
@@ -144,59 +139,28 @@
                     <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
                         <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
                         <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Zero Data Harvesting</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails, phone numbers, or personal info.</strong> Just pick a secure username and remember your password!</p>
+                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails or phones.</strong> Pick a secure username and remember your password!</p>
                     </div>
                 </div>
 
-                <!-- Motivational Banner Quote -->
-                <div class="dynamic-card-solid border border-dashed rounded-2xl p-3.5 text-center shadow-inner">
-                    <p class="text-[11px] italic text-[var(--text-muted)]">"We are what we repeatedly do. Excellence, then, is not an act, but a habit."</p>
-                </div>
-
-                <div class="pt-2 flex justify-end">
-                    <button onclick="goToWizardStep(2)" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase flex items-center gap-2">
-                        Next: How It Works &rarr;
-                    </button>
-                </div>
-            </div>
-
-            <!-- WIZARD STEP 2: Instructions & Security Reminder -->
-            <div id="wizard-step-2" class="space-y-5 hidden animate-fade-in">
-                <div class="text-center space-y-2">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">How to Access & Master Your Space</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Quick operational briefing before you enter the matrix command center.</p>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
-                        <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">A</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Create Your Secure Credential</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">On the login screen, enter any unique username and a password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—since we store zero recovery emails or trackers, it is your sole key to your data.</p>
-                        </div>
-                    </div>
-
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
-                        <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">B</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Build & Track Daily</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">Add custom graphs with your max target limits. Log values day by day and monitor your consistency score seamlessly.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex flex-col sm:flex-row items-center gap-3 justify-between border-t border-[var(--border-color)] pt-4">
-                    <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
-                        <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
-                        <span>Don't show this introductory intro again</span>
-                    </label>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="goToWizardStep(1)" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)] transition">&larr; Back</button>
-                        <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase flex-1 sm:flex-none">Launch Matrix &rarr;</button>
+                <!-- Security Tip Box -->
+                <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
+                    <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">🛡️</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Quick Access Reminder</h4>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">On the login screen, enter any unique username and a password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—since we store zero recovery credentials, it is your sole key.</p>
                     </div>
                 </div>
             </div>
 
+            <!-- Footer Controls -->
+            <div class="pt-3 flex flex-col sm:flex-row items-center gap-3 justify-between border-t border-[var(--border-color)]">
+                <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
+                    <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
+                    <span>Don't show this intro again</span>
+                </label>
+                <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase w-full sm:w-auto">Launch Matrix &rarr;</button>
+            </div>
         </div>
     </div>
 
@@ -398,22 +362,6 @@
                 document.getElementById('welcome-overlay').classList.remove('hidden');
             }
         })();
-
-        function goToWizardStep(stepNum) {
-            const step1 = document.getElementById('wizard-step-1');
-            const step2 = document.getElementById('wizard-step-2');
-            const stepNumIndicator = document.getElementById('wizard-step-num');
-
-            if (stepNum === 1) {
-                step1.classList.remove('hidden');
-                step2.classList.add('hidden');
-                stepNumIndicator.innerText = '1';
-            } else {
-                step1.classList.add('hidden');
-                step2.classList.remove('hidden');
-                stepNumIndicator.innerText = '2';
-            }
-        }
 
         function dismissWelcome() {
             const dontShowCheckbox = document.getElementById('dont-show-welcome');
@@ -635,7 +583,6 @@
                 return;
             }
             
-            // Sort users by last_action descending (latest activity first)
             adminUsersCache = (users || []).sort((a, b) => {
                 const timeA = a.last_action ? new Date(a.last_action).getTime() : 0;
                 const timeB = b.last_action ? new Date(b.last_action).getTime() : 0;
@@ -838,11 +785,7 @@
                     const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
                     const activeDays = t.data.filter(v => v > 0).length;
                     const consistency = Math.round((activeDays / 30) * 100);
-
-                    const firstHalf = t.data.slice(0, 15).reduce((a, b) => a + (b || 0), 0);
-                    const secondHalf = t.data.slice(15, 30).reduce((a, b) => a + (b || 0), 0);
-                    const diff = secondHalf - firstHalf;
-                    const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
+                    const dailyAverage = activeDays > 0 ? (totalVal / activeDays).toFixed(1) : '0.0';
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
@@ -885,9 +828,9 @@
                                             <p class="text-[10px] text-[var(--text-muted)] mt-0.5">${activeDays} active days out of 30</p>
                                         </div>
                                         <div class="dynamic-card border rounded-xl p-3 text-center">
-                                            <p class="text-xs text-[var(--text-muted)]">Period Difference</p>
-                                            <p class="text-lg font-bold ${diff >= 0 ? 'dynamic-text' : 'text-red-400'} mt-1">${diffText}</p>
-                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">H2 vs H1 progress change</p>
+                                            <p class="text-xs text-[var(--text-muted)]">Daily Average</p>
+                                            <p class="text-lg font-bold dynamic-text mt-1">${dailyAverage}</p>
+                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Average output per active day</p>
                                         </div>
                                         <div class="dynamic-card border rounded-xl p-3 text-center">
                                             <p class="text-xs text-[var(--text-muted)]">Total Monthly Output</p>
