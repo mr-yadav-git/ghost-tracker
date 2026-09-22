@@ -42,6 +42,12 @@
         <div class="w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px]"></div>
     </div>
 
+    <!-- Live Date/Time Display in Top Corner -->
+    <div id="live-clock-container" class="fixed top-4 right-4 z-50 hidden bg-gray-950/80 backdrop-blur-md border border-gray-800/80 rounded-xl px-3 py-1.5 shadow-lg flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="live-clock" class="text-xs font-mono text-gray-300"></span>
+    </div>
+
     <div class="w-full max-w-4xl mx-auto relative z-10">
         
         <!-- Auth Screen -->
@@ -167,11 +173,26 @@
         const MASTER_ADMIN = 'mr_yadav'; 
 
         window.addEventListener('DOMContentLoaded', async () => {
+            startLiveClock();
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
                 await restoreSession(savedUser);
             }
         });
+
+        function startLiveClock() {
+            const clockEl = document.getElementById('live-clock');
+            const clockContainer = document.getElementById('live-clock-container');
+            
+            function updateClock() {
+                const now = new Date();
+                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                clockEl.innerText = now.toLocaleDateString('en-US', options);
+            }
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
 
         async function restoreSession(username) {
             const { data: existingUser, error } = await client
@@ -196,6 +217,7 @@
 
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('live-clock-container').classList.remove('hidden');
                 render();
             } else {
                 localStorage.removeItem('ghost_current_user');
@@ -257,6 +279,7 @@
 
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('live-clock-container').classList.remove('hidden');
             render();
         }
 
@@ -391,6 +414,7 @@
             document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('live-clock-container').classList.add('hidden');
         }
 
         async function saveAndCloudSync() {
