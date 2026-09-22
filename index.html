@@ -114,41 +114,37 @@
             <!-- Decorative Accent Flare -->
             <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-3xl opacity-25 pointer-events-none"></div>
 
-            <!-- Header -->
+            <!-- Header (Step indicator removed completely) -->
             <div class="flex items-center gap-2.5 border-b border-[var(--border-color)] pb-4">
                 <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs shadow-inner">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER COMMAND BRIEFING</span>
+                <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER WIZARD</span>
             </div>
 
             <!-- Content Area -->
             <div class="space-y-4">
                 <div class="text-center space-y-1.5">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">Your Sanctuary for Deep Focus & Growth</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your 30-day habits, review consistency scores, and command your discipline.</p>
+                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">How to Access & Master Your Space</h2>
+                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Quick operational briefing before you enter the matrix command center.</p>
                 </div>
 
-                <!-- 2 Pillars / Features -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- 2 Distinct Step Cards Preserved -->
+                <div class="space-y-3">
                     <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Dynamic 30-Day Matrix</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Build custom target graphs, watch your live donut completion metrics rise, and inspect history instantly.</p>
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px]">A</div>
+                            <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Create Your Secure Credential</h3>
+                        </div>
+                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed pl-8">On the login screen, enter any unique username and a password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—since we store zero recovery emails or trackers, it is your sole key to your data.</p>
                     </div>
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Zero Data Harvesting</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails or phones.</strong> Pick a secure username and remember your password!</p>
-                    </div>
-                </div>
 
-                <!-- Security Tip Box -->
-                <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
-                    <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">🛡️</div>
-                    <div>
-                        <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Quick Access Reminder</h4>
-                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">On the login screen, enter any unique username and a password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—since we store zero recovery credentials, it is your sole key.</p>
+                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px]">B</div>
+                            <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Build & Track Daily</h3>
+                        </div>
+                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed pl-8">Add custom graphs with your max target limits. Log values day by day and monitor your consistency score seamlessly.</p>
                     </div>
                 </div>
             </div>
@@ -157,7 +153,7 @@
             <div class="pt-3 flex flex-col sm:flex-row items-center gap-3 justify-between border-t border-[var(--border-color)]">
                 <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
                     <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
-                    <span>Don't show this intro again</span>
+                    <span>Don't show this introductory intro again</span>
                 </label>
                 <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase w-full sm:w-auto">Launch Matrix &rarr;</button>
             </div>
