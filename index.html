@@ -12,7 +12,7 @@
         /* Dynamic Theme Variables Root (Default Dark Emerald) */
         :root {
             --bg-main: #030712;
-            --bg-card: rgba(17, 24, 39, 0.6);
+            --bg-card: #111827;
             --bg-card-solid: #0b0f19;
             --bg-input: #030712;
             --text-main: #f3f4f6;
@@ -34,9 +34,9 @@
         /* Light Mode Overrides */
         body.light-mode {
             --bg-main: #f8fafc;
-            --bg-card: rgba(255, 255, 255, 0.85);
-            --bg-card-solid: #ffffff;
-            --bg-input: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-card-solid: #f1f5f9;
+            --bg-input: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
             --canvas-bg: #ffffff;
@@ -44,10 +44,11 @@
             --canvas-text: #94a3b8;
         }
 
-        /* Apply theme variables to custom utility classes */
+        /* Apply theme variables to custom utility classes & hardware accelerate for zero lag */
         body {
             background-color: var(--bg-main) !important;
             color: var(--text-main) !important;
+            transform: translateZ(0);
         }
 
         .dynamic-card {
@@ -101,39 +102,39 @@
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
         @keyframes fadeInScale {
-            0% { opacity: 0; transform: scale(0.96); }
+            0% { opacity: 0; transform: scale(0.98); }
             100% { opacity: 1; transform: scale(1); }
         }
         .animate-fade-in {
-            animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fadeInScale 0.2s ease-out forwards;
         }
 
         @keyframes pulseGlow {
             0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.02); opacity: 1; }
+            50% { transform: scale(1.01); opacity: 1; }
         }
         .animate-goal-banner {
             animation: pulseGlow 2s infinite ease-in-out;
         }
     </style>
 </head>
-<body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
+<body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- Ambient Background Glow -->
+    <!-- Ambient Background Glow (Optimized for zero CPU lag) -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
-        <div id="ambient-glow" class="w-[600px] h-[600px] dynamic-glow rounded-full blur-[140px] transition-colors duration-300"></div>
+        <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
 
     <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY -->
-    <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300 hidden">
-        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden">
+    <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
+        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
             <!-- Decorative Accent Flare -->
-            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-3xl opacity-25 pointer-events-none"></div>
+            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
 
             <!-- Step Indicator Header -->
             <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-4">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs shadow-inner">
+                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
                     <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER WIZARD</span>
@@ -151,24 +152,24 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
                         <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
                         <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Dynamic 30-Day Matrix</h3>
                         <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Build custom target graphs, watch your live donut completion metrics rise, and inspect history instantly.</p>
                     </div>
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 shadow-md relative group hover:border-[var(--theme-primary)] transition">
+                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
                         <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
                         <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Zero Data Harvesting</h3>
                         <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails, phone numbers, or personal info.</strong> Just pick a secure username and remember your password!</p>
                     </div>
                 </div>
 
-                <div class="dynamic-card-solid border border-dashed rounded-2xl p-3.5 text-center shadow-inner">
+                <div class="dynamic-card-solid border border-dashed rounded-2xl p-3.5 text-center">
                     <p class="text-[11px] italic text-[var(--text-muted)]">"We are what we repeatedly do. Excellence, then, is not an act, but a habit."</p>
                 </div>
 
                 <div class="pt-2 flex justify-end">
-                    <button onclick="goToWizardStep(2)" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase flex items-center gap-2">
+                    <button onclick="goToWizardStep(2)" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex items-center gap-2">
                         Next: How It Works &rarr;
                     </button>
                 </div>
@@ -182,7 +183,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
+                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3">
                         <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">A</div>
                         <div>
                             <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Create Your Secure Credential</h4>
@@ -190,7 +191,7 @@
                         </div>
                     </div>
 
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3 shadow-md">
+                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3">
                         <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">B</div>
                         <div>
                             <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Build & Track Daily</h4>
@@ -205,8 +206,8 @@
                         <span>Don't show this introductory intro again</span>
                     </label>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="goToWizardStep(1)" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)] transition">&larr; Back</button>
-                        <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition duration-200 tracking-wider uppercase flex-1 sm:flex-none">Launch Matrix &rarr;</button>
+                        <button onclick="goToWizardStep(1)" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">&larr; Back</button>
+                        <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex-1 sm:flex-none">Launch Matrix &rarr;</button>
                     </div>
                 </div>
             </div>
@@ -217,9 +218,9 @@
     <div class="w-full max-w-4xl mx-auto relative z-10">
         
         <!-- Auth Screen -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card backdrop-blur-xl border rounded-2xl p-8 shadow-2xl mt-12 transition-all duration-300">
+        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3 shadow-inner">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
                 <h1 class="text-xl font-bold tracking-widest dynamic-text">GHOST TRACKER</h1>
@@ -231,13 +232,13 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Username</label>
-                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition">
+                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Password <span class="text-[10px] text-[var(--text-muted)]">(Remember this!)</span></label>
-                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition">
+                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none">
                 </div>
-                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-lg transition-all duration-200 mt-2">Enter Your Own Matrix</button>
+                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-md mt-2">Enter Your Own Matrix</button>
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
@@ -248,40 +249,39 @@
             <!-- Header Row with Live Clock -->
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
                 <div class="text-center sm:text-left">
-                    <h1 class="text-2xl font-bold tracking-wider dynamic-text transition-colors duration-300">Ghost Mode</h1>
+                    <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
                     <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
                 </div>
                 <!-- Live Date/Time Badge -->
-                <div class="dynamic-card backdrop-blur-md border rounded-xl px-3.5 py-2 shadow-lg flex items-center gap-2">
+                <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
                     <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
                 </div>
             </div>
 
             <!-- Profile Bar -->
-            <div class="dynamic-card backdrop-blur-md border rounded-2xl p-4 shadow-xl flex justify-between items-center flex-wrap gap-3">
+            <div class="dynamic-card border rounded-2xl p-4 shadow-sm flex justify-between items-center flex-wrap gap-3">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
                     <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <!-- Regular User Delete Account Button (Hidden for Master Admin) -->
-                    <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl transition duration-200 hidden">Delete Account</button>
-                    <button onclick="handleLogout()" class="dynamic-card border text-xs px-3 py-1.5 rounded-xl transition duration-200 text-[var(--text-main)]">Logout</button>
+                    <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl hidden">Delete Account</button>
+                    <button onclick="handleLogout()" class="dynamic-card border text-xs px-3 py-1.5 rounded-xl text-[var(--text-main)]">Logout</button>
                 </div>
             </div>
 
             <!-- Global Admin Override Panel with Tabs -->
-            <div id="admin-section" class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-2xl hidden space-y-5 transition-colors duration-300">
+            <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
                 <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                     <div>
                         <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
                         <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, 10 themes, reset credentials, or inspect activity securely.</p>
                     </div>
                     <!-- Navigation Tabs -->
-                    <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs shadow-inner">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users</button>
+                    <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
+                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
+                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users</button>
                     </div>
                 </div>
 
@@ -289,7 +289,7 @@
                 <div id="admin-content-tracker" class="space-y-6">
                     
                     <!-- Global 10-Theme Selector Card -->
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                         <div class="flex justify-between items-center flex-wrap gap-4">
                             <div>
                                 <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
@@ -297,8 +297,7 @@
                             </div>
                             
                             <div class="flex flex-wrap gap-2 items-center">
-                                <!-- Accent Color Selector -->
-                                <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none transition">
+                                <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
                                     <option value="emerald">Emerald Accent</option>
                                     <option value="cyan">Cyber Neon (Cyan)</option>
                                     <option value="amber">Matrix Amber</option>
@@ -306,8 +305,7 @@
                                     <option value="crimson">Crimson Protocol</option>
                                 </select>
 
-                                <!-- Background Mode Selector (Dark / Light) -->
-                                <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none transition">
+                                <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
                                     <option value="dark">Dark Night Mode</option>
                                     <option value="light">Pure White Mode</option>
                                 </select>
@@ -318,35 +316,34 @@
                     <!-- Dynamic Trackers Container -->
                     <div id="trackers-container" class="space-y-6"></div>
 
-                    <!-- Add New Custom Graph Card (Updated to 5-Column Layout) -->
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-xl space-y-4">
+                    <!-- Add New Custom Graph Card (5-Column Layout) -->
+                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                                 <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                             </h3>
                             <div class="flex gap-1.5">
-                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">💪 Pushups Preset</button>
-                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">📚 Study Hour Preset</button>
+                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
                             </div>
                         </div>
                         
-                        <!-- 5-Column Grid Form -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                                <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                                <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                                <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
+                                <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                     <option value="Day">Day</option>
                                     <option value="Week" selected>Week</option>
                                     <option value="Month">Month</option>
@@ -354,7 +351,7 @@
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
+                                <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                     <option value="#2ecc71">🟢 Emerald Green</option>
                                     <option value="#3498db">🔵 Electric Blue</option>
                                     <option value="#e74c3c">🔴 Crimson Red</option>
@@ -366,7 +363,7 @@
                             </div>
                         </div>
                         <div class="flex justify-end pt-2">
-                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs transition duration-200 shadow-md">Create</button>
+                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                         </div>
                     </div>
                 </div>
@@ -375,46 +372,44 @@
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
                         <p class="text-xs text-[var(--text-muted)]">Complete registered user directory, credentials, live status, and remote controls.</p>
-                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56 transition" />
+                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
                     </div>
-                    <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid shadow-inner">
+                    <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
                         <div id="users-list-container" class="text-xs">Loading users...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Regular Trackers Container (if logged in as regular user) -->
+            <!-- Regular Trackers Container -->
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
-                <!-- Add New Custom Graph Card for Regular Users (Updated to 5-Column Layout) -->
-                <div class="dynamic-card backdrop-blur-md border rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                             <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                         </h3>
                         <div class="flex gap-1.5">
-                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">💪 Pushups Preset</button>
-                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] transition">📚 Study Hour Preset</button>
+                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
                         </div>
                     </div>
                     
-                    <!-- 5-Column Grid Form -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                            <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                            <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                            <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                            <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                            <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition" />
+                            <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                            <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
+                            <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                 <option value="Day">Day</option>
                                 <option value="Week" selected>Week</option>
                                 <option value="Month">Month</option>
@@ -422,7 +417,7 @@
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                            <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none transition">
+                            <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                 <option value="#2ecc71">🟢 Emerald Green</option>
                                 <option value="#3498db">🔵 Electric Blue</option>
                                 <option value="#e74c3c">🔴 Crimson Red</option>
@@ -434,7 +429,7 @@
                         </div>
                     </div>
                     <div class="flex justify-end pt-2">
-                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs transition duration-200 shadow-md">Create</button>
+                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                     </div>
                 </div>
             </div>
@@ -454,35 +449,30 @@
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
 
-        // 5 Accent Color Configurations
         const ACCENTS = {
-            emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.05)', glowLight: 'rgba(16, 185, 129, 0.08)' },
-            cyan: { primary: '#22d3ee', primaryBg: '#06b6d4', primaryHover: '#22d3ee', borderDark: 'rgba(34, 211, 238, 0.3)', borderLight: 'rgba(6, 182, 212, 0.4)', glowDark: 'rgba(34, 211, 238, 0.05)', glowLight: 'rgba(6, 182, 212, 0.08)' },
-            amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.05)', glowLight: 'rgba(245, 158, 11, 0.08)' },
-            indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.05)', glowLight: 'rgba(99, 102, 241, 0.08)' },
-            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.05)', glowLight: 'rgba(239, 68, 68, 0.08)' }
+            emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.03)', glowLight: 'rgba(16, 185, 129, 0.05)' },
+            cyan: { primary: '#22d3ee', primaryBg: '#06b6d4', primaryHover: '#22d3ee', borderDark: 'rgba(34, 211, 238, 0.3)', borderLight: 'rgba(6, 182, 212, 0.4)', glowDark: 'rgba(34, 211, 238, 0.03)', glowLight: 'rgba(6, 182, 212, 0.05)' },
+            amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.03)', glowLight: 'rgba(245, 158, 11, 0.05)' },
+            indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.03)', glowLight: 'rgba(99, 102, 241, 0.05)' },
+            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.03)', glowLight: 'rgba(239, 68, 68, 0.05)' }
         };
 
         let currentAccentKey = 'emerald';
-        let currentModeKey = 'dark'; // 'dark' or 'light'
+        let currentModeKey = 'dark';
 
-        // IMMEDIATELY fetch theme from cloud on page load before render to prevent ANY flash of default emerald on refresh
         (async function initThemeOnLoad() {
             try {
                 const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
                 if (data && data.theme) {
-                    const parts = data.theme.split('_'); // e.g. "emerald_dark" or "cyan_light"
+                    const parts = data.theme.split('_');
                     if (parts.length === 2 && ACCENTS[parts[0]]) {
                         currentAccentKey = parts[0];
                         currentModeKey = parts[1];
                     }
                 }
-            } catch (e) {
-                // fallback
-            }
+            } catch (e) {}
             applyThemeUI(currentAccentKey, currentModeKey);
             
-            // Check if user has previously dismissed welcome page
             const dismissed = localStorage.getItem('ghost_welcome_dismissed');
             if (!dismissed) {
                 document.getElementById('welcome-overlay').classList.remove('hidden');
@@ -510,10 +500,7 @@
             if (dontShowCheckbox && dontShowCheckbox.checked) {
                 localStorage.setItem('ghost_welcome_dismissed', 'true');
             }
-            document.getElementById('welcome-overlay').classList.add('opacity-0');
-            setTimeout(() => {
-                document.getElementById('welcome-overlay').classList.add('hidden');
-            }, 300);
+            document.getElementById('welcome-overlay').classList.add('hidden');
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -534,10 +521,7 @@
             const combinedThemeKey = `${currentAccentKey}_${currentModeKey}`;
 
             applyThemeUI(currentAccentKey, currentModeKey);
-
-            // Save globally in Master Admin row so it persists permanently for all visitors/users across refreshes
             await client.from('profiles').update({ theme: combinedThemeKey }).eq('username', MASTER_ADMIN);
-            
             render();
         }
 
@@ -606,7 +590,6 @@
                 trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
                 document.getElementById('display-user').innerText = currentUser;
 
-                // Toggle visibility of regular delete button vs admin section
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
                 if (currentUser === MASTER_ADMIN) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -672,7 +655,6 @@
             localStorage.setItem('ghost_current_user', currentUser);
             document.getElementById('display-user').innerText = currentUser;
             
-            // Sync theme
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
             if (adminData && adminData.theme) {
                 const parts = adminData.theme.split('_');
@@ -710,7 +692,7 @@
                 return;
             }
 
-            if (confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped from the database.`)) {
+            if (confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped.`)) {
                 const { error } = await client.from('profiles').delete().eq('username', currentUser);
                 if (!error) {
                     alert('Your account has been successfully deleted.');
@@ -729,13 +711,13 @@
             const usersContent = document.getElementById('admin-content-users');
 
             if (tab === 'tracker') {
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm';
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
                 trackerContent.classList.remove('hidden');
                 usersContent.classList.add('hidden');
             } else {
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium dynamic-bg shadow-sm';
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg transition font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
+                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
+                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
                 usersContent.classList.remove('hidden');
                 trackerContent.classList.add('hidden');
                 renderAdminPanel();
@@ -749,7 +731,7 @@
             const { data: users, error } = await client.from('profiles').select('username, password, last_action');
             
             if (error) {
-                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users from cloud: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
                 return;
             }
             
@@ -794,14 +776,14 @@
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
-                html += `<tr class="border-b border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5 transition">
+                html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end">
-                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] transition" title="Instantly log this user out">Force Logout</button>
-                        <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] transition text-[var(--text-main)]">Reset Pass</button>
-                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px] transition">Delete</button>` : ''}
+                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Force Logout</button>
+                        <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
+                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
                     </td>
                 </tr>`;
             });
@@ -813,10 +795,8 @@
             if (confirm(`Are you sure you want to force logout user "${targetUser}"?`)) {
                 const { error } = await client.from('profiles').update({ force_logout: true }).eq('username', targetUser);
                 if (!error) {
-                    alert(`User "${targetUser}" has been successfully logged out from their device.`);
+                    alert(`User "${targetUser}" logged out successfully.`);
                     renderAdminPanel();
-                } else {
-                    alert('Failed to execute force logout.');
                 }
             }
         }
@@ -826,10 +806,8 @@
             if (!newPass) return;
             const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
             if (!error) {
-                alert(`Password for "${targetUser}" successfully updated.`);
+                alert(`Password successfully updated.`);
                 renderAdminPanel();
-            } else {
-                alert('Failed to update password.');
             }
         }
 
@@ -838,17 +816,12 @@
             if (!adminPassInput) return;
             const { data: adminData } = await client.from('profiles').select('password').eq('username', MASTER_ADMIN).single();
             if (!adminData || adminData.password !== adminPassInput) {
-                alert('Authentication Failed: Incorrect admin password.');
+                alert('Incorrect admin password.');
                 return;
             }
-            if (confirm(`Permanently erase user "${targetUser}" from cloud?`)) {
+            if (confirm(`Permanently erase user "${targetUser}"?`)) {
                 const { error } = await client.from('profiles').delete().eq('username', targetUser);
-                if (!error) {
-                    alert(`Account "${targetUser}" deleted.`);
-                    renderAdminPanel();
-                } else {
-                    alert('Deletion failed.');
-                }
+                if (!error) renderAdminPanel();
             }
         }
 
@@ -880,7 +853,6 @@
                 num = 0;
             } else if (num > tracker.max) {
                 num = tracker.max;
-                alert(`Value cannot exceed the max Y-axis limit (${tracker.max}).`);
             }
             tracker.data[dayIndex] = num;
             saveAndCloudSync();
@@ -969,7 +941,7 @@
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
 
                     const card = document.createElement('div');
-                    card.className = 'dynamic-card backdrop-blur-md border rounded-2xl p-5 shadow-xl space-y-4';
+                    card.className = 'dynamic-card border rounded-2xl p-5 shadow-sm space-y-4';
                     
                     let inputsHtml = '';
                     for(let i = 0; i < 30; i++) {
@@ -983,7 +955,7 @@
                                        min="0" 
                                        max="${t.max}" 
                                        onchange="updateValue('${t.id}', ${i}, this.value)" 
-                                       class="w-10 dynamic-card-solid border text-center rounded-lg p-1.5 focus:outline-none font-mono text-xs transition" />
+                                       class="w-10 dynamic-card-solid border text-center rounded-lg p-1.5 focus:outline-none font-mono text-xs" />
                             </div>
                         `;
                     }
@@ -994,8 +966,6 @@
                     const activeDays = t.data.filter(v => v > 0).length;
                     const consistency = Math.round((activeDays / 30) * 100);
                     const dailyAverage = activeDays > 0 ? (totalVal / activeDays).toFixed(1) : '0.0';
-
-                    // Goal achievement check
                     const isGoalAchieved = percentage >= 100;
 
                     card.innerHTML = `
@@ -1003,20 +973,20 @@
                             <div class="flex items-center gap-3">
                                 <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
                                 <div class="flex dynamic-card-solid border rounded-xl p-0.5 text-xs">
-                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'graph' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">Habit tracker</button>
-                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg transition ${t.activeTab === 'history' ? 'dynamic-bg shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">History & Stats</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg ${t.activeTab === 'graph' ? 'dynamic-bg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">Habit tracker</button>
+                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg ${t.activeTab === 'history' ? 'dynamic-bg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">History & Stats</button>
                                 </div>
                             </div>
-                            <button class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs transition duration-200" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                            <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
                         </div>
 
                         ${isGoalAchieved ? `
-                            <div class="dynamic-card-solid border dynamic-border rounded-xl p-3 flex items-center justify-between gap-3 shadow-md animate-goal-banner">
+                            <div class="dynamic-card-solid border dynamic-border rounded-xl p-3 flex items-center justify-between gap-3 animate-goal-banner">
                                 <div class="flex items-center gap-2.5">
                                     <span class="text-lg">🏆</span>
                                     <div>
                                         <h4 class="text-xs font-bold dynamic-text tracking-wide uppercase">Goal Achieved! Outstanding Discipline!</h4>
-                                        <p class="text-[11px] text-[var(--text-muted)]">You reached 100%+ completion for your ${t.title.toLowerCase()} (${t.timeframe} target goal). Keep pushing forward!</p>
+                                        <p class="text-[11px] text-[var(--text-muted)]">You reached 100%+ completion for your ${t.title.toLowerCase()} (${t.timeframe} target goal).</p>
                                     </div>
                                 </div>
                                 <span class="dynamic-bg px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Unlocked</span>
@@ -1027,10 +997,10 @@
                             ${t.activeTab === 'graph' ? `
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                                     <div class="md:col-span-3 space-y-3">
-                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block shadow-inner"></canvas>
-                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl shadow-inner">${inputsHtml}</div>
+                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
+                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                                     </div>
-                                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4 h-full shadow-inner">
+                                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4 h-full">
                                         <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Monthly Progress</span>
                                         <div class="relative w-28 h-28 flex items-center justify-center">
                                             <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
@@ -1043,7 +1013,7 @@
                                     </div>
                                 </div>
                             ` : `
-                                <div class="dynamic-card-solid border rounded-xl p-5 space-y-4 shadow-inner">
+                                <div class="dynamic-card-solid border rounded-xl p-5 space-y-4">
                                     <h4 class="text-xs font-bold dynamic-text tracking-wider uppercase">Monthly History & Performance Analytics</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div class="dynamic-card border rounded-xl p-3 text-center">
