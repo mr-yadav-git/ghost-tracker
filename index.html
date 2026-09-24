@@ -332,6 +332,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Contribute / Support Card with QR Code -->
+                    <div class="dynamic-card border rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
+                        <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 shrink-0">
+                            <!-- User Provided QR Code Image -->
+                            <img src="https://i.ibb.co/68v9N43/qr.jpg" alt="Contribute QR Code" class="w-36 h-36 sm:w-40 sm:h-40 object-contain rounded-xl" />
+                        </div>
+                        <div class="space-y-3 text-center sm:text-left">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
+                                ☕ Support Developer
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold text-[var(--text-main)]">Contribute & Fuel Future Updates</h3>
+                            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                                Ghost Tracker is built with passion to give you ruthless focus and privacy. If this tool helps you master your discipline, consider supporting ongoing maintenance and new features by scanning the QR code. Thank you!
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
@@ -630,7 +647,7 @@
         // TUTORIAL STATE MACHINE WALKING THROUGH TABS
         let currentTutorialStep = 0;
         const tutorialSteps = [
-            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, and active platform operators.' },
+            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, active platform operators, and contribution portal.' },
             { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
             { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
             { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
@@ -2024,37 +2041,35 @@
                 let actualVal = val || 0;
                 let clampedVal = Math.min(actualVal, t.max);
                 let y = canvas.height - (clampedVal / t.max) * canvas.height;
+                
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
             ctx.stroke();
         }
 
-        function addNewTracker() {
+        async function addNewTracker() {
             const title = document.getElementById('new-title').value.trim();
             const max = parseFloat(document.getElementById('new-max').value);
             const goal = parseFloat(document.getElementById('new-goal').value);
             const timeframe = document.getElementById('new-timeframe').value;
             const color = document.getElementById('new-color').value;
 
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid title and maximum limit.');
+            if(!title || isNaN(max) || max <= 0) {
+                alert('Please provide a valid title and maximum limit.');
                 return;
             }
 
             trackers.push({
-                id: 'track_' + Date.now(),
+                id: 'tr_' + Date.now(),
                 title: title,
                 max: max,
                 goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
-                showSettings: false,
                 congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
+                showSettings: false
             });
 
             document.getElementById('new-title').value = '';
@@ -2065,31 +2080,28 @@
             render();
         }
 
-        function addNewTrackerRegular() {
+        async function addNewTrackerRegular() {
             const title = document.getElementById('reg-new-title').value.trim();
             const max = parseFloat(document.getElementById('reg-new-max').value);
             const goal = parseFloat(document.getElementById('reg-new-goal').value);
             const timeframe = document.getElementById('reg-new-timeframe').value;
             const color = document.getElementById('reg-new-color').value;
 
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid title and maximum limit.');
+            if(!title || isNaN(max) || max <= 0) {
+                alert('Please provide a valid title and maximum limit.');
                 return;
             }
 
             trackers.push({
-                id: 'track_' + Date.now(),
+                id: 'tr_' + Date.now(),
                 title: title,
                 max: max,
                 goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
-                showSettings: false,
                 congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
+                showSettings: false
             });
 
             document.getElementById('reg-new-title').value = '';
@@ -2100,8 +2112,8 @@
             render();
         }
 
-        function deleteTracker(id, title) {
-            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
+        async function deleteTracker(id, title) {
+            if(confirm(`Are you sure you want to delete graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
