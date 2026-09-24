@@ -47,7 +47,6 @@
         body {
             background-color: var(--bg-main) !important;
             color: var(--text-main) !important;
-            transform: translateZ(0);
         }
 
         .dynamic-card {
@@ -113,16 +112,85 @@
         .animate-goal-banner {
             animation: pulseGlow 2s infinite ease-in-out;
         }
-    </style>
-</head>
-<body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-20">
 
-    <!-- Ambient Background Glow[cite: 2] -->
+        @keyframes borderBlink {
+            0%, 100% { border-color: rgba(52, 211, 153, 0.9); box-shadow: 0 0 20px rgba(52, 211, 153, 0.4); }
+            50% { border-color: rgba(52, 211, 153, 0.2); box-shadow: 0 0 0px transparent; }
+        }
+        .animate-border-blink {
+            animation: borderBlink 1.5s infinite ease-in-out;
+        }
+    </style>
+
+<style id="ghost-graph-fix">
+    /* Graph rendering: keep CSS size separate from the high-resolution canvas bitmap. */
+    #app-tab-tracker canvas[id^="canvas-"] {
+        display: block;
+        width: 100% !important;
+        height: 180px !important;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        image-rendering: auto;
+    }
+
+    #app-tab-tracker .dynamic-card,
+    #app-tab-tracker .dynamic-card-solid,
+    #app-tab-tracker .space-y-3 {
+        min-width: 0;
+    }
+</style>
+
+</head>
+<body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
+
+    <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
         <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
 
-    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP[cite: 2] -->
+    <!-- SINGLE POPUP BEFORE LOGIN -->
+    <div id="pre-login-popup" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden animate-fade-in">
+            <div class="text-5xl mb-4">🌌</div>
+            <h2 class="text-2xl font-black mb-3 dynamic-text">Enter Your Own World</h2>
+            <p class="text-[var(--text-muted)] text-sm mb-8 leading-relaxed">
+                Just need a username and password to access your secure telemetry and habit matrix.
+            </p>
+            <button onclick="closePreLoginPopup()" class="w-full py-3.5 dynamic-bg font-bold rounded-xl shadow-lg transition cursor-pointer text-sm">
+                Get Started 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- TUTORIAL OVERLAY (Walks user through tabs after login) -->
+    <div id="site-tutorial-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/35 hidden transition-all duration-500">
+        <div class="w-full max-w-lg dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden space-y-6 animate-border-blink">
+            <div class="absolute -top-16 -right-16 w-32 h-32 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full dynamic-bg animate-ping"></span>
+                    <h3 class="text-xs font-black uppercase tracking-widest dynamic-text">New User Guide</h3>
+                </div>
+                <span id="tutorial-step-indicator" class="text-xs font-mono text-[var(--text-muted)]">Step 1 of 6</span>
+            </div>
+
+            <div id="tutorial-step-content" class="space-y-3 min-h-[110px]">
+                <!-- Dynamic Step Content -->
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
+                <button onclick="prevTutorialStep()" id="tutorial-back-btn" class="dynamic-card border px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-main)] hover:bg-[var(--bg-card-solid)] transition">Back</button>
+                <div class="flex items-center gap-2">
+                    <button onclick="skipTutorial()" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] px-3 py-2">Skip Tour</button>
+                    <button onclick="nextTutorialStep()" id="tutorial-next-btn" class="dynamic-bg px-6 py-2 rounded-xl text-xs font-bold shadow-md">Next Tab ➡️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP -->
     <div id="goalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
             <div id="modalGlow" class="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
@@ -135,101 +203,24 @@
         </div>
     </div>
 
-    <!-- SHARE ACCOMPLISHMENT MODAL -->
-    <div id="shareModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="w-full max-w-md dynamic-card border rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 relative space-y-4">
-            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🏆 Share Your Accomplishment</h3>
-                <button onclick="closeShareModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs">✕ Close</button>
-            </div>
-            <p class="text-xs text-[var(--text-muted)]">Copy your progress card summary or share it directly with peers.</p>
-            <textarea id="share-text-output" readonly class="w-full h-32 dynamic-input border rounded-xl p-3 text-xs font-mono focus:outline-none resize-none"></textarea>
-            <div class="flex gap-2">
-                <button onclick="copyShareText()" class="flex-1 dynamic-bg font-bold py-2.5 rounded-xl text-xs shadow-sm">Copy to Clipboard</button>
-                <button onclick="nativeShare()" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">Share Link</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY[cite: 2] -->
-    <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
-        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
-            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
-
-            <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER WIZARD</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)]">
-                    <span id="wizard-step-num" class="dynamic-text font-bold">1</span>
-                </div>
-            </div>
-
-            <!-- WIZARD STEP 1[cite: 2] -->
-            <div id="wizard-step-1" class="space-y-5 animate-fade-in">
-                <div class="text-center space-y-2">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">Your Sanctuary for Deep Focus & Growth</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your habits, review consistency metrics, and command your discipline without noise.</p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Dynamic Matrix</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Build custom target graphs and watch your live completion metrics rise.</p>
-                    </div>
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Zero Data Harvesting</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails or phone numbers.</strong> Just pick a secure username and password!</p>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end">
-                    <button onclick="goToWizardStep(2)" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex items-center gap-2">
-                        Next: How It Works &rarr;
-                    </button>
-                </div>
-            </div>
-
-            <!-- WIZARD STEP 2[cite: 2] -->
-            <div id="wizard-step-2" class="space-y-5 hidden animate-fade-in">
-                <div class="text-center space-y-2">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">How to Access & Master Your Space</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Quick operational briefing before you enter the matrix command center.</p>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3">
-                        <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">A</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Create Your Secure Credential</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">On the login screen, enter any unique username and password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—it is your sole key to your data.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex flex-col sm:flex-row items-center gap-3 justify-between border-t border-[var(--border-color)] pt-4">
-                    <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
-                        <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
-                        <span>Don't show this intro again</span>
-                    </label>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="goToWizardStep(1)" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">&larr; Back</button>
-                        <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex-1 sm:flex-none">Launch Matrix &rarr;</button>
-                    </div>
-                </div>
+    <!-- HABIT RELAPSE / "I LOST" MOTIVATIONAL MODAL POPUP -->
+    <div id="relapseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="relapseModalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
+            <div class="text-5xl mb-3">🛡️💪</div>
+            <h2 class="text-xl font-black mb-2 text-[var(--text-main)] uppercase tracking-wide">Setback is Not Defeat</h2>
+            <p id="relapseModalMessage" class="text-[var(--text-muted)] text-xs md:text-sm mb-6 leading-relaxed">
+                Stumbling doesn't mean you've failed; it means you're fighting a real battle. Dust yourself off, lock in, and let's start a stronger clean streak right now. You've got this!
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeRelapseModal(false)" class="flex-1 py-3 dynamic-card border font-semibold rounded-xl text-xs text-[var(--text-main)] hover:bg-[var(--bg-card-solid)] transition">Cancel</button>
+                <button onclick="closeRelapseModal(true)" class="flex-1 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold rounded-xl text-xs transition shadow-md">Confirm Reset</button>
             </div>
         </div>
     </div>
 
-    <div class="w-full max-w-4xl mx-auto relative z-10">
-        
-        <!-- Auth Screen[cite: 2] -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
+    <!-- Auth Screen Wrapper -->
+    <div id="auth-screen-wrapper" class="w-full max-w-md mx-auto relative z-10 my-auto">
+        <div id="auth-screen" class="w-full dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -250,320 +241,376 @@
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
+    </div>
 
-        <!-- App Screen[cite: 2] -->
-        <div id="app-screen" class="hidden space-y-6">
-            
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-                <div class="text-center sm:text-left">
-                    <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
-                    <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
+    <!-- App Screen (Full-width responsive layout with fixed left sidebar) -->
+    <div id="app-screen" class="hidden w-full relative z-10">
+        <div class="flex flex-col md:flex-row gap-6 items-start relative w-full">
+
+            <!-- SIDEBAR FOR LAPTOPS (FIXED LEFT) & FIXED BOTTOM NAV FOR MOBILES -->
+            <div id="app-nav-container" class="dynamic-card border rounded-2xl p-2 shadow-xl flex md:flex-col items-center justify-around md:justify-start overflow-x-auto gap-2 fixed bottom-0 left-0 right-0 z-50 md:top-4 md:left-4 md:bottom-auto md:w-56 md:shrink-0 md:h-[calc(100vh-2rem)]">
+                <div class="hidden md:flex flex-col items-start w-full px-3 py-3 border-b border-[var(--border-color)] mb-2">
+                    <h2 class="text-xs font-bold tracking-widest uppercase dynamic-text">GHOST MATRIX</h2>
+                    <p class="text-[10px] text-[var(--text-muted)]">Navigation Menu</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="openShareModal()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
-                        🏆 Share Progress
+                <div class="flex md:flex-col items-center md:items-stretch gap-1.5 w-full justify-around md:justify-start">
+                    <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full">
+                        🏠 Home<span class="hidden md:inline">:</span>
                     </button>
-                    <button onclick="shareSite()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
-                        🔗 Share Site
+                    <button onclick="switchAppTab('tracker')" id="nav-tab-tracker" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📈 Tracker<span class="hidden md:inline">:</span>
                     </button>
+                    <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📋 To-Do<span class="hidden md:inline">:</span>
+                    </button>
+                    <button onclick="switchAppTab('habits')" id="nav-tab-habits" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        🛡️ Bad Habits<span class="hidden md:inline">:</span>
+                    </button>
+                    <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📊 Stats<span class="hidden md:inline">:</span>
+                    </button>
+                    <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        👤 User<span class="hidden md:inline">:</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT MAIN CONTENT AREA (Offset left margin on desktop to accommodate fixed sidebar) -->
+            <div class="flex-1 w-full space-y-6 md:ml-64 max-w-5xl px-2 sm:px-4 pb-20 md:pb-6 mx-auto">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
+                        <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
+                    </div>
                     <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
                         <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
                     </div>
                 </div>
-            </div>
 
-            <!-- YOUTUBE-STYLE APP NAVIGATION TABS BAR -->
-            <div class="dynamic-card border rounded-2xl p-2 shadow-sm flex items-center justify-between overflow-x-auto gap-2">
-                <div class="flex items-center gap-1.5 overflow-x-auto w-full">
-                    <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap">
-                        🏠 Home / Trackers
-                    </button>
-                    <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        📋 Daily To-Do
-                    </button>
-                    <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        📊 Weekly History
-                    </button>
-                    <button onclick="switchAppTab('focus')" id="nav-tab-focus" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        ⏳ Focus Timer
-                    </button>
-                    <button onclick="switchAppTab('notes')" id="nav-tab-notes" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        📝 Quick Notes
-                    </button>
-                    <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        👤 Profile & Status
-                    </button>
-                </div>
-            </div>
-
-            <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
-            <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                        <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
-                    </div>
-                    <div class="flex items-center gap-3 pt-2">
-                        <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
-                        <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROMINENTLY PLACED: TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
-            <div id="app-tab-todo" class="space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 flex-wrap gap-3">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📋 Daily To-Do List & Today's Completion Telemetry
-                            </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
+                <!-- TAB CONTAINER: HOME / ABOUT SITE & METRICS -->
+                <div id="app-tab-home" class="space-y-6 animate-fade-in">
+                    <!-- Hero Welcome Banner -->
+                    <div class="dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-4">
+                        <div class="absolute -top-24 -right-24 w-48 h-48 dynamic-bg rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
+                            ✨ Welcome to your private sanctuary
                         </div>
-                        <div id="todo-streak-badge" class="dynamic-card-solid border px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
-                            🔥 <span id="todo-streak-val">0</span> Day Streak
-                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
+                            Master Your Discipline. <span class="dynamic-text">Leave No Trace.</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl">
+                            Ghost Tracker is a cutting-edge, ultra-secure personal telemetry and habit command center. Designed for individuals who demand ruthless accountability, uncompromised focus, and absolute privacy—empowering you to crush your goals, build unbreakable clean streaks, and monitor daily progress without unnecessary noise or tracking.
+                        </p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                        <!-- Task Input & List -->
-                        <div class="md:col-span-2 space-y-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
-                                <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
+                    <!-- Grid: Sharing URL, Login Streak, & Live Users -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Sharing URL Card -->
+                        <div class="dynamic-card border rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    🔗 Site Sharing URL
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Copy and share this gateway link with trusted peers.</p>
                             </div>
-
-                            <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                                <!-- Injected dynamically -->
+                            <div class="flex items-center gap-2 pt-2">
+                                <input type="text" id="site-share-url" readonly class="w-full dynamic-input border rounded-xl px-3 py-2 text-xs font-mono select-all" />
+                                <button onclick="copyShareUrl()" class="dynamic-bg font-semibold px-3 py-2 rounded-xl text-xs shrink-0">Copy</button>
                             </div>
                         </div>
 
-                        <!-- Donut Chart & Stats (Today's Data) -->
-                        <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
-                            <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
-                            <div class="relative w-28 h-28 flex items-center justify-center">
-                                <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
-                                    <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
+                        <!-- Login Streak Card -->
+                        <div class="dynamic-card border rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    🔥 Login Streak
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Consecutive days you've signed into your matrix.</p>
+                            </div>
+                            <div class="flex items-baseline gap-2 pt-2">
+                                <span id="home-login-streak" class="text-3xl font-black dynamic-text font-mono">1</span>
+                                <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Days Logged In</span>
+                            </div>
+                        </div>
+
+                        <!-- LIVE NO. OF USERS -->
+                        <div id="live-users-highlight-section" class="dynamic-card border border-emerald-500/50 rounded-2xl p-5 space-y-3 flex flex-col justify-between bg-emerald-500/5">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                        ⚡ Live Active Users
+                                    </h3>
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                </div>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Real-time platform user registry count.</p>
+                            </div>
+                            <div class="flex items-baseline gap-2 pt-2">
+                                <span id="home-live-users-count" class="text-3xl font-black text-emerald-400 font-mono">...</span>
+                                <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Registered Operators</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
+                <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                            <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
+                        </div>
+                        <div class="flex items-center gap-3 pt-2">
+                            <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
+                            <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTAINER 2: DAILY TRACKER & GRAPH MATRIX -->
+                <div id="app-tab-tracker" class="hidden space-y-6 animate-fade-in">
+                    <!-- Global Admin Override Panel -->
+                    <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
+                        <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                            <div>
+                                <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                                <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
+                            </div>
+                            <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
+                                <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
+                                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
+                            </div>
+                        </div>
+
+                        <div id="admin-content-tracker" class="space-y-6">
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
+                                <div class="flex justify-between items-center flex-wrap gap-4">
+                                    <div>
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🎨 Global 10-Theme Matrix Engine</h3>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 items-center">
+                                        <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
+                                            <option value="emerald">Emerald Accent</option>
+                                            <option value="cyan">Cyber Neon (Cyan)</option>
+                                            <option value="amber">Matrix Amber</option>
+                                            <option value="indigo">Deep Indigo</option>
+                                            <option value="crimson">Crimson Protocol</option>
+                                        </select>
+                                        <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
+                                            <option value="dark">Dark Night Mode</option>
+                                            <option value="light">Pure White Mode</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
+
+                            <div id="trackers-container" class="space-y-6"></div>
+
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                        <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                                    </h3>
+                                    <div class="flex gap-1.5">
+                                        <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                        <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
+                                        <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
+                                        <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
+                                        <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
+                                        <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                            <option value="Day">Day</option>
+                                            <option value="Week" selected>Week</option>
+                                            <option value="Month">Month</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
+                                        <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                            <option value="#2ecc71">🟢 Emerald Green</option>
+                                            <option value="#3498db">🔵 Electric Blue</option>
+                                            <option value="#e74c3c">🔴 Crimson Red</option>
+                                            <option value="#f1c40f">🟡 Neon Yellow</option>
+                                            <option value="#9b59b6">🟣 Vivid Purple</option>
+                                            <option value="#e67e22">🟠 Sunset Orange</option>
+                                            <option value="#1abc9c">🩵 Turquoise</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end pt-2">
+                                    <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="admin-content-users" class="hidden space-y-4">
+                            <div class="flex justify-between items-center gap-3">
+                                <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
+                                <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
+                            </div>
+                            <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
+                                <div id="users-list-container" class="text-xs">Loading users...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Regular Trackers Container -->
+                    <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
+                        <div id="regular-trackers-container" class="space-y-6"></div>
+                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                                </h3>
+                                <div class="flex gap-1.5">
+                                    <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                    <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
+                                    <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
+                                    <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
+                                    <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
+                                    <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                        <option value="Day">Day</option>
+                                        <option value="Week" selected>Week</option>
+                                        <option value="Month">Month</option>
+                                    </select>
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
+                                    <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                        <option value="#2ecc71">🟢 Emerald Green</option>
+                                        <option value="#3498db">🔵 Electric Blue</option>
+                                        <option value="#e74c3c">🔴 Crimson Red</option>
+                                        <option value="#f1c40f">🟡 Neon Yellow</option>
+                                        <option value="#9b59b6">🟣 Vivid Purple</option>
+                                        <option value="#e67e22">🟠 Sunset Orange</option>
+                                        <option value="#1abc9c">🩵 Turquoise</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
-            <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📊 Weekly History & Consistency Matrix
-                            </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
-                        </div>
-                    </div>
-                    
-                    <div id="weekly-history-container" class="space-y-4">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB 1: FOCUS TIMER -->
-            <div id="app-tab-focus" class="hidden space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-6 text-center max-w-lg mx-auto">
-                    <div class="border-b border-[var(--border-color)] pb-4">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center justify-center gap-2">
-                            ⏳ Pomodoro Focus Timer
-                        </h3>
-                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Boost your deep work sessions with timed intervals.</p>
-                    </div>
-                    <div class="flex justify-center gap-2">
-                        <button onclick="setFocusMode('work')" id="focus-btn-work" class="dynamic-bg px-4 py-1.5 rounded-xl text-xs font-bold transition">Work (25m)</button>
-                        <button onclick="setFocusMode('shortBreak')" id="focus-btn-short" class="dynamic-card border px-4 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">Short Break (5m)</button>
-                        <button onclick="setFocusMode('longBreak')" id="focus-btn-long" class="dynamic-card border px-4 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">Long Break (15m)</button>
-                    </div>
-                    <div class="py-8">
-                        <span id="focus-timer-display" class="text-6xl font-mono font-bold tracking-wider dynamic-text">25:00</span>
-                    </div>
-                    <div class="flex justify-center gap-3">
-                        <button onclick="toggleFocusTimer()" id="focus-toggle-btn" class="dynamic-bg font-bold px-8 py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">Start Focus</button>
-                        <button onclick="resetFocusTimer()" class="dynamic-card border font-semibold px-6 py-3 rounded-xl text-xs text-[var(--text-main)]">Reset</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW TAB 2: QUICK NOTES -->
-            <div id="app-tab-notes" class="hidden space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 flex-wrap gap-3">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📝 Quick Scratchpad & Notes
-                            </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Jot down thoughts, code snippets, or ideas. Auto-saves securely.</p>
-                        </div>
-                        <button onclick="saveNotes()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs shadow-sm">Save Notes</button>
-                    </div>
-                    <textarea id="quick-notes-textarea" placeholder="Type or paste your notes here... Changes sync automatically." class="w-full h-80 dynamic-input border rounded-xl p-4 text-xs font-mono focus:outline-none resize-y" oninput="debounceAutoSaveNotes()"></textarea>
-                </div>
-            </div>
-
-            <!-- Global Admin Override Panel[cite: 2] -->
-            <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
-                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
-                    <div>
-                        <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
-                    </div>
-                    <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
-                    </div>
-                </div>
-
-                <div id="admin-content-tracker" class="space-y-6">
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center flex-wrap gap-4">
+                <!-- TAB CONTAINER 3: DAILY TO-DO MATRIX & DONUT SECTION -->
+                <div id="app-tab-todo" class="hidden space-y-6 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                             <div>
-                                <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
-                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
-                            </div>
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
-                                    <option value="emerald">Emerald Accent</option>
-                                    <option value="cyan">Cyber Neon (Cyan)</option>
-                                    <option value="amber">Matrix Amber</option>
-                                    <option value="indigo">Deep Indigo</option>
-                                    <option value="crimson">Crimson Protocol</option>
-                                </select>
-                                <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
-                                    <option value="dark">Dark Night Mode</option>
-                                    <option value="light">Pure White Mode</option>
-                                </select>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    📋 Daily To-Do List & Today's Completion Telemetry
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
                             </div>
                         </div>
-                    </div>
 
-                    <div id="trackers-container" class="space-y-6"></div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                            <!-- Task Input & List -->
+                            <div class="md:col-span-2 space-y-4">
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                                    <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
+                                </div>
 
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                            </h3>
-                            <div class="flex gap-1.5">
-                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                    <!-- Injected dynamically -->
+                                </div>
                             </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+
+                            <!-- Donut Chart & Stats (Today's Data) -->
+                            <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
+                                <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
+                                <div class="relative w-28 h-28 flex items-center justify-center">
+                                    <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
+                                        <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
+                                    </div>
+                                </div>
+                                <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
                             </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="Day">Day</option>
-                                    <option value="Week" selected>Week</option>
-                                    <option value="Month">Month</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="#2ecc71">🟢 Emerald Green</option>
-                                    <option value="#3498db">🔵 Electric Blue</option>
-                                    <option value="#e74c3c">🔴 Crimson Red</option>
-                                    <option value="#f1c40f">🟡 Neon Yellow</option>
-                                    <option value="#9b59b6">🟣 Vivid Purple</option>
-                                    <option value="#e67e22">🟠 Sunset Orange</option>
-                                    <option value="#1abc9c">🩵 Turquoise</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex justify-end pt-2">
-                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                         </div>
                     </div>
                 </div>
 
-                <div id="admin-content-users" class="hidden space-y-4">
-                    <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
-                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
-                    </div>
-                    <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
-                        <div id="users-list-container" class="text-xs">Loading users...</div>
-                    </div>
-                </div>
-            </div>
+                <!-- TAB CONTAINER NEW: HABITS BREAKING MATRIX (STREAK SYSTEM) -->
+                <div id="app-tab-habits" class="hidden space-y-6 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                            <div>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    🛡️ Habit Breaking & Streak Protection Matrix
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Name any bad habit you want to leave behind. Watch your clean streak climb and protect your discipline.</p>
+                            </div>
+                        </div>
 
-            <!-- Regular Trackers Container[cite: 2] -->
-            <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
-                <div id="regular-trackers-container" class="space-y-6"></div>
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                            <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                        </h3>
-                        <div class="flex gap-1.5">
-                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                        <!-- Add Habit Builder -->
+                        <div class="dynamic-card-solid border rounded-2xl p-4 space-y-3">
+                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">+ Add Habit to Leave</h4>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="new-habit-input" placeholder="e.g. Procrastination, Sugar..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addHabit()" />
+                                <button onclick="addHabit()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Start Streak</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                            <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+
+                        <!-- Habits Streak Cards Container -->
+                        <div id="habits-list-container" class="space-y-4">
+                            <!-- Injected dynamically -->
                         </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                            <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                            <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                            <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                <option value="Day">Day</option>
-                                <option value="Week" selected>Week</option>
-                                <option value="Month">Month</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                            <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                <option value="#2ecc71">🟢 Emerald Green</option>
-                                <option value="#3498db">🔵 Electric Blue</option>
-                                <option value="#e74c3c">🔴 Crimson Red</option>
-                                <option value="#f1c40f">🟡 Neon Yellow</option>
-                                <option value="#9b59b6">🟣 Vivid Purple</option>
-                                <option value="#e67e22">🟠 Sunset Orange</option>
-                                <option value="#1abc9c">🩵 Turquoise</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex justify-end pt-2">
-                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                     </div>
                 </div>
+
+                <!-- TAB CONTAINER 4: WEEKLY HISTORY -->
+                <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                            <div>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    📊 Weekly History & Consistency Matrix
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="weekly-history-container" class="space-y-4">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -580,17 +627,13 @@
         let isAdmin = false;
         let trackers = [];
         let todos = [];
-        let notesText = '';
+        let habits = [];
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
+        let habitToResetId = null;
+        let userLoginStreakCount = 1;
         const MASTER_ADMIN = 'mr_yadav'; 
-
-        // Focus Timer State
-        let focusTimerInterval = null;
-        let focusTimeRemaining = 25 * 60;
-        let focusIsRunning = false;
-        let focusMode = 'work'; // 'work', 'shortBreak', 'longBreak'
 
         const ACCENTS = {
             emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.03)', glowLight: 'rgba(16, 185, 129, 0.05)' },
@@ -604,6 +647,17 @@
         let currentModeKey = 'dark';
         let saveTimeout = null;
 
+        // TUTORIAL STATE MACHINE WALKING THROUGH TABS
+        let currentTutorialStep = 0;
+        const tutorialSteps = [
+            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, and active platform operators.' },
+            { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
+            { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
+            { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
+            { tab: 'history', title: 'Weekly History & Stats Tab', desc: 'Review comprehensive weekly consistency scores and historical completion graphs across all your routines.' },
+            { tab: 'profile', title: 'User Profile & Account', desc: 'Manage your active session details, check your operator role, or securely sign out whenever you choose.' }
+        ];
+
         (async function initThemeOnLoad() {
             try {
                 const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
@@ -616,70 +670,143 @@
                 }
             } catch (e) {}
             applyThemeUI(currentAccentKey, currentModeKey);
-            
-            const dismissed = localStorage.getItem('ghost_welcome_dismissed');
-            if (!dismissed) {
-                document.getElementById('welcome-overlay').classList.remove('hidden');
+        })();
+
+        // Check pre-login popup seen state
+        (async function initPreLoginPopup() {
+            if (localStorage.getItem('ghost_pre_login_popup_seen')) {
+                const popup = document.getElementById('pre-login-popup');
+                if (popup) popup.classList.add('hidden');
             }
         })();
 
-        function goToWizardStep(stepNum) {
-            const step1 = document.getElementById('wizard-step-1');
-            const step2 = document.getElementById('wizard-step-2');
-            const stepNumIndicator = document.getElementById('wizard-step-num');
+        function closePreLoginPopup() {
+            localStorage.setItem('ghost_pre_login_popup_seen', 'true');
+            document.getElementById('pre-login-popup').classList.add('hidden');
+        }
 
-            if (stepNum === 1) {
-                step1.classList.remove('hidden');
-                step2.classList.add('hidden');
-                stepNumIndicator.innerText = '1';
-            } else {
-                step1.classList.add('hidden');
-                step2.classList.remove('hidden');
-                stepNumIndicator.innerText = '2';
+        function startTutorialIfNeeded() {
+            const dismissed = localStorage.getItem('ghost_new_user_tutorial_done');
+            if (!dismissed) {
+                currentTutorialStep = 0;
+                document.getElementById('site-tutorial-overlay').classList.remove('hidden');
+                renderTutorialStep();
             }
         }
 
-        function dismissWelcome() {
-            const dontShowCheckbox = document.getElementById('dont-show-welcome');
-            if (dontShowCheckbox && dontShowCheckbox.checked) {
-                localStorage.setItem('ghost_welcome_dismissed', 'true');
+        function renderTutorialStep() {
+            const step = tutorialSteps[currentTutorialStep];
+            switchAppTab(step.tab);
+
+            document.getElementById('tutorial-step-indicator').innerText = `Step ${currentTutorialStep + 1} of ${tutorialSteps.length}`;
+            document.getElementById('tutorial-step-content').innerHTML = `
+                <h4 class="text-sm font-bold dynamic-text uppercase tracking-wider">${step.title}</h4>
+                <p class="text-xs text-[var(--text-muted)] leading-relaxed">${step.desc}</p>
+            `;
+
+            const backBtn = document.getElementById('tutorial-back-btn');
+            if (currentTutorialStep === 0) {
+                backBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
             }
-            document.getElementById('welcome-overlay').classList.add('hidden');
+
+            const nextBtn = document.getElementById('tutorial-next-btn');
+            if (currentTutorialStep === tutorialSteps.length - 1) {
+                nextBtn.innerText = 'Finish Tour 🎉';
+            } else {
+                nextBtn.innerText = 'Next Tab ➡️';
+            }
+        }
+
+        function nextTutorialStep() {
+            if (currentTutorialStep < tutorialSteps.length - 1) {
+                currentTutorialStep++;
+                renderTutorialStep();
+            } else {
+                finishTutorial();
+            }
+        }
+
+        function prevTutorialStep() {
+            if (currentTutorialStep > 0) {
+                currentTutorialStep--;
+                renderTutorialStep();
+            }
+        }
+
+        function skipTutorial() {
+            finishTutorial();
+        }
+
+        function finishTutorial() {
+            localStorage.setItem('ghost_new_user_tutorial_done', 'true');
+            document.getElementById('site-tutorial-overlay').classList.add('hidden');
+            switchAppTab('home');
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
+            
+            const shareInput = document.getElementById('site-share-url');
+            if (shareInput) shareInput.value = window.location.href;
+
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
                 await restoreSession(savedUser);
             }
+            setInterval(updateHabitsStreaksTimer, 1000);
+            
+            fetchLiveUsersCount();
         });
+
+        async function fetchLiveUsersCount() {
+            try {
+                const { count, error } = await client.from('profiles').select('*', { count: 'exact', head: true });
+                const liveCountEl = document.getElementById('home-live-users-count');
+                if (!error && liveCountEl) {
+                    liveCountEl.innerText = count !== null ? count : 1;
+                }
+            } catch (e) {
+                const liveCountEl = document.getElementById('home-live-users-count');
+                if (liveCountEl) liveCountEl.innerText = '1';
+            }
+        }
+
+        function copyShareUrl() {
+            const shareInput = document.getElementById('site-share-url');
+            if (!shareInput) return;
+            shareInput.select();
+            shareInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(shareInput.value);
+            alert('Site sharing URL copied to clipboard!');
+        }
 
         function switchAppTab(tabName) {
             currentAppTab = tabName;
-            const tabs = ['home', 'todo', 'history', 'focus', 'notes', 'profile'];
-            
+            const tabs = ['home', 'tracker', 'todo', 'habits', 'history', 'profile'];
+
             tabs.forEach(t => {
                 const btn = document.getElementById(`nav-tab-${t}`);
                 const section = document.getElementById(`app-tab-${t}`);
+
                 if (btn) {
                     if (t === tabName) {
-                        btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap";
+                        btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full";
                     } else {
-                        btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap";
+                        btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full";
                     }
                 }
+
                 if (section) {
-                    if (t === tabName) {
-                        section.classList.remove('hidden');
-                    } else {
-                        section.classList.add('hidden');
-                    }
+                    if (t === tabName) section.classList.remove('hidden');
+                    else section.classList.add('hidden');
                 }
             });
 
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            if (tabName === 'home') {
+
+            if (tabName === 'tracker') {
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -687,17 +814,21 @@
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
+
+                // Important: the tracker was hidden before this function ran.
+                // Wait until the browser has laid out the visible tab before measuring canvases.
+                scheduleGraphRedraw(12);
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
             }
 
+            if (tabName === 'habits') {
+                renderHabits();
+            }
+
             if (tabName === 'history') {
                 renderWeeklyHistoryView();
-            }
-            if (tabName === 'notes') {
-                const notesArea = document.getElementById('quick-notes-textarea');
-                if (notesArea) notesArea.value = notesText;
             }
         }
 
@@ -779,21 +910,23 @@
                 currentUser = username;
                 isAdmin = (username === MASTER_ADMIN) || (existingUser.is_admin === true);
                 
+                calculateLoginStreak(existingUser);
+
                 try {
                     const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        notesText = '';
+                        habits = [];
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        notesText = parsed.notes || '';
+                        habits = parsed.habits || [];
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
-                    notesText = '';
+                    habits = [];
                 }
                 
                 checkAndResetPeriodicGoals();
@@ -802,13 +935,13 @@
                 const roleBadge = document.getElementById('profile-role-badge');
                 if (currentUser === MASTER_ADMIN) {
                     roleBadge.innerText = 'Master Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
                 } else if (isAdmin) {
                     roleBadge.innerText = 'Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
                 } else {
                     roleBadge.innerText = 'User';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
                 }
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
@@ -819,13 +952,24 @@
                     if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
                 }
 
-                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('auth-screen-wrapper').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 switchAppTab('home');
                 render();
             } else {
                 localStorage.removeItem('ghost_current_user');
             }
+        }
+
+        function calculateLoginStreak(userData) {
+            const baseDate = userData.last_action ? new Date(userData.last_action) : new Date();
+            const now = new Date();
+            const diffTime = Math.abs(now - baseDate);
+            const diffDays = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+            userLoginStreakCount = diffDays;
+            
+            const streakEl = document.getElementById('home-login-streak');
+            if (streakEl) streakEl.innerText = userLoginStreakCount;
         }
 
         async function handleLogin() {
@@ -850,6 +994,8 @@
                 return;
             }
 
+            let isNewUserSignUp = false;
+
             if (existingUser) {
                 if (existingUser.password !== pass) {
                     errTag.innerText = 'Error: Incorrect password. Username already exists.';
@@ -860,28 +1006,31 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        notesText = '';
+                        habits = [];
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        notesText = parsed.notes || '';
+                        habits = parsed.habits || [];
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
-                    notesText = '';
+                    habits = [];
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
-                await client.from('profiles').update({ force_logout: false }).eq('username', user);
+                calculateLoginStreak(existingUser);
+                await client.from('profiles').update({ force_logout: false, last_action: new Date().toISOString() }).eq('username', user);
             } else {
+                isNewUserSignUp = true;
                 trackers = [];
                 todos = [];
-                notesText = '';
+                habits = [];
                 isAdmin = (user === MASTER_ADMIN);
-                const initialPayload = JSON.stringify({ trackers, todos, notes: notesText });
+                userLoginStreakCount = 1;
+                const initialPayload = JSON.stringify({ trackers, todos, habits });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_action: new Date().toISOString() }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -898,13 +1047,13 @@
             const roleBadge = document.getElementById('profile-role-badge');
             if (currentUser === MASTER_ADMIN) {
                 roleBadge.innerText = 'Master Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
             } else if (isAdmin) {
                 roleBadge.innerText = 'Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
             } else {
                 roleBadge.innerText = 'User';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
             }
             
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
@@ -925,10 +1074,16 @@
                 if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
             }
 
-            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('auth-screen-wrapper').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
+            fetchLiveUsersCount();
+
+            // Trigger tutorial for new user login
+            if (isNewUserSignUp) {
+                setTimeout(startTutorialIfNeeded, 300);
+            }
         }
 
         function checkAndResetPeriodicGoals() {
@@ -1082,11 +1237,12 @@
                 const timeAgoStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
                 const isUserAdmin = u.is_admin === true || isUserMaster;
+                const displayPassword = isUserMaster ? '••••••••' : u.password;
 
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
-                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
-                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
+                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
+                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
                         ${!isUserMaster ? (
@@ -1165,17 +1321,17 @@
             isAdmin = false;
             trackers = [];
             todos = [];
-            notesText = '';
+            habits = [];
             adminUsersCache = [];
             currentAdminTab = 'tracker';
             document.getElementById('auth-user').value = '';
             document.getElementById('auth-pass').value = '';
             document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('auth-screen-wrapper').classList.remove('hidden');
         }
 
-        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE (FIXES SITE LAG)
+        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE
         function saveAndCloudSync() {
             if (!currentUser) return;
             if (saveTimeout) clearTimeout(saveTimeout);
@@ -1184,17 +1340,23 @@
                 const payload = JSON.stringify({
                     trackers: trackers,
                     todos: todos,
-                    notes: notesText
+                    habits: habits
                 });
                 await client.from('profiles').update({ 
                     data: payload,
                     last_action: new Date().toISOString()
                 }).eq('username', currentUser);
-            }, 600); // Debounce 600ms to avoid network thrashing and lag
+            }, 600);
         }
 
         function updateValue(id, dayIndex, val) {
             const tracker = trackers.find(t => t.id === id);
+            if (!tracker) return;
+            if (!Array.isArray(tracker.data)) tracker.data = Array(30).fill(0);
+            if (tracker.data.length < 30) {
+                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+            }
+
             let num = parseFloat(val);
             if (isNaN(num) || val === '') {
                 num = 0;
@@ -1208,7 +1370,6 @@
             evaluateGoalCompletion(tracker);
             saveAndCloudSync();
             
-            // Redraw only the specific canvas immediately without full re-render for zero lag
             drawGraph(tracker, currentUser === MASTER_ADMIN || isAdmin ? '1' : '2');
         }
 
@@ -1248,128 +1409,6 @@
             renderTodos();
         }
 
-        function saveNotes() {
-            const notesArea = document.getElementById('quick-notes-textarea');
-            if (notesArea) {
-                notesText = notesArea.value;
-                saveAndCloudSync();
-                alert('Notes saved successfully!');
-            }
-        }
-
-        function debounceAutoSaveNotes() {
-            const notesArea = document.getElementById('quick-notes-textarea');
-            if (notesArea) {
-                notesText = notesArea.value;
-                saveAndCloudSync();
-            }
-        }
-
-        // Focus Timer Functions
-        function setFocusMode(mode) {
-            focusMode = mode;
-            focusIsRunning = false;
-            clearInterval(focusTimerInterval);
-            document.getElementById('focus-toggle-btn').innerText = 'Start Focus';
-
-            const btnWork = document.getElementById('focus-btn-work');
-            const btnShort = document.getElementById('focus-btn-short');
-            const btnLong = document.getElementById('focus-btn-long');
-
-            [btnWork, btnShort, btnLong].forEach(btn => {
-                btn.className = "dynamic-card border px-4 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition";
-            });
-
-            if (mode === 'work') {
-                focusTimeRemaining = 25 * 60;
-                btnWork.className = "dynamic-bg px-4 py-1.5 rounded-xl text-xs font-bold transition";
-            } else if (mode === 'shortBreak') {
-                focusTimeRemaining = 5 * 60;
-                btnShort.className = "dynamic-bg px-4 py-1.5 rounded-xl text-xs font-bold transition";
-            } else if (mode === 'longBreak') {
-                focusTimeRemaining = 15 * 60;
-                btnLong.className = "dynamic-bg px-4 py-1.5 rounded-xl text-xs font-bold transition";
-            }
-            updateFocusDisplay();
-        }
-
-        function toggleFocusTimer() {
-            const toggleBtn = document.getElementById('focus-toggle-btn');
-            if (focusIsRunning) {
-                focusIsRunning = false;
-                clearInterval(focusTimerInterval);
-                toggleBtn.innerText = 'Resume Focus';
-            } else {
-                focusIsRunning = true;
-                toggleBtn.innerText = 'Pause Focus';
-                focusTimerInterval = setInterval(() => {
-                    if (focusTimeRemaining > 0) {
-                        focusTimeRemaining--;
-                        updateFocusDisplay();
-                    } else {
-                        focusIsRunning = false;
-                        clearInterval(focusTimerInterval);
-                        toggleBtn.innerText = 'Start Focus';
-                        alert('Focus session completed! Take a break.');
-                    }
-                }, 1000);
-            }
-        }
-
-        function resetFocusTimer() {
-            focusIsRunning = false;
-            clearInterval(focusTimerInterval);
-            document.getElementById('focus-toggle-btn').innerText = 'Start Focus';
-            if (focusMode === 'work') focusTimeRemaining = 25 * 60;
-            else if (focusMode === 'shortBreak') focusTimeRemaining = 5 * 60;
-            else if (focusMode === 'longBreak') focusTimeRemaining = 15 * 60;
-            updateFocusDisplay();
-        }
-
-        function updateFocusDisplay() {
-            const minutes = Math.floor(focusTimeRemaining / 60);
-            const seconds = focusTimeRemaining % 60;
-            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            const el = document.getElementById('focus-timer-display');
-            if (el) el.innerText = display;
-        }
-
-        function calculateStreak(dataArray) {
-            let streak = 0;
-            // Count backwards from today (index 0 or last active entry)
-            for (let i = 0; i < dataArray.length; i++) {
-                if (dataArray[i] > 0) {
-                    streak++;
-                } else if (i > 0) {
-                    break; // break streak if a day is missed
-                }
-            }
-            return streak;
-        }
-
-        function calculateTodoStreak() {
-            // Count consecutive days where all or at least some tasks were completed
-            let streak = 0;
-            let checkDate = new Date();
-            
-            for (let i = 0; i < 30; i++) {
-                const dateStr = checkDate.toISOString().split('T')[0];
-                const dayTasks = todos.filter(t => t.createdAt <= dateStr);
-                if (dayTasks.length === 0) {
-                    checkDate.setDate(checkDate.getDate() - 1);
-                    continue;
-                }
-                const completedOnDay = dayTasks.every(t => t.completed && t.completedDate === dateStr);
-                if (completedOnDay) {
-                    streak++;
-                } else if (i > 0) {
-                    break;
-                }
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-            return streak;
-        }
-
         function renderTodos() {
             const container = document.getElementById('todos-list-container');
             if (!container) return;
@@ -1377,7 +1416,6 @@
             if (todos.length === 0) {
                 container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet. Persistent tasks remain until removed.</p>`;
                 drawTodoDonut(0, 0);
-                document.getElementById('todo-streak-val').innerText = '0';
                 return;
             }
 
@@ -1408,12 +1446,147 @@
             const statsEl = document.getElementById('todo-stats-text');
             if (pctEl) pctEl.innerText = `${percentage}%`;
             if (statsEl) statsEl.innerText = `${completedTodayCount} / ${totalActiveTasks} Done Today`;
-            
-            const streakVal = calculateTodoStreak();
-            const streakEl = document.getElementById('todo-streak-val');
-            if (streakEl) streakEl.innerText = streakVal;
-
             drawTodoDonut(completedTodayCount, totalActiveTasks);
+        }
+
+        // HABIT STREAK SYSTEM LOGIC
+        function addHabit() {
+            const input = document.getElementById('new-habit-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            habits.push({
+                id: 'habit_' + Date.now(),
+                name: text,
+                startDate: new Date().toISOString(),
+                relapses: 0
+            });
+            input.value = '';
+            saveAndCloudSync();
+            renderHabits();
+        }
+
+        function promptResetHabitStreak(id) {
+            habitToResetId = id;
+            const modal = document.getElementById('relapseModal');
+            const content = document.getElementById('relapseModalContent');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeRelapseModal(confirmed) {
+            const modal = document.getElementById('relapseModal');
+            const content = document.getElementById('relapseModalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+
+            if (confirmed && habitToResetId) {
+                const habit = habits.find(h => h.id === habitToResetId);
+                if (habit) {
+                    habit.startDate = new Date().toISOString();
+                    habit.relapses = (habit.relapses || 0) + 1;
+                    saveAndCloudSync();
+                    renderHabits();
+                }
+            }
+            habitToResetId = null;
+        }
+
+        function deleteHabit(id) {
+            const habit = habits.find(h => h.id === id);
+            if (confirm(`Remove "${habit ? habit.name : 'this habit'}" from your list?`)) {
+                habits = habits.filter(h => h.id !== id);
+                saveAndCloudSync();
+                renderHabits();
+            }
+        }
+
+        function renderHabits() {
+            const container = document.getElementById('habits-list-container');
+            if (!container) return;
+
+            if (habits.length === 0) {
+                container.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-8 text-center text-[var(--text-muted)] text-xs">No habits added yet. Type a bad habit above (e.g. Masturbation, Procrastination) and start building your clean streak!</div>`;
+                return;
+            }
+
+            let html = '';
+            habits.forEach(h => {
+                const diffMs = new Date() - new Date(h.startDate);
+                const totalSeconds = Math.floor(diffMs / 1000);
+                const days = Math.floor(totalSeconds / (3600 * 24));
+                const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                html += `
+                    <div class="dynamic-card-solid border rounded-2xl p-5 space-y-4 animate-fade-in" data-habit-id="${h.id}">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-[var(--text-main)] uppercase tracking-wide flex items-center gap-2">
+                                    🛡️ Leaving: <span class="dynamic-text">${escapeHtml(h.name)}</span>
+                                </h4>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Total Relapses / Resets: <span class="font-mono text-[var(--text-main)]">${h.relapses || 0}</span></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="deleteHabit('${h.id}')" class="dynamic-card border px-2.5 py-1.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-red-400">✕</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                            <div class="dynamic-card border rounded-xl p-3">
+                                <span class="text-xl font-black dynamic-text font-mono habit-days">${days}</span>
+                                <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Days Clean</p>
+                            </div>
+                            <div class="dynamic-card border rounded-xl p-3">
+                                <span class="text-xl font-black text-[var(--text-main)] font-mono habit-hours">${hours}</span>
+                                <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Hours</p>
+                            </div>
+                            <div class="dynamic-card border rounded-xl p-3">
+                                <span class="text-xl font-black text-[var(--text-main)] font-mono habit-mins">${minutes}</span>
+                                <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Minutes</p>
+                            </div>
+                            <div class="dynamic-card border rounded-xl p-3">
+                                <span class="text-xl font-black text-[var(--text-main)] font-mono habit-secs">${seconds}</span>
+                                <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Seconds</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center pt-1">
+                            <button onclick="promptResetHabitStreak('${h.id}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/40 px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
+                                ⚠️ RETRY
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateHabitsStreaksTimer() {
+            if (currentAppTab !== 'habits' || habits.length === 0) return;
+            habits.forEach(h => {
+                const cardEl = document.querySelector(`[data-habit-id="${h.id}"]`);
+                if (!cardEl) return;
+                const diffMs = new Date() - new Date(h.startDate);
+                const totalSeconds = Math.floor(diffMs / 1000);
+                const days = Math.floor(totalSeconds / (3600 * 24));
+                const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                const daysEl = cardEl.querySelector('.habit-days');
+                const hoursEl = cardEl.querySelector('.habit-hours');
+                const minsEl = cardEl.querySelector('.habit-mins');
+                const secsEl = cardEl.querySelector('.habit-secs');
+
+                if (daysEl) daysEl.innerText = days;
+                if (hoursEl) hoursEl.innerText = hours;
+                if (minsEl) minsEl.innerText = minutes;
+                if (secsEl) secsEl.innerText = seconds;
+            });
         }
 
         function drawTodoDonut(completed, total) {
@@ -1464,7 +1637,6 @@
 
             let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
-            // Weekly History To-Do Donut (Weeks Data)
             const totalTodos = todos.length;
             const completedWeeklyTodos = todos.filter(t => t.completed).length;
             const todoWeekPct = totalTodos > 0 ? Math.round((completedWeeklyTodos / totalTodos) * 100) : 0;
@@ -1489,7 +1661,6 @@
                 </div>
             `;
 
-            // Trackers History Cards with Donuts instead of Goal
             trackers.forEach((t, index) => {
                 const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                 const maxPossible = t.max * 30;
@@ -1616,69 +1787,6 @@
             content.classList.add('scale-95');
         }
 
-        function openShareModal() {
-            const modal = document.getElementById('shareModal');
-            const content = modal.querySelector('div');
-            const textarea = document.getElementById('share-text-output');
-
-            let report = `🔥 GHOST TRACKER PROGRESS REPORT (${currentUser})\n`;
-            report += `----------------------------------------\n`;
-            report += `📋 To-Do Streak: ${calculateTodoStreak()} Days\n`;
-            
-            trackers.forEach(t => {
-                const streak = calculateStreak(t.data);
-                report += `📈 ${t.title}: ${streak} Day Streak\n`;
-            });
-            report += `----------------------------------------\n`;
-            report += `Powered by GHOST Tracker Matrix.`;
-
-            textarea.value = report;
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-95');
-            content.classList.add('scale-100');
-        }
-
-        function closeShareModal() {
-            const modal = document.getElementById('shareModal');
-            const content = modal.querySelector('div');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-        }
-
-        function copyShareText() {
-            const textarea = document.getElementById('share-text-output');
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value);
-            alert('Progress report copied to clipboard!');
-        }
-
-        function nativeShare() {
-            const textarea = document.getElementById('share-text-output');
-            if (navigator.share) {
-                navigator.share({
-                    title: 'My GHOST Tracker Progress',
-                    text: textarea.value,
-                    url: window.location.href
-                }).catch(() => {});
-            } else {
-                copyShareText();
-            }
-        }
-
-        function shareSite() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'GHOST Tracker',
-                    text: 'Check out GHOST Tracker for secure telemetry & habit tracking!',
-                    url: window.location.href
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Site link copied to clipboard!');
-            }
-        }
-
         function toggleTrackerSettings(id) {
             const tracker = trackers.find(t => t.id === id);
             if (!tracker) return;
@@ -1785,16 +1893,25 @@
                             const roleBadge = document.getElementById('profile-role-badge');
                             if (roleBadge) {
                                 roleBadge.innerText = isAdmin ? 'Admin' : 'User';
-                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400'}`;
+                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400'}`;
                             }
                         }
                     }
                 });
             }
 
-            const containers = hasAdminAccess 
-                ? [document.getElementById('trackers-container')] 
-                : [document.getElementById('trackers-container'), document.getElementById('regular-trackers-container')];
+            /*
+             * CRITICAL GRAPH FIX:
+             * Render each user's tracker cards in exactly ONE container.
+             *
+             * The previous code rendered normal users' cards into BOTH the
+             * hidden admin container and the visible regular container.
+             * Both copies had the same canvas ID. getElementById() could then
+             * select the hidden admin copy, so the graph was drawn but invisible.
+             */
+            const containers = hasAdminAccess
+                ? [document.getElementById('trackers-container')]
+                : [document.getElementById('regular-trackers-container')];
 
             containers.forEach(container => {
                 if (!container) return;
@@ -1806,11 +1923,18 @@
                 }
 
                 trackers.forEach(t => {
+                    // Keep legacy tracker data valid without changing its meaning.
+                    if (!Array.isArray(t.data)) t.data = [];
+                    if (t.data.length < 30) t.data = t.data.concat(Array(30 - t.data.length).fill(0));
+                    if (t.data.length > 30) t.data = t.data.slice(0, 30);
+
+                    const safeMax = Number(t.max);
+                    if (!Number.isFinite(safeMax) || safeMax <= 0) t.max = 1;
+
                     if (!t.timeframe) t.timeframe = 'Week';
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
                     if (t.showSettings === undefined) t.showSettings = false;
 
-                    const streakCount = calculateStreak(t.data);
                     const card = document.createElement('div');
                     card.className = 'dynamic-card border rounded-2xl p-5 shadow-sm space-y-4';
                     
@@ -1842,10 +1966,7 @@
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
-                            <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
-                                <span class="dynamic-card-solid border px-2 py-0.5 rounded-lg text-[10px] font-bold dynamic-text flex items-center gap-1">🔥 ${streakCount} Day Streak</span>
-                            </div>
+                            <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
                                 <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
@@ -1897,155 +2018,394 @@
                         ` : ''}
 
                         <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
+                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full min-w-0 h-[180px] dynamic-card-solid border rounded-xl block graph-canvas"></canvas>
                             <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
                     
-                    drawGraph(t, hasAdminAccess ? '1' : '2');
+                    
                 });
             });
 
             renderTodos();
+            renderHabits();
+
+            // Draw only after the complete tracker DOM exists.
+            scheduleGraphRedraw(10);
+        }
+
+        /*
+         * GHOST Tracker graph renderer — robust across laptop, tablet and phone.
+         *
+         * The graph keeps the same data and behavior. Only rendering is improved:
+         * - CSS pixels and backing-store pixels are separated.
+         * - devicePixelRatio makes laptop/Retina lines and text crisp.
+         * - hidden tabs are never measured as zero-width.
+         * - ResizeObserver redraws when mobile layout changes.
+         * - repeated RAF retries handle browser tab/viewport transitions.
+         */
+        const graphResizeObservers = new Map();
+        let graphRedrawTimer = null;
+        let graphResizeFrame = null;
+
+        function getGraphCanvasId(trackerId, suffix) {
+            return `canvas-${trackerId}-${suffix}`;
         }
 
         function drawGraph(t, suffix) {
-            const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.parentElement.clientWidth - 20;
-            canvas.height = 140;
+            const canvas = document.getElementById(getGraphCanvasId(t.id, suffix));
+            if (!canvas) return false;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const trackerSection = document.getElementById('app-tab-tracker');
+            if (!trackerSection || trackerSection.classList.contains('hidden')) return false;
 
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
+            const rect = canvas.getBoundingClientRect();
+            const parent = canvas.parentElement;
+            const parentRect = parent ? parent.getBoundingClientRect() : { width: 0 };
 
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 1;
-            const rows = 4;
-            for (let i = 0; i <= rows; i++) {
-                let y = (canvas.height / rows) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-                
-                ctx.fillStyle = textColor;
-                ctx.font = '10px monospace';
-                let labelVal = Math.round(t.max - (t.max / rows) * i);
-                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
+            // A hidden/collapsing mobile tab can report 0. Do not create a 0px bitmap.
+            const measuredWidth = Math.max(
+                rect.width || 0,
+                parentRect.width || 0,
+                canvas.clientWidth || 0
+            );
+
+            // Never draw into a hidden canvas/container.
+            const canvasStyle = window.getComputedStyle(canvas);
+            const parentStyle = parent ? window.getComputedStyle(parent) : null;
+            if (
+                canvasStyle.display === 'none' ||
+                canvasStyle.visibility === 'hidden' ||
+                (parentStyle && parentStyle.display === 'none')
+            ) {
+                return false;
             }
 
-            const dx = canvas.width / 29;
-            ctx.strokeStyle = t.color;
-            ctx.lineWidth = 2;
+            if (!Number.isFinite(measuredWidth) || measuredWidth < 80) {
+                return false;
+            }
+
+            const cssWidth = Math.max(220, Math.floor(measuredWidth));
+            const cssHeight = 180;
+            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 4));
+
+            // CSS size is stable; bitmap size is multiplied by DPR for crisp rendering.
+            canvas.style.width = '100%';
+            canvas.style.height = `${cssHeight}px`;
+            canvas.style.display = 'block';
+
+            const bitmapWidth = Math.max(1, Math.round(cssWidth * dpr));
+            const bitmapHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+            if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
+                canvas.width = bitmapWidth;
+                canvas.height = bitmapHeight;
+            }
+
+            const ctx = canvas.getContext('2d', {
+                alpha: true,
+                desynchronized: false
+            });
+            if (!ctx) return false;
+
+            // Reset transform every draw; otherwise repeated redraws can compound transforms.
+            if (typeof ctx.resetTransform === 'function') {
+                ctx.resetTransform();
+            } else {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+            const rawMax = Number(t.max);
+            const maxValue = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 1;
+            const data = Array.isArray(t.data) ? t.data : [];
+
+            const left = cssWidth < 340 ? 34 : 42;
+            const right = 12;
+            const top = 12;
+            const bottom = 30;
+            const plotWidth = Math.max(1, cssWidth - left - right);
+            const plotHeight = Math.max(1, cssHeight - top - bottom);
+
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
+            const textColor = currentModeKey === 'light' ? '#64748b' : '#94a3b8';
+            const axisColor = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
+            const lineColor = t.color || '#34d399';
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Horizontal grid and Y labels.
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.font = '10px monospace';
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            const rows = 4;
+            for (let i = 0; i <= rows; i++) {
+                const y = top + (plotHeight / rows) * i;
+
+                ctx.beginPath();
+                ctx.moveTo(left, y);
+                ctx.lineTo(left + plotWidth, y);
+                ctx.stroke();
+
+                const labelValue = Math.round(maxValue - (maxValue / rows) * i);
+                ctx.fillText(String(labelValue), left - 6, y);
+            }
+
+            // X axis.
+            ctx.strokeStyle = axisColor;
+            ctx.beginPath();
+            ctx.moveTo(left, top + plotHeight);
+            ctx.lineTo(left + plotWidth, top + plotHeight);
+            ctx.stroke();
+
+            // 30 data points remain exactly as before.
+            const pointCount = 30;
+            const dx = plotWidth / (pointCount - 1);
+
+            // Day labels. Fewer labels on narrow screens prevents overlap.
+            const labelIndexes = cssWidth < 360
+                ? [0, 7, 14, 21, 29]
+                : [0, 6, 13, 20, 29];
+
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            labelIndexes.forEach(index => {
+                const x = left + index * dx;
+                ctx.fillText(String(index + 1), x, top + plotHeight + 8);
+            });
+
+            const points = [];
+            for (let i = 0; i < pointCount; i++) {
+                const numericValue = Number(data[i]);
+                const value = Number.isFinite(numericValue) ? numericValue : 0;
+                const clampedValue = Math.max(0, Math.min(value, maxValue));
+
+                points.push({
+                    x: left + i * dx,
+                    y: top + plotHeight - (clampedValue / maxValue) * plotHeight,
+                    value
+                });
+            }
+
+            // Main graph line.
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 2.25;
             ctx.beginPath();
 
-            t.data.forEach((val, i) => {
-                let x = i * dx;
-                let actualVal = val || 0;
-                let clampedVal = Math.min(actualVal, t.max);
-                let y = canvas.height - (clampedVal / t.max) * canvas.height;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+            points.forEach((point, index) => {
+                if (index === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
             });
             ctx.stroke();
+
+            // Small high-DPI points make individual recorded values easier to see.
+            ctx.fillStyle = lineColor;
+            points.forEach(point => {
+                if (point.value !== 0) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 2.25, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            if (points.every(point => point.value === 0)) {
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('No values recorded yet', left, top + plotHeight - 6);
+            }
+
+            return true;
+        }
+
+        function getTrackerGraphSuffix() {
+            return (currentUser === MASTER_ADMIN || isAdmin) ? '1' : '2';
+        }
+
+        function redrawAllGraphs() {
+            if (currentAppTab !== 'tracker') return;
+
+            const suffix = getTrackerGraphSuffix();
+            if (!Array.isArray(trackers)) return;
+
+            trackers.forEach(tracker => {
+                drawGraph(tracker, suffix);
+            });
+        }
+
+        function scheduleGraphRedraw(attempts = 10) {
+            if (graphRedrawTimer) {
+                clearTimeout(graphRedrawTimer);
+                graphRedrawTimer = null;
+            }
+
+            let remaining = attempts;
+
+            const tryDraw = () => {
+                if (currentAppTab !== 'tracker') return;
+
+                const canvases = document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]');
+                let drawn = 0;
+
+                canvases.forEach(canvas => {
+                    const id = canvas.id;
+                    const match = id.match(/^canvas-(.+)-([12])$/);
+                    if (!match) return;
+
+                    const tracker = trackers.find(t => String(t.id) === match[1]);
+                    if (tracker && drawGraph(tracker, match[2])) drawn++;
+                });
+
+                if (drawn < canvases.length && remaining > 0) {
+                    remaining--;
+                    graphRedrawTimer = requestAnimationFrame(() => {
+                        graphRedrawTimer = setTimeout(tryDraw, 20);
+                    });
+                } else {
+                    graphRedrawTimer = null;
+                }
+            };
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(tryDraw);
+            });
+        }
+
+        function observeGraphCanvas(canvas) {
+            if (!canvas || graphResizeObservers.has(canvas)) return;
+
+            if (typeof ResizeObserver === 'function') {
+                const observer = new ResizeObserver(() => {
+                    if (currentAppTab === 'tracker') {
+                        scheduleGraphRedraw(4);
+                    }
+                });
+
+                observer.observe(canvas);
+                if (canvas.parentElement) observer.observe(canvas.parentElement);
+                graphResizeObservers.set(canvas, observer);
+            }
+        }
+
+        function observeAllGraphCanvases() {
+            document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]').forEach(observeGraphCanvas);
+        }
+
+        function installGraphObservers() {
+            observeAllGraphCanvases();
+
+            const trackerSection = document.getElementById('app-tab-tracker');
+            if (trackerSection && typeof MutationObserver === 'function') {
+                const mutationObserver = new MutationObserver(() => {
+                    observeAllGraphCanvases();
+                    if (currentAppTab === 'tracker') scheduleGraphRedraw(4);
+                });
+                mutationObserver.observe(trackerSection, { childList: true, subtree: true });
+            }
+
+            window.addEventListener('resize', () => scheduleGraphRedraw(6));
+            window.addEventListener('orientationchange', () => scheduleGraphRedraw(12));
+            window.addEventListener('pageshow', () => scheduleGraphRedraw(8));
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) scheduleGraphRedraw(8);
+            });
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => scheduleGraphRedraw(8));
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', installGraphObservers, { once: true });
+        } else {
+            installGraphObservers();
         }
 
         function addNewTracker() {
-            const titleInput = document.getElementById('new-title');
-            const maxInput = document.getElementById('new-max');
-            const goalInput = document.getElementById('new-goal');
-            const timeframeSelect = document.getElementById('new-timeframe');
-            const colorInput = document.getElementById('new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
+            const title = document.getElementById('new-title').value.trim();
+            const max = parseFloat(document.getElementById('new-max').value);
+            const goal = parseFloat(document.getElementById('new-goal').value);
+            const timeframe = document.getElementById('new-timeframe').value;
+            const color = document.getElementById('new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
             trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
+                id: 'track_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
                 data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
                 showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-max').value = '';
+            document.getElementById('new-goal').value = '';
+
             saveAndCloudSync();
             render();
         }
 
         function addNewTrackerRegular() {
-            const titleInput = document.getElementById('reg-new-title');
-            const maxInput = document.getElementById('reg-new-max');
-            const goalInput = document.getElementById('reg-new-goal');
-            const timeframeSelect = document.getElementById('reg-new-timeframe');
-            const colorInput = document.getElementById('reg-new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
+            const title = document.getElementById('reg-new-title').value.trim();
+            const max = parseFloat(document.getElementById('reg-new-max').value);
+            const goal = parseFloat(document.getElementById('reg-new-goal').value);
+            const timeframe = document.getElementById('reg-new-timeframe').value;
+            const color = document.getElementById('reg-new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
             trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
+                id: 'track_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
                 data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
                 showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
+            document.getElementById('reg-new-title').value = '';
+            document.getElementById('reg-new-max').value = '';
+            document.getElementById('reg-new-goal').value = '';
+
             saveAndCloudSync();
             render();
         }
 
         function deleteTracker(id, title) {
-            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"?`);
-            if (confirmed) {
+            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
             }
         }
-
-        window.onresize = () => {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            trackers.forEach(t => {
-                drawGraph(t, hasAdminAccess ? '1' : '2');
-            });
-            const todayStr = new Date().toISOString().split('T')[0];
-            const completedToday = todos.filter(t => t.completed && t.completedDate === todayStr).length;
-            drawTodoDonut(completedToday, todos.length);
-        };
     </script>
 </body>
 </html>
-```[cite: 9]
