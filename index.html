@@ -273,7 +273,7 @@
                     <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                        <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
+                        <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
                     </div>
                     <div class="flex items-center gap-3 pt-2">
                         <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
@@ -282,15 +282,15 @@
                 </div>
             </div>
 
-            <!-- PROMINENTLY PLACED: TAB CONTAINER 2: WEEKLY TO-DO MATRIX & DONUT SECTION -->
+            <!-- PROMINENTLY PLACED: TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
             <div id="app-tab-todo" class="space-y-6 animate-fade-in">
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                     <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                         <div>
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📋 Weekly To-Do List & Completion Telemetry
+                                📋 Daily To-Do List & Today's Completion Telemetry
                             </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add weekly tasks, check them off as completed, and track your weekly completion donut side-by-side.</p>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
                         </div>
                     </div>
 
@@ -298,7 +298,7 @@
                         <!-- Task Input & List -->
                         <div class="md:col-span-2 space-y-4">
                             <div class="flex gap-2">
-                                <input type="text" id="new-todo-input" placeholder="Add a new task for this week..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                                <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
                                 <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
                             </div>
 
@@ -307,17 +307,17 @@
                             </div>
                         </div>
 
-                        <!-- Donut Chart & Stats -->
+                        <!-- Donut Chart & Stats (Today's Data) -->
                         <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
-                            <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Weekly Task Donut</span>
+                            <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
                             <div class="relative w-28 h-28 flex items-center justify-center">
                                 <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
-                                    <span class="text-[10px] text-[var(--text-muted)]">Completed</span>
+                                    <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
                                 </div>
                             </div>
-                            <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done</span>
+                            <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
                         </div>
                     </div>
                 </div>
@@ -346,11 +346,11 @@
                 <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                     <div>
                         <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, themes, and reset credentials securely.</p>
+                        <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
                     </div>
                     <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
                         <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users</button>
+                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
                     </div>
                 </div>
 
@@ -431,7 +431,7 @@
 
                 <div id="admin-content-users" class="hidden space-y-4">
                     <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-[var(--text-muted)]">Complete registered user directory and remote controls.</p>
+                        <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
                         <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
                     </div>
                     <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
@@ -504,9 +504,9 @@
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
+        let isAdmin = false;
         let trackers = [];
         let todos = [];
-        let todoLastResetWeek = null;
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
@@ -522,6 +522,7 @@
 
         let currentAccentKey = 'emerald';
         let currentModeKey = 'dark';
+        let saveTimeout = null;
 
         (async function initThemeOnLoad() {
             try {
@@ -597,8 +598,9 @@
                 }
             });
 
+            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
             if (tabName === 'home') {
-                if (currentUser === MASTER_ADMIN) {
+                if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
                 } else {
@@ -691,17 +693,16 @@
                 }
 
                 currentUser = username;
+                isAdmin = (username === MASTER_ADMIN) || (existingUser.is_admin === true);
                 
                 try {
                     const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        todoLastResetWeek = getWeekNumber(new Date());
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        todoLastResetWeek = parsed.todoLastResetWeek || getWeekNumber(new Date());
                     }
                 } catch(e) {
                     trackers = [];
@@ -709,9 +710,19 @@
                 }
                 
                 checkAndResetPeriodicGoals();
-                checkTodoWeeklyReset();
 
                 document.getElementById('display-user').innerText = currentUser;
+                const roleBadge = document.getElementById('profile-role-badge');
+                if (currentUser === MASTER_ADMIN) {
+                    roleBadge.innerText = 'Master Admin';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                } else if (isAdmin) {
+                    roleBadge.innerText = 'Admin';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                } else {
+                    roleBadge.innerText = 'User';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                }
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
                 if (currentUser === MASTER_ADMIN) {
@@ -762,25 +773,24 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        todoLastResetWeek = getWeekNumber(new Date());
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        todoLastResetWeek = parsed.todoLastResetWeek || getWeekNumber(new Date());
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
                 }
+                isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 await client.from('profiles').update({ force_logout: false }).eq('username', user);
             } else {
                 trackers = [];
                 todos = [];
-                todoLastResetWeek = getWeekNumber(new Date());
-                const initialPayload = JSON.stringify({ trackers, todos, todoLastResetWeek });
+                isAdmin = (user === MASTER_ADMIN);
+                const initialPayload = JSON.stringify({ trackers, todos });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -792,9 +802,19 @@
             localStorage.setItem('ghost_current_user', currentUser);
             
             checkAndResetPeriodicGoals();
-            checkTodoWeeklyReset();
 
             document.getElementById('display-user').innerText = currentUser;
+            const roleBadge = document.getElementById('profile-role-badge');
+            if (currentUser === MASTER_ADMIN) {
+                roleBadge.innerText = 'Master Admin';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            } else if (isAdmin) {
+                roleBadge.innerText = 'Admin';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+            } else {
+                roleBadge.innerText = 'User';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+            }
             
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
             if (adminData && adminData.theme) {
@@ -807,7 +827,7 @@
             }
 
             const regDeleteBtn = document.getElementById('regular-delete-btn');
-            if (currentUser === MASTER_ADMIN) {
+            if (currentUser === MASTER_ADMIN || isAdmin) {
                 if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
                 renderAdminPanel();
             } else {
@@ -866,13 +886,6 @@
             }
         }
 
-        function checkTodoWeeklyReset() {
-            const currentWeekNum = getWeekNumber(new Date());
-            if (todoLastResetWeek !== currentWeekNum) {
-                todoLastResetWeek = currentWeekNum;
-            }
-        }
-
         function getWeekNumber(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
@@ -928,7 +941,7 @@
             if(!container) return;
             container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
-            const { data: users, error } = await client.from('profiles').select('username, password, last_action');
+            const { data: users, error } = await client.from('profiles').select('username, password, last_action, is_admin');
             
             if (error) {
                 container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
@@ -972,23 +985,49 @@
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Graph Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
+                const isUserMaster = u.username === MASTER_ADMIN;
+                const isUserAdmin = u.is_admin === true || isUserMaster;
+
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
+                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
-                    <td class="py-3 px-3.5 flex gap-2 justify-end">
-                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Force Logout</button>
+                    <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
+                        ${!isUserMaster ? (
+                            isUserAdmin 
+                                ? `<button onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
+                                : `<button onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
+                        ) : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
+                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
                         <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
-                        ${u.username !== MASTER_ADMIN ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
+                        ${!isUserMaster ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
                     </td>
                 </tr>`;
             });
             html += '</table>';
             container.innerHTML = html;
+        }
+
+        async function adminToggleRole(targetUser, makeAdmin) {
+            if (targetUser === MASTER_ADMIN) {
+                alert('Cannot modify Master Admin role.');
+                return;
+            }
+            const actionText = makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from';
+            if (confirm(`Are you sure you want to ${actionText} "${targetUser}"?`)) {
+                const { error } = await client.from('profiles').update({ is_admin: makeAdmin }).eq('username', targetUser);
+                if (!error) {
+                    alert(`User role updated successfully.`);
+                    renderAdminPanel();
+                } else {
+                    alert('Error updating user role.');
+                }
+            }
         }
 
         async function adminForceLogout(targetUser) {
@@ -1012,11 +1051,15 @@
         }
 
         async function adminDeleteAccount(targetUser) {
-            let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${MASTER_ADMIN}):`);
+            if (targetUser === MASTER_ADMIN) {
+                alert('Master Admin cannot be deleted.');
+                return;
+            }
+            let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${currentUser}):`);
             if (!adminPassInput) return;
-            const { data: adminData } = await client.from('profiles').select('password').eq('username', MASTER_ADMIN).single();
+            const { data: adminData } = await client.from('profiles').select('password').eq('username', currentUser).single();
             if (!adminData || adminData.password !== adminPassInput) {
-                alert('Incorrect admin password.');
+                alert('Incorrect password.');
                 return;
             }
             if (confirm(`Permanently erase user "${targetUser}"?`)) {
@@ -1028,6 +1071,7 @@
         function handleLogout() {
             localStorage.removeItem('ghost_current_user');
             currentUser = null;
+            isAdmin = false;
             trackers = [];
             todos = [];
             adminUsersCache = [];
@@ -1039,17 +1083,21 @@
             document.getElementById('auth-screen').classList.remove('hidden');
         }
 
-        async function saveAndCloudSync() {
-            const payload = JSON.stringify({
-                trackers: trackers,
-                todos: todos,
-                todoLastResetWeek: todoLastResetWeek
-            });
-            await client.from('profiles').update({ 
-                data: payload,
-                last_action: new Date().toISOString()
-            }).eq('username', currentUser);
-            render();
+        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE (FIXES SITE LAG)
+        function saveAndCloudSync() {
+            if (!currentUser) return;
+            if (saveTimeout) clearTimeout(saveTimeout);
+            
+            saveTimeout = setTimeout(async () => {
+                const payload = JSON.stringify({
+                    trackers: trackers,
+                    todos: todos
+                });
+                await client.from('profiles').update({ 
+                    data: payload,
+                    last_action: new Date().toISOString()
+                }).eq('username', currentUser);
+            }, 600); // Debounce 600ms to avoid network thrashing and lag
         }
 
         function updateValue(id, dayIndex, val) {
@@ -1066,6 +1114,9 @@
             
             evaluateGoalCompletion(tracker);
             saveAndCloudSync();
+            
+            // Redraw only the specific canvas immediately without full re-render for zero lag
+            drawGraph(tracker, currentUser === MASTER_ADMIN || isAdmin ? '1' : '2');
         }
 
         function addTodo() {
@@ -1073,28 +1124,35 @@
             const text = input.value.trim();
             if (!text) return;
 
+            const todayStr = new Date().toISOString().split('T')[0];
+
             todos.push({
                 id: 'todo_' + Date.now(),
                 text: text,
                 completed: false,
-                createdAt: new Date().toISOString()
+                completedDate: null,
+                createdAt: todayStr
             });
             input.value = '';
-            checkTodoWeeklyReset();
             saveAndCloudSync();
+            renderTodos();
         }
 
         function toggleTodo(id) {
             const todo = todos.find(t => t.id === id);
             if (todo) {
                 todo.completed = !todo.completed;
+                const todayStr = new Date().toISOString().split('T')[0];
+                todo.completedDate = todo.completed ? todayStr : null;
                 saveAndCloudSync();
+                renderTodos();
             }
         }
 
         function deleteTodo(id) {
             todos = todos.filter(t => t.id !== id);
             saveAndCloudSync();
+            renderTodos();
         }
 
         function renderTodos() {
@@ -1102,16 +1160,20 @@
             if (!container) return;
 
             if (todos.length === 0) {
-                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added for this week yet.</p>`;
+                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet. Persistent tasks remain until removed.</p>`;
                 drawTodoDonut(0, 0);
                 return;
             }
 
             let html = '';
-            let completedCount = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+            let completedTodayCount = 0;
+            let totalActiveTasks = todos.length;
 
             todos.forEach(t => {
-                if (t.completed) completedCount++;
+                const isCompletedToday = t.completed && t.completedDate === todayStr;
+                if (isCompletedToday) completedTodayCount++;
+
                 html += `
                     <div class="dynamic-card-solid border rounded-xl p-3 flex items-center justify-between gap-3 animate-fade-in">
                         <label class="flex items-center gap-3 cursor-pointer select-none flex-1 overflow-hidden">
@@ -1125,13 +1187,12 @@
 
             container.innerHTML = html;
 
-            const total = todos.length;
-            const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+            const percentage = totalActiveTasks > 0 ? Math.round((completedTodayCount / totalActiveTasks) * 100) : 0;
             const pctEl = document.getElementById('todo-donut-pct');
             const statsEl = document.getElementById('todo-stats-text');
             if (pctEl) pctEl.innerText = `${percentage}%`;
-            if (statsEl) statsEl.innerText = `${completedCount} / ${total} Done`;
-            drawTodoDonut(completedCount, total);
+            if (statsEl) statsEl.innerText = `${completedTodayCount} / ${totalActiveTasks} Done Today`;
+            drawTodoDonut(completedTodayCount, totalActiveTasks);
         }
 
         function drawTodoDonut(completed, total) {
@@ -1182,11 +1243,11 @@
 
             let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
-            // To-Do Weekly Summary Card
+            // Weekly History To-Do Donut (Weeks Data)
             const totalTodos = todos.length;
-            const completedTodos = todos.filter(t => t.completed).length;
-            const todoPct = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
-            const consistencyMsg = todoPct >= 80 ? "🔥 Outstanding consistency! You're crushing your weekly targets." : (todoPct >= 40 ? "⚡ Good steady progress. Keep pushing forward!" : "🌱 Room for growth. Tackle your remaining tasks!");
+            const completedWeeklyTodos = todos.filter(t => t.completed).length;
+            const todoWeekPct = totalTodos > 0 ? Math.round((completedWeeklyTodos / totalTodos) * 100) : 0;
+            const consistencyMsg = todoWeekPct >= 80 ? "🔥 Outstanding weekly consistency!" : (todoWeekPct >= 40 ? "⚡ Good steady progress this week!" : "🌱 Room for growth this week!");
 
             html += `
                 <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
@@ -1194,14 +1255,14 @@
                         <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
                         <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
                         <div>
-                            <span class="text-xl font-bold text-[var(--text-main)]">${todoPct}%</span>
-                            <p class="text-[10px] text-[var(--text-muted)]">${completedTodos} of ${totalTodos} tasks completed</p>
+                            <span class="text-xl font-bold text-[var(--text-main)]">${todoWeekPct}%</span>
+                            <p class="text-[10px] text-[var(--text-muted)]">${completedWeeklyTodos} of ${totalTodos} total persistent tasks completed</p>
                         </div>
                     </div>
                     <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
                         <canvas id="history-todo-donut" width="80" height="80" class="w-20 h-20"></canvas>
                         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-xs font-bold dynamic-text">${todoPct}%</span>
+                            <span class="text-xs font-bold dynamic-text">${todoWeekPct}%</span>
                         </div>
                     </div>
                 </div>
@@ -1239,7 +1300,7 @@
             container.innerHTML = html;
 
             setTimeout(() => {
-                drawSmallDonut('history-todo-donut', todoPct, getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399');
+                drawSmallDonut('history-todo-donut', todoWeekPct, getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399');
                 trackers.forEach((t, index) => {
                     const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                     const maxPossible = t.max * 30;
@@ -1356,6 +1417,7 @@
             tracker.showSettings = false;
             evaluateGoalCompletion(tracker);
             saveAndCloudSync();
+            render();
         }
 
         function stopActiveCycle(id) {
@@ -1373,6 +1435,7 @@
                 tracker.congratulatedCycle = false;
                 tracker.showSettings = false;
                 saveAndCloudSync();
+                render();
             }
         }
 
@@ -1413,8 +1476,10 @@
         }
 
         function render() {
+            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+
             if (currentUser && currentUser !== MASTER_ADMIN) {
-                client.from('profiles').select('theme, force_logout').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
+                client.from('profiles').select('theme, force_logout, is_admin').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
                     if (adminData && adminData.theme) {
                         const parts = adminData.theme.split('_');
                         if (parts.length === 2 && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey)) {
@@ -1425,15 +1490,25 @@
                     }
                 });
 
-                client.from('profiles').select('force_logout').eq('username', currentUser).maybeSingle().then(({data}) => {
-                    if (data && data.force_logout === true) {
-                        alert('Session terminated by administrator.');
-                        handleLogout();
+                client.from('profiles').select('force_logout, is_admin').eq('username', currentUser).maybeSingle().then(({data}) => {
+                    if (data) {
+                        if (data.force_logout === true) {
+                            alert('Session terminated by administrator.');
+                            handleLogout();
+                        }
+                        if (data.is_admin !== isAdmin) {
+                            isAdmin = data.is_admin === true;
+                            const roleBadge = document.getElementById('profile-role-badge');
+                            if (roleBadge) {
+                                roleBadge.innerText = isAdmin ? 'Admin' : 'User';
+                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400'}`;
+                            }
+                        }
                     }
                 });
             }
 
-            const containers = currentUser === MASTER_ADMIN 
+            const containers = hasAdminAccess 
                 ? [document.getElementById('trackers-container')] 
                 : [document.getElementById('trackers-container'), document.getElementById('regular-trackers-container')];
 
@@ -1534,13 +1609,13 @@
                         ` : ''}
 
                         <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
+                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
                             <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
                     
-                    drawGraph(t, container === document.getElementById('trackers-container') ? '1' : '2');
+                    drawGraph(t, hasAdminAccess ? '1' : '2');
                 });
             });
 
@@ -1625,6 +1700,7 @@
             maxInput.value = '';
             goalInput.value = '';
             saveAndCloudSync();
+            render();
         }
 
         function addNewTrackerRegular() {
@@ -1660,6 +1736,7 @@
             maxInput.value = '';
             goalInput.value = '';
             saveAndCloudSync();
+            render();
         }
 
         function deleteTracker(id, title) {
@@ -1667,16 +1744,18 @@
             if (confirmed) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
+                render();
             }
         }
 
         window.onresize = () => {
+            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
             trackers.forEach(t => {
-                drawGraph(t, '1');
-                drawGraph(t, '2');
+                drawGraph(t, hasAdminAccess ? '1' : '2');
             });
-            const completed = todos.filter(t => t.completed).length;
-            drawTodoDonut(completed, todos.length);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const completedToday = todos.filter(t => t.completed && t.completedDate === todayStr).length;
+            drawTodoDonut(completedToday, todos.length);
         };
     </script>
 </body>
