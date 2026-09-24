@@ -134,6 +134,21 @@
         </div>
     </div>
 
+    <!-- HABIT RELAPSE / "I LOST" MOTIVATIONAL MODAL POPUP -->
+    <div id="relapseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="relapseModalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
+            <div class="text-5xl mb-3">🛡️💪</div>
+            <h2 class="text-xl font-black mb-2 text-[var(--text-main)] uppercase tracking-wide">Setback is Not Defeat</h2>
+            <p id="relapseModalMessage" class="text-[var(--text-muted)] text-xs md:text-sm mb-6 leading-relaxed">
+                Stumbling doesn't mean you've failed; it means you're fighting a real battle. Dust yourself off, lock in, and let's start a stronger clean streak right now. You've got this!
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeRelapseModal(false)" class="flex-1 py-3 dynamic-card border font-semibold rounded-xl text-xs text-[var(--text-main)] hover:bg-[var(--bg-card-solid)] transition">Cancel</button>
+                <button onclick="closeRelapseModal(true)" class="flex-1 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold rounded-xl text-xs transition shadow-md">Confirm Reset</button>
+            </div>
+        </div>
+    </div>
+
     <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY[cite: 2] -->
     <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
         <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
@@ -349,7 +364,7 @@
                         <div class="dynamic-card-solid border rounded-2xl p-4 space-y-3">
                             <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">+ Add Habit to Leave</h4>
                             <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="new-habit-input" placeholder="e.g. Masturbation, Procrastination, Sugar..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addHabit()" />
+                                <input type="text" id="new-habit-input" placeholder="e.g. Procrastination, Sugar..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addHabit()" />
                                 <button onclick="addHabit()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Start Streak</button>
                             </div>
                         </div>
@@ -551,6 +566,7 @@
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
+        let habitToResetId = null;
         const MASTER_ADMIN = 'mr_yadav'; 
 
         const ACCENTS = {
@@ -1267,15 +1283,32 @@
             renderHabits();
         }
 
-        function resetHabitStreak(id) {
-            const habit = habits.find(h => h.id === id);
-            if (!habit) return;
-            if (confirm(`Relapse recorded for "${habit.name}"? This will reset your streak timer to zero. Stay strong!`)) {
-                habit.startDate = new Date().toISOString();
-                habit.relapses = (habit.relapses || 0) + 1;
-                saveAndCloudSync();
-                renderHabits();
+        function promptResetHabitStreak(id) {
+            habitToResetId = id;
+            const modal = document.getElementById('relapseModal');
+            const content = document.getElementById('relapseModalContent');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeRelapseModal(confirmed) {
+            const modal = document.getElementById('relapseModal');
+            const content = document.getElementById('relapseModalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+
+            if (confirmed && habitToResetId) {
+                const habit = habits.find(h => h.id === habitToResetId);
+                if (habit) {
+                    habit.startDate = new Date().toISOString();
+                    habit.relapses = (habit.relapses || 0) + 1;
+                    saveAndCloudSync();
+                    renderHabits();
+                }
             }
+            habitToResetId = null;
         }
 
         function deleteHabit(id) {
@@ -1315,7 +1348,6 @@
                                 <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Total Relapses / Resets: <span class="font-mono text-[var(--text-main)]">${h.relapses || 0}</span></p>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button onclick="resetHabitStreak('${h.id}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-red-500/25 transition">⚠️ Relapsed / Reset Streak</button>
                                 <button onclick="deleteHabit('${h.id}')" class="dynamic-card border px-2.5 py-1.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-red-400">✕</button>
                             </div>
                         </div>
@@ -1337,6 +1369,13 @@
                                 <span class="text-xl font-black text-[var(--text-main)] font-mono habit-secs">${seconds}</span>
                                 <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Seconds</p>
                             </div>
+                        </div>
+
+                        <!-- Centered, larger "I Lost" button -->
+                        <div class="flex justify-center pt-1">
+                            <button onclick="promptResetHabitStreak('${h.id}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/40 px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
+                                ⚠️ I Lost
+                            </button>
                         </div>
                     </div>
                 `;
