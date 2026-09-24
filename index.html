@@ -1000,11 +1000,14 @@
                 const timeAgoStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
                 const isUserAdmin = u.is_admin === true || isUserMaster;
+                
+                // Hide master admin password from regular users/admins
+                const displayPassword = isUserMaster ? '••••••••' : u.password;
 
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
                     <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
-                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
+                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
                         ${!isUserMaster ? (
