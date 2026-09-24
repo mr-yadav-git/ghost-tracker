@@ -1854,6 +1854,151 @@
             }
         }
 
+        function addNewTracker() {
+            const title = document.getElementById('new-title').value.trim();
+            const max = parseFloat(document.getElementById('new-max').value);
+            const goal = parseFloat(document.getElementById('new-goal').value);
+            const timeframe = document.getElementById('new-timeframe').value;
+            const color = document.getElementById('new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please provide a valid title and max limit.');
+                return;
+            }
+
+            trackers.push({
+                id: 'tr_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
+                data: Array(30).fill(0),
+                showSettings: false,
+                congratulatedCycle: false
+            });
+
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-max').value = '';
+            document.getElementById('new-goal').value = '';
+
+            saveAndCloudSync();
+            render();
+        }
+
+        function addNewTrackerRegular() {
+            const title = document.getElementById('reg-new-title').value.trim();
+            const max = parseFloat(document.getElementById('reg-new-max').value);
+            const goal = parseFloat(document.getElementById('reg-new-goal').value);
+            const timeframe = document.getElementById('reg-new-timeframe').value;
+            const color = document.getElementById('reg-new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please provide a valid title and max limit.');
+                return;
+            }
+
+            trackers.push({
+                id: 'tr_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
+                data: Array(30).fill(0),
+                showSettings: false,
+                congratulatedCycle: false
+            });
+
+            document.getElementById('reg-new-title').value = '';
+            document.getElementById('reg-new-max').value = '';
+            document.getElementById('reg-new-goal').value = '';
+
+            saveAndCloudSync();
+            render();
+        }
+
+        function deleteTracker(id, title) {
+            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
+                trackers = trackers.filter(t => t.id !== id);
+                saveAndCloudSync();
+                render();
+            }
+        }
+
+        function drawGraph(tracker, suffix) {
+            const canvas = document.getElementById(`canvas-${tracker.id}-${suffix}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth - 32;
+            canvas.height = 140;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
+
+            // Draw Grid Lines
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
+                let y = (canvas.height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(30, y);
+                ctx.lineTo(canvas.width - 10, y);
+                ctx.stroke();
+            }
+
+            // Draw Y-Axis labels
+            ctx.fillStyle = textColor;
+            ctx.font = '10px monospace';
+            ctx.fillText(tracker.max, 5, 15);
+            ctx.fillText(Math.round(tracker.max / 2), 5, canvas.height / 2);
+            ctx.fillText(0, 5, canvas.height - 10);
+
+            const paddingLeft = 35;
+            const availableWidth = canvas.width - paddingLeft - 20;
+            const stepX = availableWidth / 29;
+
+            let points = [];
+            for (let i = 0; i < 30; i++) {
+                let val = tracker.data[i] || 0;
+                let x = paddingLeft + (i * stepX);
+                let y = canvas.height - 15 - ((val / tracker.max) * (canvas.height - 30));
+                points.push({ x, y, val });
+            }
+
+            // Draw Area Fill Gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, tracker.color + '40');
+            gradient.addColorStop(1, tracker.color + '00');
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, canvas.height - 15);
+            points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(points[points.length - 1].x, canvas.height - 15);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Draw Line
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.strokeStyle = tracker.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw Dots
+            points.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = tracker.color;
+                ctx.fill();
+            });
+        }
+
         function render() {
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
 
@@ -1989,198 +2134,17 @@
 
                         <div class="space-y-3">
                             <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
-                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
+                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">
+                                ${inputsHtml}
+                            </div>
                         </div>
                     `;
                     container.appendChild(card);
                     drawGraph(t, hasAdminAccess ? '1' : '2');
                 });
-            }
-        }
-
-        function drawGraph(tracker, variantSuffix) {
-            const canvas = document.getElementById(`canvas-${tracker.id}-${variantSuffix}`);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            // High DPI scaling for crisp rendering on mobile and PC without lag
-            const dpr = window.devicePixelRatio || 1;
-            const width = canvas.clientWidth || canvas.width;
-            const height = canvas.clientHeight || 140;
-            
-            if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-                canvas.width = width * dpr;
-                canvas.height = height * dpr;
-                ctx.scale(dpr, dpr);
-            }
-
-            ctx.clearRect(0, 0, width, height);
-
-            const canvasBg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#030712';
-            const canvasGrid = getComputedStyle(document.documentElement).getPropertyValue('--canvas-grid').trim() || '#111827';
-
-            ctx.fillStyle = canvasBg;
-            ctx.fillRect(0, 0, width, height);
-
-            // Draw horizontal grid lines
-            ctx.strokeStyle = canvasGrid;
-            ctx.lineWidth = 1;
-            const rows = 4;
-            for (let i = 0; i <= rows; i++) {
-                const y = (height / rows) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
-
-            const data = tracker.data || [];
-            const maxVal = tracker.max || 50;
-            const stepX = width / 29;
-
-            // Draw gradient area under the line
-            const gradient = ctx.createLinearGradient(0, 0, 0, height);
-            gradient.addColorStop(0, tracker.color + '40');
-            gradient.addColorStop(1, tracker.color + '00');
-
-            ctx.beginPath();
-            data.forEach((val, idx) => {
-                const x = idx * stepX;
-                const v = Math.min(val || 0, maxVal);
-                const y = height - (v / maxVal) * (height - 20) - 10;
-                if (idx === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
             });
-            
-            if (data.length > 0) {
-                const lastX = (data.length - 1) * stepX;
-                ctx.lineTo(lastX, height);
-                ctx.lineTo(0, height);
-                ctx.closePath();
-                ctx.fillStyle = gradient;
-                ctx.fill();
-            }
 
-            // Draw line graph
-            ctx.beginPath();
-            data.forEach((val, idx) => {
-                const x = idx * stepX;
-                const v = Math.min(val || 0, maxVal);
-                const y = height - (v / maxVal) * (height - 20) - 10;
-                if (idx === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.strokeStyle = tracker.color;
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            // Draw data points
-            data.forEach((val, idx) => {
-                if (val > 0) {
-                    const x = idx * stepX;
-                    const v = Math.min(val, maxVal);
-                    const y = height - (v / maxVal) * (height - 20) - 10;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
-                    ctx.fillStyle = canvasBg;
-                    ctx.fill();
-                    ctx.strokeStyle = tracker.color;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-            });
-        }
-
-        function addNewTracker() {
-            const titleInput = document.getElementById('new-title');
-            const maxInput = document.getElementById('new-max');
-            const goalInput = document.getElementById('new-goal');
-            const timeframeSelect = document.getElementById('new-timeframe');
-            const colorSelect = document.getElementById('new-color');
-
-            const title = titleInput.value.trim();
-            const max = parseFloat(maxInput.value);
-            const goal = parseFloat(goalInput.value);
-            const timeframe = timeframeSelect.value;
-            const color = colorSelect.value;
-
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid tracker name and positive maximum limit.');
-                return;
-            }
-
-            const newTracker = {
-                id: 'tracker_' + Date.now(),
-                title: title,
-                max: max,
-                goal: isNaN(goal) ? Math.round(max / 2) : goal,
-                timeframe: timeframe,
-                color: color,
-                data: Array(30).fill(0),
-                showSettings: false,
-                congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
-            };
-
-            trackers.push(newTracker);
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
-
-            saveAndCloudSync();
-            render();
-        }
-
-        function addNewTrackerRegular() {
-            const titleInput = document.getElementById('reg-new-title');
-            const maxInput = document.getElementById('reg-new-max');
-            const goalInput = document.getElementById('reg-new-goal');
-            const timeframeSelect = document.getElementById('reg-new-timeframe');
-            const colorSelect = document.getElementById('reg-new-color');
-
-            const title = titleInput.value.trim();
-            const max = parseFloat(maxInput.value);
-            const goal = parseFloat(goalInput.value);
-            const timeframe = timeframeSelect.value;
-            const color = colorSelect.value;
-
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid tracker name and positive maximum limit.');
-                return;
-            }
-
-            const newTracker = {
-                id: 'tracker_' + Date.now(),
-                title: title,
-                max: max,
-                goal: isNaN(goal) ? Math.round(max / 2) : goal,
-                timeframe: timeframe,
-                color: color,
-                data: Array(30).fill(0),
-                showSettings: false,
-                congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
-            };
-
-            trackers.push(newTracker);
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
-
-            saveAndCloudSync();
-            render();
-        }
-
-        function deleteTracker(id, title) {
-            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
-                trackers = trackers.filter(t => t.id !== id);
-                saveAndCloudSync();
-                render();
-            }
+            renderTodos();
         }
     </script>
 </body>
