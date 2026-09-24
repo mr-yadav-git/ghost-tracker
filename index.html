@@ -1995,158 +1995,188 @@
                     container.appendChild(card);
                     drawGraph(t, hasAdminAccess ? '1' : '2');
                 });
-            });
+            }
         }
 
-        function drawGraph(t, suffix) {
-            const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
+        function drawGraph(tracker, variantSuffix) {
+            const canvas = document.getElementById(`canvas-${tracker.id}-${variantSuffix}`);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            canvas.width = canvas.parentElement.clientWidth || 600;
-            canvas.height = 140;
+            // High DPI scaling for crisp rendering on mobile and PC without lag
+            const dpr = window.devicePixelRatio || 1;
+            const width = canvas.clientWidth || canvas.width;
+            const height = canvas.clientHeight || 140;
+            
+            if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                ctx.scale(dpr, dpr);
+            }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, width, height);
 
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
-            const textColor = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
+            const canvasBg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#030712';
+            const canvasGrid = getComputedStyle(document.documentElement).getPropertyValue('--canvas-grid').trim() || '#111827';
 
-            ctx.strokeStyle = gridColor;
+            ctx.fillStyle = canvasBg;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw horizontal grid lines
+            ctx.strokeStyle = canvasGrid;
             ctx.lineWidth = 1;
-            for (let i = 1; i < 4; i++) {
-                let y = (canvas.height / 4) * i;
+            const rows = 4;
+            for (let i = 0; i <= rows; i++) {
+                const y = (height / rows) * i;
                 ctx.beginPath();
-                ctx.moveTo(35, y);
-                ctx.lineTo(canvas.width - 10, y);
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
                 ctx.stroke();
             }
 
-            ctx.fillStyle = textColor;
-            ctx.font = '10px monospace';
-            ctx.fillText(t.max, 5, 15);
-            ctx.fillText(Math.round(t.max / 2), 5, canvas.height / 2 + 3);
-            ctx.fillText('0', 5, canvas.height - 5);
+            const data = tracker.data || [];
+            const maxVal = tracker.max || 50;
+            const stepX = width / 29;
 
-            const paddingLeft = 45;
-            const paddingRight = 20;
-            const usableWidth = canvas.width - paddingLeft - paddingRight;
-            const stepX = usableWidth / 29;
-
-            const points = [];
-            for (let i = 0; i < 30; i++) {
-                const val = t.data[i] || 0;
-                const ratio = Math.min(1, Math.max(0, val / (t.max || 1)));
-                const x = paddingLeft + (i * stepX);
-                const y = canvas.height - 10 - ratio * (canvas.height - 25);
-                points.push({ x, y, val });
-            }
+            // Draw gradient area under the line
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, tracker.color + '40');
+            gradient.addColorStop(1, tracker.color + '00');
 
             ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 0; i < points.length - 1; i++) {
-                let xc = (points[i].x + points[i + 1].x) / 2;
-                let yc = (points[i].y + points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            data.forEach((val, idx) => {
+                const x = idx * stepX;
+                const v = Math.min(val || 0, maxVal);
+                const y = height - (v / maxVal) * (height - 20) - 10;
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            
+            if (data.length > 0) {
+                const lastX = (data.length - 1) * stepX;
+                ctx.lineTo(lastX, height);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
             }
-            ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-            ctx.strokeStyle = t.color || '#34d399';
+
+            // Draw line graph
+            ctx.beginPath();
+            data.forEach((val, idx) => {
+                const x = idx * stepX;
+                const v = Math.min(val || 0, maxVal);
+                const y = height - (v / maxVal) * (height - 20) - 10;
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.strokeStyle = tracker.color;
             ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            ctx.lineTo(points[points.length - 1].x, canvas.height - 10);
-            ctx.lineTo(points[0].x, canvas.height - 10);
-            ctx.closePath();
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, hexToRgba(t.color || '#34d399', 0.25));
-            gradient.addColorStop(1, hexToRgba(t.color || '#34d399', 0.0));
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            points.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3.5, 0, 2 * Math.PI);
-                ctx.fillStyle = t.color || '#34d399';
-                ctx.fill();
-                ctx.lineWidth = 1.5;
-                ctx.strokeStyle = currentModeKey === 'light' ? '#ffffff' : '#030712';
-                ctx.stroke();
+            // Draw data points
+            data.forEach((val, idx) => {
+                if (val > 0) {
+                    const x = idx * stepX;
+                    const v = Math.min(val, maxVal);
+                    const y = height - (v / maxVal) * (height - 20) - 10;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+                    ctx.fillStyle = canvasBg;
+                    ctx.fill();
+                    ctx.strokeStyle = tracker.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
             });
         }
 
-        function hexToRgba(hex, alpha) {
-            let c = hex.replace('#','');
-            if(c.length===3) c = c.split('').map(x=>x+x).join('');
-            const num = parseInt(c, 16);
-            return `rgba(${(num>>16)&255}, ${(num>>8)&255}, ${num&255}, ${alpha})`;
-        }
-
         function addNewTracker() {
-            const title = document.getElementById('new-title').value.trim();
-            const max = parseFloat(document.getElementById('new-max').value);
-            const goal = parseFloat(document.getElementById('new-goal').value);
-            const timeframe = document.getElementById('new-timeframe').value;
-            const color = document.getElementById('new-color').value;
+            const titleInput = document.getElementById('new-title');
+            const maxInput = document.getElementById('new-max');
+            const goalInput = document.getElementById('new-goal');
+            const timeframeSelect = document.getElementById('new-timeframe');
+            const colorSelect = document.getElementById('new-color');
 
-            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
-                alert('Please enter a valid title, max target limit, and goal value.');
+            const title = titleInput.value.trim();
+            const max = parseFloat(maxInput.value);
+            const goal = parseFloat(goalInput.value);
+            const timeframe = timeframeSelect.value;
+            const color = colorSelect.value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid tracker name and positive maximum limit.');
                 return;
             }
 
-            trackers.push({
+            const newTracker = {
                 id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
-                goal: goal,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false
-            });
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
+            };
 
-            document.getElementById('new-title').value = '';
-            document.getElementById('new-max').value = '';
-            document.getElementById('new-goal').value = '';
+            trackers.push(newTracker);
+            titleInput.value = '';
+            maxInput.value = '';
+            goalInput.value = '';
 
             saveAndCloudSync();
             render();
         }
 
         function addNewTrackerRegular() {
-            const title = document.getElementById('reg-new-title').value.trim();
-            const max = parseFloat(document.getElementById('reg-new-max').value);
-            const goal = parseFloat(document.getElementById('reg-new-goal').value);
-            const timeframe = document.getElementById('reg-new-timeframe').value;
-            const color = document.getElementById('reg-new-color').value;
+            const titleInput = document.getElementById('reg-new-title');
+            const maxInput = document.getElementById('reg-new-max');
+            const goalInput = document.getElementById('reg-new-goal');
+            const timeframeSelect = document.getElementById('reg-new-timeframe');
+            const colorSelect = document.getElementById('reg-new-color');
 
-            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
-                alert('Please enter a valid title, max target limit, and goal value.');
+            const title = titleInput.value.trim();
+            const max = parseFloat(maxInput.value);
+            const goal = parseFloat(goalInput.value);
+            const timeframe = timeframeSelect.value;
+            const color = colorSelect.value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid tracker name and positive maximum limit.');
                 return;
             }
 
-            trackers.push({
+            const newTracker = {
                 id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
-                goal: goal,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false
-            });
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
+            };
 
-            document.getElementById('reg-new-title').value = '';
-            document.getElementById('reg-new-max').value = '';
-            document.getElementById('reg-new-goal').value = '';
+            trackers.push(newTracker);
+            titleInput.value = '';
+            maxInput.value = '';
+            goalInput.value = '';
 
             saveAndCloudSync();
             render();
         }
 
         function deleteTracker(id, title) {
-            if(confirm(`Are you sure you want to delete the graph "${title}"?`)) {
+            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
