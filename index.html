@@ -259,7 +259,7 @@
                         📋 Daily To-Do
                     </button>
                     <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
-                        📊 Weekly History & Donuts
+                        📊 Weekly History
                     </button>
                     <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
                         👤 Profile & Status
@@ -323,13 +323,13 @@
                 </div>
             </div>
 
-            <!-- TAB CONTAINER 3: WEEKLY HISTORY & PREVIOUS DAYS DONUTS -->
+            <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
             <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                     <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                         <div>
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📊 Weekly History & Consistency Donuts Matrix
+                                📊 Weekly History & Consistency Matrix
                             </h3>
                             <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
                         </div>
@@ -869,7 +869,6 @@
         function checkTodoWeeklyReset() {
             const currentWeekNum = getWeekNumber(new Date());
             if (todoLastResetWeek !== currentWeekNum) {
-                // Keep tasks persistent or initialize fresh for new week without bugs
                 todoLastResetWeek = currentWeekNum;
             }
         }
@@ -1190,21 +1189,26 @@
             const consistencyMsg = todoPct >= 80 ? "🔥 Outstanding consistency! You're crushing your weekly targets." : (todoPct >= 40 ? "⚡ Good steady progress. Keep pushing forward!" : "🌱 Room for growth. Tackle your remaining tasks!");
 
             html += `
-                <div class="dynamic-card-solid border rounded-2xl p-5 space-y-3">
-                    <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
-                    <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
-                    <div class="flex items-center justify-between pt-2">
+                <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
+                    <div class="space-y-2 flex-1">
+                        <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
+                        <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
                         <div>
-                            <span class="text-2xl font-bold text-[var(--text-main)]">${todoPct}%</span>
+                            <span class="text-xl font-bold text-[var(--text-main)]">${todoPct}%</span>
                             <p class="text-[10px] text-[var(--text-muted)]">${completedTodos} of ${totalTodos} tasks completed</p>
                         </div>
-                        <span class="dynamic-bg px-3 py-1 rounded-xl text-xs font-bold">Week Ring Active</span>
+                    </div>
+                    <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
+                        <canvas id="history-todo-donut" width="80" height="80" class="w-20 h-20"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-xs font-bold dynamic-text">${todoPct}%</span>
+                        </div>
                     </div>
                 </div>
             `;
 
-            // Trackers History Cards
-            trackers.forEach(t => {
+            // Trackers History Cards with Donuts instead of Goal
+            trackers.forEach((t, index) => {
                 const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                 const maxPossible = t.max * 30;
                 const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
@@ -1212,15 +1216,20 @@
                 const consistency = Math.round((activeDays / 30) * 100);
 
                 html += `
-                    <div class="dynamic-card-solid border rounded-2xl p-5 space-y-3">
-                        <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">${t.title} (${t.timeframe} History)</h4>
-                        <p class="text-xs text-[var(--text-muted)]">Consistency Score: <strong class="dynamic-text">${consistency}%</strong> (${activeDays} active days)</p>
-                        <div class="flex items-center justify-between pt-2">
+                    <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
+                        <div class="space-y-2 flex-1">
+                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">${t.title} (${t.timeframe} History)</h4>
+                            <p class="text-xs text-[var(--text-muted)]">Consistency Score: <strong class="dynamic-text">${consistency}%</strong> (${activeDays} active days)</p>
                             <div>
-                                <span class="text-2xl font-bold dynamic-text">${percentage}%</span>
+                                <span class="text-xl font-bold dynamic-text">${percentage}%</span>
                                 <p class="text-[10px] text-[var(--text-muted)]">Total Output: ${totalVal} / ${maxPossible}</p>
                             </div>
-                            <span class="dynamic-card border px-3 py-1 rounded-xl text-xs font-mono text-[var(--text-main)]">Goal: ${t.goal}</span>
+                        </div>
+                        <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
+                            <canvas id="history-tracker-donut-${index}" width="80" height="80" class="w-20 h-20"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-xs font-bold dynamic-text">${percentage}%</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1228,6 +1237,51 @@
 
             html += `</div>`;
             container.innerHTML = html;
+
+            setTimeout(() => {
+                drawSmallDonut('history-todo-donut', todoPct, getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399');
+                trackers.forEach((t, index) => {
+                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
+                    const maxPossible = t.max * 30;
+                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
+                    drawSmallDonut(`history-tracker-donut-${index}`, percentage, t.color);
+                });
+            }, 50);
+        }
+
+        function drawSmallDonut(canvasId, percentage, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 30;
+            const holeRadius = 20;
+
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const holeBg = currentModeKey === 'light' ? '#f1f5f9' : '#0b0f19';
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            if (percentage > 0) {
+                const angle = (Math.min(100, percentage) / 100) * (2 * Math.PI) - (0.5 * Math.PI);
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, -0.5 * Math.PI, angle);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 6;
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = holeBg;
+            ctx.fill();
         }
 
         function escapeHtml(str) {
@@ -1278,13 +1332,6 @@
             modal.classList.add('opacity-0', 'pointer-events-none');
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
-        }
-
-        function switchTrackerTab(id, tabName) {
-            const tracker = trackers.find(t => t.id === id);
-            if (!tracker) return;
-            tracker.activeTab = tabName;
-            render();
         }
 
         function toggleTrackerSettings(id) {
@@ -1400,7 +1447,6 @@
                 }
 
                 trackers.forEach(t => {
-                    if (!t.activeTab) t.activeTab = 'graph';
                     if (!t.timeframe) t.timeframe = 'Week';
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
                     if (t.showSettings === undefined) t.showSettings = false;
@@ -1426,11 +1472,6 @@
                     }
 
                     const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                    const maxPossible = t.max * 30;
-                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                    const activeDays = t.data.filter(v => v > 0).length;
-                    const consistency = Math.round((activeDays / 30) * 100);
-                    const dailyAverage = activeDays > 0 ? (totalVal / activeDays).toFixed(1) : '0.0';
                     
                     let currentCycleSum = 0;
                     if (t.timeframe === 'Day') currentCycleSum = t.data[0] || 0;
@@ -1441,13 +1482,7 @@
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
-                            <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
-                                <div class="flex dynamic-card-solid border rounded-xl p-0.5 text-xs">
-                                    <button onclick="switchTrackerTab('${t.id}', 'graph')" class="px-3 py-1 rounded-lg ${t.activeTab === 'graph' ? 'dynamic-bg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">Habit tracker</button>
-                                    <button onclick="switchTrackerTab('${t.id}', 'history')" class="px-3 py-1 rounded-lg ${t.activeTab === 'history' ? 'dynamic-bg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">History & Stats</button>
-                                </div>
-                            </div>
+                            <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
                                 <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
@@ -1498,61 +1533,14 @@
                             </div>
                         ` : ''}
 
-                        <div id="tab-content-${t.id}">
-                            ${t.activeTab === 'graph' ? `
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                                    <div class="md:col-span-3 space-y-3">
-                                        <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
-                                        <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
-                                    </div>
-                                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4 h-full">
-                                        <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Monthly Progress</span>
-                                        <div class="relative w-28 h-28 flex items-center justify-center">
-                                            <canvas id="donut-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" width="112" height="112" class="w-28 h-28"></canvas>
-                                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                <span class="text-sm font-bold dynamic-text">${percentage}%</span>
-                                                <span class="text-[10px] text-[var(--text-muted)]">Achieved</span>
-                                            </div>
-                                        </div>
-                                        <span class="text-[11px] text-[var(--text-muted)] mt-2 font-mono">Total: ${totalVal} /${maxPossible}</span>
-                                    </div>
-                                </div>
-                            ` : `
-                                <div class="dynamic-card-solid border rounded-xl p-5 space-y-4">
-                                    <h4 class="text-xs font-bold dynamic-text tracking-wider uppercase">Monthly History & Performance Analytics</h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div class="dynamic-card border rounded-xl p-3 text-center">
-                                            <p class="text-xs text-[var(--text-muted)]">Consistency Score</p>
-                                            <p class="text-lg font-bold dynamic-text mt-1">${consistency}%</p>
-                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">${activeDays} active days out of 30</p>
-                                        </div>
-                                        <div class="dynamic-card border rounded-xl p-3 text-center">
-                                            <p class="text-xs text-[var(--text-muted)]">Daily Average</p>
-                                            <p class="text-lg font-bold dynamic-text mt-1">${dailyAverage}</p>
-                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Average output per active day</p>
-                                        </div>
-                                        <div class="dynamic-card border rounded-xl p-3 text-center">
-                                            <p class="text-xs text-[var(--text-muted)]">Total Monthly Output</p>
-                                            <p class="text-lg font-bold text-blue-400 mt-1">${totalVal}</p>
-                                            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Sum of all recorded days</p>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <p class="text-xs font-semibold text-[var(--text-main)]">30-Day Recorded Values Breakdown:</p>
-                                        <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2.5 dynamic-card border rounded-xl text-xs font-mono text-[var(--text-main)]">
-                                            ${t.data.map((v, idx) => `<span class="dynamic-card-solid px-2.5 py-1 rounded-lg border">Day ${idx+1}: <strong class="dynamic-text">${v || 0}</strong></span>`).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            `}
+                        <div class="space-y-3">
+                            <canvas id="canvas-${t.id}-${container === document.getElementById('trackers-container') ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
+                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
                     
-                    if (t.activeTab === 'graph') {
-                        drawGraph(t, container === document.getElementById('trackers-container') ? '1' : '2');
-                        drawDonutChart(t, percentage, container === document.getElementById('trackers-container') ? '1' : '2');
-                    }
+                    drawGraph(t, container === document.getElementById('trackers-container') ? '1' : '2');
                 });
             });
 
@@ -1564,7 +1552,7 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            canvas.width = canvas.parentElement.clientWidth - 40;
+            canvas.width = canvas.parentElement.clientWidth - 20;
             canvas.height = 140;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1604,39 +1592,6 @@
             ctx.stroke();
         }
 
-        function drawDonutChart(t, percentage, suffix) {
-            const canvas = document.getElementById(`donut-${t.id}-${suffix}`);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = 42;
-            const holeRadius = 28;
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 8;
-            ctx.stroke();
-
-            const angle = (Math.min(100, percentage) / 100) * (2 * Math.PI) - (0.5 * Math.PI);
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, -0.5 * Math.PI, angle);
-            ctx.strokeStyle = t.color;
-            ctx.lineWidth = 8;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
-            ctx.fillStyle = holeBg;
-            ctx.fill();
-        }
-
         function addNewTracker() {
             const titleInput = document.getElementById('new-title');
             const maxInput = document.getElementById('new-max');
@@ -1659,7 +1614,6 @@
                 max: parseFloat(maxInput.value) || 50,
                 goal: parseFloat(goalInput.value) || 10,
                 timeframe: timeframeSelect.value,
-                activeTab: 'graph',
                 showSettings: false,
                 lastResetPeriod: now.toISOString().split('T')[0],
                 lastResetWeek: getWeekNumber(now),
@@ -1695,7 +1649,6 @@
                 max: parseFloat(maxInput.value) || 50,
                 goal: parseFloat(goalInput.value) || 10,
                 timeframe: timeframeSelect.value,
-                activeTab: 'graph',
                 showSettings: false,
                 lastResetPeriod: now.toISOString().split('T')[0],
                 lastResetWeek: getWeekNumber(now),
@@ -1719,15 +1672,8 @@
 
         window.onresize = () => {
             trackers.forEach(t => {
-                if (t.activeTab === 'graph') {
-                    drawGraph(t, '1');
-                    drawGraph(t, '2');
-                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                    const maxPossible = t.max * 30;
-                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                    drawDonutChart(t, percentage, '1');
-                    drawDonutChart(t, percentage, '2');
-                }
+                drawGraph(t, '1');
+                drawGraph(t, '2');
             });
             const completed = todos.filter(t => t.completed).length;
             drawTodoDonut(completed, todos.length);
