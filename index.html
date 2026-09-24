@@ -411,6 +411,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ========================================== -->
+            <!-- ADDED: WEEKLY TO-DO MATRIX & DONUT SECTION -->
+            <!-- ========================================== -->
+            <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                    <div>
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                            📋 Weekly To-Do List & Completion Telemetry
+                        </h3>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add weekly tasks, check them off as completed, and track your weekly completion donut.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <!-- Task Input & List -->
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="new-todo-input" placeholder="Add a new task for this week..." class="w-full dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                            <button onclick="addTodo()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
+                        </div>
+
+                        <div id="todos-list-container" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Donut Chart & Stats -->
+                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4">
+                        <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Weekly Task Donut</span>
+                        <div class="relative w-28 h-28 flex items-center justify-center">
+                            <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
+                                <span class="text-[10px] text-[var(--text-muted)]">Completed</span>
+                            </div>
+                        </div>
+                        <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-2 font-mono">0 / 0 Done</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -423,6 +465,8 @@
 
         let currentUser = null;
         let trackers = [];
+        let todos = [];
+        let todoLastResetWeek = null;
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         const MASTER_ADMIN = 'mr_yadav'; 
@@ -565,9 +609,26 @@
                 }
 
                 currentUser = username;
-                trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
+                
+                // Parse stored data safely (supports legacy array or new object structure)
+                try {
+                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
+                    if (Array.isArray(parsed)) {
+                        trackers = parsed;
+                        todos = [];
+                        todoLastResetWeek = getWeekNumber(new Date());
+                    } else {
+                        trackers = parsed.trackers || [];
+                        todos = parsed.todos || [];
+                        todoLastResetWeek = parsed.todoLastResetWeek || getWeekNumber(new Date());
+                    }
+                } catch(e) {
+                    trackers = [];
+                    todos = [];
+                }
                 
                 checkAndResetPeriodicGoals();
+                checkTodoWeeklyReset();
 
                 document.getElementById('display-user').innerText = currentUser;
 
@@ -618,13 +679,30 @@
                     errTag.innerText = 'Error: Incorrect password. Username already exists.';
                     return;
                 }
-                trackers = existingUser.data ? JSON.parse(existingUser.data) : [];
+                try {
+                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
+                    if (Array.isArray(parsed)) {
+                        trackers = parsed;
+                        todos = [];
+                        todoLastResetWeek = getWeekNumber(new Date());
+                    } else {
+                        trackers = parsed.trackers || [];
+                        todos = parsed.todos || [];
+                        todoLastResetWeek = parsed.todoLastResetWeek || getWeekNumber(new Date());
+                    }
+                } catch(e) {
+                    trackers = [];
+                    todos = [];
+                }
                 await client.from('profiles').update({ force_logout: false }).eq('username', user);
             } else {
                 trackers = [];
+                todos = [];
+                todoLastResetWeek = getWeekNumber(new Date());
+                const initialPayload = JSON.stringify({ trackers, todos, todoLastResetWeek });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: JSON.stringify(trackers), force_logout: false }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -636,6 +714,7 @@
             localStorage.setItem('ghost_current_user', currentUser);
             
             checkAndResetPeriodicGoals();
+            checkTodoWeeklyReset();
 
             document.getElementById('display-user').innerText = currentUser;
             
@@ -709,6 +788,15 @@
 
             if (updated && currentUser) {
                 saveAndCloudSync();
+            }
+        }
+
+        function checkTodoWeeklyReset() {
+            const currentWeekNum = getWeekNumber(new Date());
+            if (todoLastResetWeek !== currentWeekNum) {
+                // Weekly rollover / history rotation for to-dos
+                todoLastResetWeek = currentWeekNum;
+                // Keep tasks or reset completion if desired, here we update the cycle tracker week
             }
         }
 
@@ -867,6 +955,7 @@
             localStorage.removeItem('ghost_current_user');
             currentUser = null;
             trackers = [];
+            todos = [];
             adminUsersCache = [];
             currentAdminTab = 'tracker';
             document.getElementById('auth-user').value = '';
@@ -877,8 +966,13 @@
         }
 
         async function saveAndCloudSync() {
+            const payload = JSON.stringify({
+                trackers: trackers,
+                todos: todos,
+                todoLastResetWeek: todoLastResetWeek
+            });
             await client.from('profiles').update({ 
-                data: JSON.stringify(trackers),
+                data: payload,
                 last_action: new Date().toISOString()
             }).eq('username', currentUser);
             render();
@@ -899,6 +993,114 @@
             evaluateGoalCompletion(tracker);
             
             saveAndCloudSync();
+        }
+
+        /* To-Do List Functions */
+        function addTodo() {
+            const input = document.getElementById('new-todo-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            todos.push({
+                id: 'todo_' + Date.now(),
+                text: text,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            input.value = '';
+            checkTodoWeeklyReset();
+            saveAndCloudSync();
+        }
+
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveAndCloudSync();
+            }
+        }
+
+        function deleteTodo(id) {
+            todos = todos.filter(t => t.id !== id);
+            saveAndCloudSync();
+        }
+
+        function renderTodos() {
+            const container = document.getElementById('todos-list-container');
+            if (!container) return;
+
+            if (todos.length === 0) {
+                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added for this week yet.</p>`;
+                drawTodoDonut(0, 0);
+                return;
+            }
+
+            let html = '';
+            let completedCount = 0;
+
+            todos.forEach(t => {
+                if (t.completed) completedCount++;
+                html += `
+                    <div class="dynamic-card-solid border rounded-xl p-3 flex items-center justify-between gap-3 animate-fade-in">
+                        <label class="flex items-center gap-3 cursor-pointer select-none flex-1 overflow-hidden">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${t.id}')" class="rounded dynamic-input border w-4 h-4 shrink-0 accent-[var(--theme-primary)]" />
+                            <span class="text-xs ${t.completed ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'} truncate">${escapeHtml(t.text)}</span>
+                        </label>
+                        <button onclick="deleteTodo('${t.id}')" class="text-[var(--text-muted)] hover:text-red-400 text-xs px-2 py-1 shrink-0">✕</button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            const total = todos.length;
+            const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+            document.getElementById('todo-donut-pct').innerText = `${percentage}%`;
+            document.getElementById('todo-stats-text').innerText = `${completedCount} / ${total} Done`;
+            drawTodoDonut(completedCount, total);
+        }
+
+        function drawTodoDonut(completed, total) {
+            const canvas = document.getElementById('todo-donut-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 42;
+            const holeRadius = 28;
+
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
+            const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
+
+            // Background circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 8;
+            ctx.stroke();
+
+            if (total > 0 && completed > 0) {
+                const percentage = Math.min(100, (completed / total) * 100);
+                const angle = (percentage / 100) * (2 * Math.PI) - (0.5 * Math.PI);
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, -0.5 * Math.PI, angle);
+                ctx.strokeStyle = accentPrimary;
+                ctx.lineWidth = 8;
+                ctx.stroke();
+            }
+
+            // Hole
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = holeBg;
+            ctx.fill();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         function evaluateGoalCompletion(tracker) {
@@ -1223,6 +1425,9 @@
                     }
                 });
             });
+
+            // Render To-Do list items and donut
+            renderTodos();
         }
 
         function drawGraph(t, suffix) {
@@ -1383,17 +1588,21 @@
             }
         }
 
-        window.onresize = () => trackers.forEach(t => {
-            if (t.activeTab === 'graph') {
-                drawGraph(t, '1');
-                drawGraph(t, '2');
-                const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                const maxPossible = t.max * 30;
-                const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                drawDonutChart(t, percentage, '1');
-                drawDonutChart(t, percentage, '2');
-            }
-        });
+        window.onresize = () => {
+            trackers.forEach(t => {
+                if (t.activeTab === 'graph') {
+                    drawGraph(t, '1');
+                    drawGraph(t, '2');
+                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
+                    const maxPossible = t.max * 30;
+                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
+                    drawDonutChart(t, percentage, '1');
+                    drawDonutChart(t, percentage, '2');
+                }
+            });
+            const completed = todos.filter(t => t.completed).length;
+            drawTodoDonut(completed, todos.length);
+        };
     </script>
 </body>
 </html>
