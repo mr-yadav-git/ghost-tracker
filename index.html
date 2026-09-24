@@ -762,13 +762,15 @@
             alert('Site sharing URL copied to clipboard!');
         }
 
+
         function switchAppTab(tabName) {
             currentAppTab = tabName;
             const tabs = ['home', 'tracker', 'todo', 'habits', 'history', 'profile'];
-            
+
             tabs.forEach(t => {
                 const btn = document.getElementById(`nav-tab-${t}`);
                 const section = document.getElementById(`app-tab-${t}`);
+
                 if (btn) {
                     if (t === tabName) {
                         btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full";
@@ -776,6 +778,7 @@
                         btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full";
                     }
                 }
+
                 if (section) {
                     if (t === tabName) {
                         section.classList.remove('hidden');
@@ -786,6 +789,7 @@
             });
 
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+
             if (tabName === 'tracker') {
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -794,6 +798,9 @@
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
+
+                // Let the browser finish layout before measuring canvas width.
+                redrawGraphsWhenVisible();
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -1327,6 +1334,10 @@
 
         function updateValue(id, dayIndex, val) {
             const tracker = trackers.find(t => t.id === id);
+            if (!tracker) return;
+            if (!Array.isArray(tracker.data)) tracker.data = Array(30).fill(0);
+            if (tracker.data.length < 30) tracker.data.length = 30;
+
             let num = parseFloat(val);
             if (isNaN(num) || val === '') {
                 num = 0;
@@ -1884,6 +1895,10 @@
                 }
 
                 trackers.forEach(t => {
+                    if (!Array.isArray(t.data)) t.data = [];
+                    if (t.data.length < 30) t.data = t.data.concat(Array(30 - t.data.length).fill(0));
+                    if (t.data.length > 30) t.data = t.data.slice(0, 30);
+                    if (!t.max || Number(t.max) <= 0) t.max = 1;
                     if (!t.timeframe) t.timeframe = 'Week';
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
                     if (t.showSettings === undefined) t.showSettings = false;
@@ -1971,7 +1986,7 @@
                         ` : ''}
 
                         <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
+                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full min-w-0 h-[180px] dynamic-card-solid border rounded-xl block"></canvas>
                             <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
@@ -1985,49 +2000,178 @@
             renderHabits();
         }
 
+
         function drawGraph(t, suffix) {
             const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
             if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.parentElement.clientWidth - 20;
-            canvas.height = 140;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const parent = canvas.parentElement;
+            if (!parent) return;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // Mobile browsers can report 0 width while a tab is hidden or during
+            // the bottom-nav transition. Measure the visible canvas itself first,
+            // then fall back to its parent/window width.
+            const rect = canvas.getBoundingClientRect();
+            const parentRect = parent.getBoundingClientRect();
+            const measuredWidth = rect.width || parentRect.width || window.innerWidth || 320;
+
+            // Keep enough room for Y-axis labels without allowing a negative/zero canvas.
+            const cssWidth = Math.max(260, Math.floor(measuredWidth));
+            const cssHeight = 180;
+            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
+
+            canvas.style.width = '100%';
+            canvas.style.height = `${cssHeight}px`;
+            canvas.width = Math.floor(cssWidth * dpr);
+            canvas.height = Math.floor(cssHeight * dpr);
+
+            // Draw in CSS pixels while using a higher backing resolution on phones.
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cssWidth, cssHeight);
 
             const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
             const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
+            const axisColor = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
 
+            const rawMax = Number(t.max);
+            const maxValue = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 1;
+            const data = Array.isArray(t.data) ? t.data : [];
+
+            const left = 36;
+            const right = 12;
+            const top = 12;
+            const bottom = 26;
+            const plotWidth = Math.max(1, cssWidth - left - right);
+            const plotHeight = Math.max(1, cssHeight - top - bottom);
+
+            // Grid + Y-axis labels.
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
+            ctx.fillStyle = textColor;
+            ctx.font = '10px monospace';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'right';
+
             const rows = 4;
             for (let i = 0; i <= rows; i++) {
-                let y = (canvas.height / rows) * i;
+                const y = top + (plotHeight / rows) * i;
+
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.moveTo(left, y);
+                ctx.lineTo(left + plotWidth, y);
                 ctx.stroke();
-                
-                ctx.fillStyle = textColor;
-                ctx.font = '10px monospace';
-                let labelVal = Math.round(t.max - (t.max / rows) * i);
-                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
+
+                const labelVal = Math.round(maxValue - (maxValue / rows) * i);
+                ctx.fillText(String(labelVal), left - 6, y);
             }
 
-            const dx = canvas.width / 29;
-            ctx.strokeStyle = t.color;
-            ctx.lineWidth = 2;
+            // X-axis.
+            ctx.strokeStyle = axisColor;
+            ctx.beginPath();
+            ctx.moveTo(left, top + plotHeight);
+            ctx.lineTo(left + plotWidth, top + plotHeight);
+            ctx.stroke();
+
+            // Day labels. Fewer labels on narrow screens keeps the graph readable.
+            const labelIndexes = cssWidth < 380
+                ? [0, 7, 14, 21, 29]
+                : [0, 6, 13, 20, 29];
+
+            const pointCount = 30;
+            const dx = pointCount > 1 ? plotWidth / (pointCount - 1) : plotWidth;
+
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            labelIndexes.forEach(index => {
+                const x = left + index * dx;
+                ctx.fillText(String(index + 1), x, top + plotHeight + 7);
+            });
+
+            const lineColor = t.color || getComputedStyle(document.documentElement)
+                .getPropertyValue('--theme-primary').trim() || '#34d399';
+
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
             ctx.beginPath();
 
-            t.data.forEach((val, i) => {
-                let x = i * dx;
-                let actualVal = val || 0;
-                let clampedVal = Math.min(actualVal, t.max);
-                let y = canvas.height - (clampedVal / t.max) * canvas.height;
+            const points = [];
+            for (let i = 0; i < pointCount; i++) {
+                const numericValue = Number(data[i]);
+                const value = Number.isFinite(numericValue) ? numericValue : 0;
+                const clampedValue = Math.max(0, Math.min(value, maxValue));
+
+                const x = left + i * dx;
+                const y = top + plotHeight - (clampedValue / maxValue) * plotHeight;
+
+                points.push({ x, y, value });
+
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
-            });
+            }
+
             ctx.stroke();
+
+            // Small points make phone graphs easier to read without changing data.
+            ctx.fillStyle = lineColor;
+            points.forEach(point => {
+                if (point.value !== 0) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            if (points.every(point => point.value === 0)) {
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('No values recorded yet', left, top + plotHeight - 5);
+            }
+        }
+
+        function redrawAllGraphs() {
+            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+            const suffix = hasAdminAccess ? '1' : '2';
+
+            if (!Array.isArray(trackers)) return;
+
+            trackers.forEach(tracker => {
+                drawGraph(tracker, suffix);
+            });
+        }
+
+        // Redraw after the tracker tab becomes visible. This is important on
+        // mobile Safari/Chrome because hidden elements can report zero width.
+        function redrawGraphsWhenVisible() {
+            if (currentAppTab !== 'tracker') return;
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    redrawAllGraphs();
+                });
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            if (currentAppTab === 'tracker') {
+                redrawGraphsWhenVisible();
+            }
+        });
+
+        // Handles mobile browser viewport changes caused by address-bar collapse,
+        // orientation changes, and bottom navigation layout changes.
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                if (currentAppTab === 'tracker') {
+                    redrawGraphsWhenVisible();
+                }
+            });
         }
 
         function addNewTracker() {
