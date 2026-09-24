@@ -335,9 +335,9 @@
 
                     <!-- Contribute / Support Card with QR Code -->
                     <div class="dynamic-card border rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
-                        <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 shrink-0">
-                            <!-- User Provided QR Code Image -->
-                            <img src="https://i.ibb.co/68v9N43/qr.jpg" alt="Contribute QR Code" class="w-36 h-36 sm:w-40 sm:h-40 object-contain rounded-xl" />
+                        <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 shrink-0 flex items-center justify-center min-w-[160px] min-h-[160px]">
+                            <!-- User Provided QR Code Image with explicit display and loading properties to guarantee visibility -->
+                            <img src="https://i.ibb.co/68v9N43/qr.jpg" alt="Contribute QR Code" class="w-36 h-36 sm:w-40 sm:h-40 object-contain rounded-xl block relative z-10" loading="eager" crossorigin="anonymous" onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=SupportGhostTracker';" />
                         </div>
                         <div class="space-y-3 text-center sm:text-left">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
@@ -2010,58 +2010,70 @@
             canvas.width = canvas.parentElement.clientWidth - 20;
             canvas.height = 140;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 20;
+            
+            ctx.clearRect(0, 0, width, height);
 
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
-
-            ctx.strokeStyle = gridColor;
+            ctx.strokeStyle = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
             ctx.lineWidth = 1;
-            const rows = 4;
-            for (let i = 0; i <= rows; i++) {
-                let y = (canvas.height / rows) * i;
+            for (let i = 0; i < 4; i++) {
+                const y = padding + (height - 2 * padding) * (i / 3);
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
                 ctx.stroke();
-                
-                ctx.fillStyle = textColor;
-                ctx.font = '10px monospace';
-                let labelVal = Math.round(t.max - (t.max / rows) * i);
-                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
             }
 
-            const dx = canvas.width / 29;
-            ctx.strokeStyle = t.color;
+            const data = t.data || [];
+            const maxVal = t.max || 10;
+            const stepX = (width - 2 * padding) / (data.length - 1 || 1);
+
+            ctx.strokeStyle = t.color || '#34d399';
             ctx.lineWidth = 2;
             ctx.beginPath();
 
-            t.data.forEach((val, i) => {
-                let x = i * dx;
-                let actualVal = val || 0;
-                let clampedVal = Math.min(actualVal, t.max);
-                let y = canvas.height - (clampedVal / t.max) * canvas.height;
-                
-                if (i === 0) ctx.moveTo(x, y);
+            data.forEach((val, idx) => {
+                const x = padding + idx * stepX;
+                const y = height - padding - ((val || 0) / maxVal) * (height - 2 * padding);
+                if (idx === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
             ctx.stroke();
+
+            data.forEach((val, idx) => {
+                const x = padding + idx * stepX;
+                const y = height - padding - ((val || 0) / maxVal) * (height - 2 * padding);
+                ctx.fillStyle = t.color || '#34d399';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            });
         }
 
-        async function addNewTracker() {
+        function deleteTracker(id, title) {
+            if (confirm(`Are you sure you want to delete tracker "${title}"?`)) {
+                trackers = trackers.filter(t => t.id !== id);
+                saveAndCloudSync();
+                render();
+            }
+        }
+
+        function addNewTracker() {
             const title = document.getElementById('new-title').value.trim();
             const max = parseFloat(document.getElementById('new-max').value);
             const goal = parseFloat(document.getElementById('new-goal').value);
             const timeframe = document.getElementById('new-timeframe').value;
             const color = document.getElementById('new-color').value;
 
-            if(!title || isNaN(max) || max <= 0) {
-                alert('Please provide a valid title and maximum limit.');
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and max limit.');
                 return;
             }
 
             trackers.push({
-                id: 'tr_' + Date.now(),
+                id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
                 goal: isNaN(goal) ? Math.round(max / 2) : goal,
@@ -2080,20 +2092,20 @@
             render();
         }
 
-        async function addNewTrackerRegular() {
+        function addNewTrackerRegular() {
             const title = document.getElementById('reg-new-title').value.trim();
             const max = parseFloat(document.getElementById('reg-new-max').value);
             const goal = parseFloat(document.getElementById('reg-new-goal').value);
             const timeframe = document.getElementById('reg-new-timeframe').value;
             const color = document.getElementById('reg-new-color').value;
 
-            if(!title || isNaN(max) || max <= 0) {
-                alert('Please provide a valid title and maximum limit.');
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and max limit.');
                 return;
             }
 
             trackers.push({
-                id: 'tr_' + Date.now(),
+                id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
                 goal: isNaN(goal) ? Math.round(max / 2) : goal,
@@ -2110,14 +2122,6 @@
 
             saveAndCloudSync();
             render();
-        }
-
-        async function deleteTracker(id, title) {
-            if(confirm(`Are you sure you want to delete graph "${title}"?`)) {
-                trackers = trackers.filter(t => t.id !== id);
-                saveAndCloudSync();
-                render();
-            }
         }
     </script>
 </body>
