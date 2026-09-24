@@ -117,12 +117,12 @@
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- Ambient Background Glow -->
+    <!-- Ambient Background Glow[cite: 2] -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
         <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
 
-    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP -->
+    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP[cite: 2] -->
     <div id="goalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
             <div id="modalGlow" class="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY -->
+    <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY[cite: 2] -->
     <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
         <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
             <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
@@ -152,7 +152,7 @@
                 </div>
             </div>
 
-            <!-- WIZARD STEP 1 -->
+            <!-- WIZARD STEP 1[cite: 2] -->
             <div id="wizard-step-1" class="space-y-5 animate-fade-in">
                 <div class="text-center space-y-2">
                     <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">Your Sanctuary for Deep Focus & Growth</h2>
@@ -179,7 +179,7 @@
                 </div>
             </div>
 
-            <!-- WIZARD STEP 2 -->
+            <!-- WIZARD STEP 2[cite: 2] -->
             <div id="wizard-step-2" class="space-y-5 hidden animate-fade-in">
                 <div class="text-center space-y-2">
                     <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">How to Access & Master Your Space</h2>
@@ -212,7 +212,7 @@
 
     <div class="w-full max-w-4xl mx-auto relative z-10">
         
-        <!-- Auth Screen -->
+        <!-- Auth Screen[cite: 2] -->
         <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3">
@@ -235,7 +235,7 @@
             </div>
         </div>
 
-        <!-- App Screen -->
+        <!-- App Screen[cite: 2] -->
         <div id="app-screen" class="hidden space-y-6">
             
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
@@ -260,7 +260,7 @@
                 </div>
             </div>
 
-            <!-- Global Admin Override Panel -->
+            <!-- Global Admin Override Panel[cite: 2] -->
             <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
                 <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                     <div>
@@ -359,7 +359,7 @@
                 </div>
             </div>
 
-            <!-- Regular Trackers Container -->
+            <!-- Regular Trackers Container[cite: 2] -->
             <div id="regular-trackers-wrapper" class="space-y-6 hidden">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
@@ -412,9 +412,7 @@
                 </div>
             </div>
 
-            <!-- ========================================== -->
-            <!-- ADDED: WEEKLY TO-DO MATRIX & DONUT SECTION -->
-            <!-- ========================================== -->
+            <!-- WEEKLY TO-DO MATRIX & DONUT SECTION[cite: 2] -->
             <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                 <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                     <div>
@@ -610,7 +608,6 @@
 
                 currentUser = username;
                 
-                // Parse stored data safely (supports legacy array or new object structure)
                 try {
                     const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
                     if (Array.isArray(parsed)) {
@@ -794,9 +791,7 @@
         function checkTodoWeeklyReset() {
             const currentWeekNum = getWeekNumber(new Date());
             if (todoLastResetWeek !== currentWeekNum) {
-                // Weekly rollover / history rotation for to-dos
                 todoLastResetWeek = currentWeekNum;
-                // Keep tasks or reset completion if desired, here we update the cycle tracker week
             }
         }
 
@@ -995,7 +990,6 @@
             saveAndCloudSync();
         }
 
-        /* To-Do List Functions */
         function addTodo() {
             const input = document.getElementById('new-todo-input');
             const text = input.value.trim();
@@ -1075,7 +1069,6 @@
             const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
             const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
 
-            // Background circle
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
             ctx.strokeStyle = gridColor;
@@ -1092,7 +1085,6 @@
                 ctx.stroke();
             }
 
-            // Hole
             ctx.beginPath();
             ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
             ctx.fillStyle = holeBg;
@@ -1323,7 +1315,6 @@
                             </div>
                         </div>
 
-                        <!-- SETTINGS DRAWER FOR GOAL & ACTIVE CYCLE -->
                         ${t.showSettings ? `
                             <div class="dynamic-card-solid border dynamic-border rounded-xl p-4 space-y-3 animate-fade-in">
                                 <div class="flex justify-between items-center">
@@ -1426,7 +1417,6 @@
                 });
             });
 
-            // Render To-Do list items and donut
             renderTodos();
         }
 
