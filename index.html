@@ -210,10 +210,9 @@
         </div>
     </div>
 
-    <div class="w-full max-w-5xl mx-auto relative z-10">
-        
-        <!-- Auth Screen[cite: 2] -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
+    <!-- Auth Screen Wrapper -->
+    <div id="auth-screen-wrapper" class="w-full max-w-md mx-auto relative z-10 my-auto">
+        <div id="auth-screen" class="w-full dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -234,251 +233,186 @@
                 <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
+    </div>
 
-        <!-- App Screen[cite: 2] -->
-        <div id="app-screen" class="hidden">
-            
-            <!-- MAIN APP LAYOUT (Sidebar for laptops, stacked content for mobile) -->
-            <div class="flex flex-col md:flex-row gap-6 items-start">
+    <!-- App Screen (Full-width responsive layout with fixed left sidebar) -->
+    <div id="app-screen" class="hidden w-full relative z-10">
+        <div class="flex flex-col md:flex-row gap-6 items-start relative w-full">
 
-                <!-- SIDEBAR FOR LAPTOPS & FIXED BOTTOM NAV FOR MOBILES -->
-                <div id="app-nav-container" class="dynamic-card border rounded-2xl p-2 shadow-sm flex md:flex-col items-center justify-around md:justify-start overflow-x-auto gap-2 fixed bottom-0 left-0 right-0 z-40 md:relative md:w-64 md:shrink-0 md:min-h-[500px]">
-                    <div class="hidden md:flex flex-col items-start w-full px-3 py-3 border-b border-[var(--border-color)] mb-2">
-                        <h2 class="text-xs font-bold tracking-widest uppercase dynamic-text">GHOST MATRIX</h2>
-                        <p class="text-[10px] text-[var(--text-muted)]">Navigation Menu</p>
+            <!-- SIDEBAR FOR LAPTOPS (FIXED LEFT) & FIXED BOTTOM NAV FOR MOBILES -->
+            <div id="app-nav-container" class="dynamic-card border rounded-2xl p-2 shadow-xl flex md:flex-col items-center justify-around md:justify-start overflow-x-auto gap-2 fixed bottom-0 left-0 right-0 z-50 md:top-4 md:left-4 md:bottom-auto md:w-56 md:shrink-0 md:h-[calc(100vh-2rem)]">
+                <div class="hidden md:flex flex-col items-start w-full px-3 py-3 border-b border-[var(--border-color)] mb-2">
+                    <h2 class="text-xs font-bold tracking-widest uppercase dynamic-text">GHOST MATRIX</h2>
+                    <p class="text-[10px] text-[var(--text-muted)]">Navigation Menu</p>
+                </div>
+                <div class="flex md:flex-col items-center md:items-stretch gap-1.5 w-full justify-around md:justify-start">
+                    <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full">
+                        🏠 <span class="hidden md:inline">Home / Trackers</span>
+                    </button>
+                    <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📋 <span class="hidden md:inline">Daily To-Do</span>
+                    </button>
+                    <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📊 <span class="hidden md:inline">Weekly History</span>
+                    </button>
+                    <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        👤 <span class="hidden md:inline">Profile & Status</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT MAIN CONTENT AREA (Offset left margin on desktop to accommodate fixed sidebar) -->
+            <div class="flex-1 w-full space-y-6 md:ml-64 max-w-5xl px-2 sm:px-4 pb-20 md:pb-6 mx-auto">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
+                        <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
                     </div>
-                    <div class="flex md:flex-col items-center md:items-stretch gap-1.5 w-full justify-around md:justify-start">
-                        <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full">
-                            🏠 <span class="hidden md:inline">Home / Trackers</span>
-                        </button>
-                        <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
-                            📋 <span class="hidden md:inline">Daily To-Do</span>
-                        </button>
-                        <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
-                            📊 <span class="hidden md:inline">Weekly History</span>
-                        </button>
-                        <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
-                            👤 <span class="hidden md:inline">Profile & Status</span>
-                        </button>
+                    <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                        <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
                     </div>
                 </div>
 
-                <!-- RIGHT MAIN CONTENT AREA -->
-                <div class="flex-1 w-full space-y-6">
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-                        <div class="text-center sm:text-left">
-                            <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
-                            <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
-                        </div>
-                        <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
+                <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
+                <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
+                        <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                            <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
+                            <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
+                        </div>
+                        <div class="flex items-center gap-3 pt-2">
+                            <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
+                            <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
-                    <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
-                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                                <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
-                            </div>
-                            <div class="flex items-center gap-3 pt-2">
-                                <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
-                                <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PROMINENTLY PLACED: TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
-                    <div id="app-tab-todo" class="space-y-6 animate-fade-in">
-                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                                <div>
-                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                        📋 Daily To-Do List & Today's Completion Telemetry
-                                    </h3>
-                                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                                <!-- Task Input & List -->
-                                <div class="md:col-span-2 space-y-4">
-                                    <div class="flex gap-2">
-                                        <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
-                                        <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
-                                    </div>
-
-                                    <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                                        <!-- Injected dynamically -->
-                                    </div>
-                                </div>
-
-                                <!-- Donut Chart & Stats (Today's Data) -->
-                                <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
-                                    <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
-                                    <div class="relative w-28 h-28 flex items-center justify-center">
-                                        <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
-                                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
-                                            <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
-                                        </div>
-                                    </div>
-                                    <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
-                    <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
-                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                                <div>
-                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                        📊 Weekly History & Consistency Matrix
-                                    </h3>
-                                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
-                                </div>
-                            </div>
-                            
-                            <div id="weekly-history-container" class="space-y-4">
-                                <!-- Populated dynamically via JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Global Admin Override Panel[cite: 2] -->
-                    <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
-                        <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                <!-- TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
+                <div id="app-tab-todo" class="space-y-6 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                             <div>
-                                <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                                <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
-                            </div>
-                            <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
-                                <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    📋 Daily To-Do List & Today's Completion Telemetry
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
                             </div>
                         </div>
 
-                        <div id="admin-content-tracker" class="space-y-6">
-                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                                <div class="flex justify-between items-center flex-wrap gap-4">
-                                    <div>
-                                        <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
-                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2 items-center">
-                                        <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
-                                            <option value="emerald">Emerald Accent</option>
-                                            <option value="cyan">Cyber Neon (Cyan)</option>
-                                            <option value="amber">Matrix Amber</option>
-                                            <option value="indigo">Deep Indigo</option>
-                                            <option value="crimson">Crimson Protocol</option>
-                                        </select>
-                                        <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
-                                            <option value="dark">Dark Night Mode</option>
-                                            <option value="light">Pure White Mode</option>
-                                        </select>
-                                    </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                            <!-- Task Input & List -->
+                            <div class="md:col-span-2 space-y-4">
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                                    <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
+                                </div>
+
+                                <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                    <!-- Injected dynamically -->
                                 </div>
                             </div>
 
-                            <div id="trackers-container" class="space-y-6"></div>
-
-                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                        <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                                    </h3>
-                                    <div class="flex gap-1.5">
-                                        <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                        <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                            <!-- Donut Chart & Stats (Today's Data) -->
+                            <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
+                                <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
+                                <div class="relative w-28 h-28 flex items-center justify-center">
+                                    <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
+                                        <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                                    <div class="flex flex-col gap-1.5">
-                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                        <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                        <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                        <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                        <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                            <option value="Day">Day</option>
-                                            <option value="Week" selected>Week</option>
-                                            <option value="Month">Month</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                        <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                            <option value="#2ecc71">🟢 Emerald Green</option>
-                                            <option value="#3498db">🔵 Electric Blue</option>
-                                            <option value="#e74c3c">🔴 Crimson Red</option>
-                                            <option value="#f1c40f">🟡 Neon Yellow</option>
-                                            <option value="#9b59b6">🟣 Vivid Purple</option>
-                                            <option value="#e67e22">🟠 Sunset Orange</option>
-                                            <option value="#1abc9c">🩵 Turquoise</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="flex justify-end pt-2">
-                                    <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="admin-content-users" class="hidden space-y-4">
-                            <div class="flex justify-between items-center gap-3">
-                                <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
-                                <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
-                            </div>
-                            <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
-                                <div id="users-list-container" class="text-xs">Loading users...</div>
+                                <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Regular Trackers Container[cite: 2] -->
-                    <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
-                        <div id="regular-trackers-container" class="space-y-6"></div>
-                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
+                <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                            <div>
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    📊 Weekly History & Consistency Matrix
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="weekly-history-container" class="space-y-4">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Admin Override Panel[cite: 2] -->
+                <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
+                    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                        <div>
+                            <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                            <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
+                        </div>
+                        <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
+                            <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
+                            <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
+                        </div>
+                    </div>
+
+                    <div id="admin-content-tracker" class="space-y-6">
+                        <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div>
+                                    <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
+                                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
+                                        <option value="emerald">Emerald Accent</option>
+                                        <option value="cyan">Cyber Neon (Cyan)</option>
+                                        <option value="amber">Matrix Amber</option>
+                                        <option value="indigo">Deep Indigo</option>
+                                        <option value="crimson">Crimson Protocol</option>
+                                    </select>
+                                    <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
+                                        <option value="dark">Dark Night Mode</option>
+                                        <option value="light">Pure White Mode</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="trackers-container" class="space-y-6"></div>
+
+                        <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                             <div class="flex justify-between items-center">
                                 <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                                     <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
                                 </h3>
                                 <div class="flex gap-1.5">
-                                    <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                    <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                    <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                    <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                    <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                                 </div>
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                    <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                                 </div>
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                    <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
                                 </div>
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                    <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                    <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                         <option value="Day">Day</option>
                                         <option value="Week" selected>Week</option>
                                         <option value="Month">Month</option>
@@ -486,7 +420,7 @@
                                 </div>
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                    <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                    <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
                                         <option value="#2ecc71">🟢 Emerald Green</option>
                                         <option value="#3498db">🔵 Electric Blue</option>
                                         <option value="#e74c3c">🔴 Crimson Red</option>
@@ -498,11 +432,73 @@
                                 </div>
                             </div>
                             <div class="flex justify-end pt-2">
-                                <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                                <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                             </div>
                         </div>
                     </div>
 
+                    <div id="admin-content-users" class="hidden space-y-4">
+                        <div class="flex justify-between items-center gap-3">
+                            <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
+                            <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
+                        </div>
+                        <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
+                            <div id="users-list-container" class="text-xs">Loading users...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regular Trackers Container[cite: 2] -->
+                <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
+                    <div id="regular-trackers-container" class="space-y-6"></div>
+                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                            </h3>
+                            <div class="flex gap-1.5">
+                                <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
+                                <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
+                                <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
+                                <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
+                                <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                    <option value="Day">Day</option>
+                                    <option value="Week" selected>Week</option>
+                                    <option value="Month">Month</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
+                                <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                    <option value="#2ecc71">🟢 Emerald Green</option>
+                                    <option value="#3498db">🔵 Electric Blue</option>
+                                    <option value="#e74c3c">🔴 Crimson Red</option>
+                                    <option value="#f1c40f">🟡 Neon Yellow</option>
+                                    <option value="#9b59b6">🟣 Vivid Purple</option>
+                                    <option value="#e67e22">🟠 Sunset Orange</option>
+                                    <option value="#1abc9c">🩵 Turquoise</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -746,7 +742,7 @@
                     if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
                 }
 
-                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('auth-screen-wrapper').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 switchAppTab('home');
                 render();
@@ -848,7 +844,7 @@
                 if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
             }
 
-            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('auth-screen-wrapper').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
@@ -1094,10 +1090,10 @@
             document.getElementById('auth-pass').value = '';
             document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('auth-screen-wrapper').classList.remove('hidden');
         }
 
-        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE (FIXES SITE LAG)[cite: 2]
+        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE[cite: 2]
         function saveAndCloudSync() {
             if (!currentUser) return;
             if (saveTimeout) clearTimeout(saveTimeout);
@@ -1111,7 +1107,7 @@
                     data: payload,
                     last_action: new Date().toISOString()
                 }).eq('username', currentUser);
-            }, 600); // Debounce 600ms to avoid network thrashing and lag
+            }, 600);
         }
 
         function updateValue(id, dayIndex, val) {
@@ -1129,7 +1125,6 @@
             evaluateGoalCompletion(tracker);
             saveAndCloudSync();
             
-            // Redraw only the specific canvas immediately without full re-render for zero lag
             drawGraph(tracker, currentUser === MASTER_ADMIN || isAdmin ? '1' : '2');
         }
 
@@ -1257,7 +1252,6 @@
 
             let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
-            // Weekly History To-Do Donut (Weeks Data)
             const totalTodos = todos.length;
             const completedWeeklyTodos = todos.filter(t => t.completed).length;
             const todoWeekPct = totalTodos > 0 ? Math.round((completedWeeklyTodos / totalTodos) * 100) : 0;
@@ -1282,7 +1276,6 @@
                 </div>
             `;
 
-            // Trackers History Cards with Donuts instead of Goal
             trackers.forEach((t, index) => {
                 const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                 const maxPossible = t.max * 30;
