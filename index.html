@@ -115,7 +115,7 @@
         }
     </style>
 </head>
-<body id="app-body" class="min-h-screen flex flex-col items-center justify-center p-4">
+<body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-20">
 
     <!-- Ambient Background Glow[cite: 2] -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
@@ -249,14 +249,95 @@
                 </div>
             </div>
 
-            <div class="dynamic-card border rounded-2xl p-4 shadow-sm flex justify-between items-center flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                    <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
+            <!-- YOUTUBE-STYLE APP NAVIGATION TABS BAR -->
+            <div class="dynamic-card border rounded-2xl p-2 shadow-sm flex items-center justify-between overflow-x-auto gap-2">
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full">
+                    <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap">
+                        🏠 Home / Trackers
+                    </button>
+                    <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
+                        📋 Daily To-Do
+                    </button>
+                    <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
+                        📊 Weekly History & Donuts
+                    </button>
+                    <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap">
+                        👤 Profile & Status
+                    </button>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-3 py-1.5 rounded-xl hidden">Delete Account</button>
-                    <button onclick="handleLogout()" class="dynamic-card border text-xs px-3 py-1.5 rounded-xl text-[var(--text-main)]">Logout</button>
+            </div>
+
+            <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
+            <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
+                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                        <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong></span>
+                    </div>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
+                        <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROMINENTLY PLACED: TAB CONTAINER 2: WEEKLY TO-DO MATRIX & DONUT SECTION -->
+            <div id="app-tab-todo" class="space-y-6 animate-fade-in">
+                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                        <div>
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                📋 Weekly To-Do List & Completion Telemetry
+                            </h3>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add weekly tasks, check them off as completed, and track your weekly completion donut side-by-side.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                        <!-- Task Input & List -->
+                        <div class="md:col-span-2 space-y-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="new-todo-input" placeholder="Add a new task for this week..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                                <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
+                            </div>
+
+                            <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Donut Chart & Stats -->
+                        <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
+                            <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Weekly Task Donut</span>
+                            <div class="relative w-28 h-28 flex items-center justify-center">
+                                <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
+                                    <span class="text-[10px] text-[var(--text-muted)]">Completed</span>
+                                </div>
+                            </div>
+                            <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB CONTAINER 3: WEEKLY HISTORY & PREVIOUS DAYS DONUTS -->
+            <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
+                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
+                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                        <div>
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                📊 Weekly History & Consistency Donuts Matrix
+                            </h3>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="weekly-history-container" class="space-y-4">
+                        <!-- Populated dynamically via JS -->
+                    </div>
                 </div>
             </div>
 
@@ -360,7 +441,7 @@
             </div>
 
             <!-- Regular Trackers Container[cite: 2] -->
-            <div id="regular-trackers-wrapper" class="space-y-6 hidden">
+            <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
                 <div id="regular-trackers-container" class="space-y-6"></div>
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
                     <div class="flex justify-between items-center">
@@ -412,45 +493,6 @@
                 </div>
             </div>
 
-            <!-- WEEKLY TO-DO MATRIX & DONUT SECTION[cite: 2] -->
-            <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                    <div>
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                            📋 Weekly To-Do List & Completion Telemetry
-                        </h3>
-                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add weekly tasks, check them off as completed, and track your weekly completion donut.</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                    <!-- Task Input & List -->
-                    <div class="md:col-span-2 space-y-4">
-                        <div class="flex gap-2">
-                            <input type="text" id="new-todo-input" placeholder="Add a new task for this week..." class="w-full dynamic-input border rounded-xl px-3.5 py-2 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
-                            <button onclick="addTodo()" class="dynamic-bg font-semibold px-4 py-2 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
-                        </div>
-
-                        <div id="todos-list-container" class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                            <!-- Injected dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Donut Chart & Stats -->
-                    <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-4">
-                        <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Weekly Task Donut</span>
-                        <div class="relative w-28 h-28 flex items-center justify-center">
-                            <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
-                                <span class="text-[10px] text-[var(--text-muted)]">Completed</span>
-                            </div>
-                        </div>
-                        <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-2 font-mono">0 / 0 Done</span>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
     </div>
@@ -467,6 +509,7 @@
         let todoLastResetWeek = null;
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
+        let currentAppTab = 'home';
         const MASTER_ADMIN = 'mr_yadav'; 
 
         const ACCENTS = {
@@ -531,6 +574,47 @@
             }
         });
 
+        function switchAppTab(tabName) {
+            currentAppTab = tabName;
+            const tabs = ['home', 'todo', 'history', 'profile'];
+            
+            tabs.forEach(t => {
+                const btn = document.getElementById(`nav-tab-${t}`);
+                const section = document.getElementById(`app-tab-${t}`);
+                if (btn) {
+                    if (t === tabName) {
+                        btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap";
+                    } else {
+                        btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap";
+                    }
+                }
+                if (section) {
+                    if (t === tabName) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                }
+            });
+
+            if (tabName === 'home') {
+                if (currentUser === MASTER_ADMIN) {
+                    document.getElementById('admin-section').classList.remove('hidden');
+                    document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+                } else {
+                    document.getElementById('admin-section').classList.add('hidden');
+                    document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('admin-section').classList.add('hidden');
+                document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+            }
+
+            if (tabName === 'history') {
+                renderWeeklyHistoryView();
+            }
+        }
+
         async function triggerThemeUpdate() {
             const accentSelect = document.getElementById('global-accent-select');
             const modeSelect = document.getElementById('global-mode-select');
@@ -576,7 +660,7 @@
             function updateClock() {
                 const now = new Date();
                 const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                clockEl.innerText = now.toLocaleDateString('en-US', options);
+                if (clockEl) clockEl.innerText = now.toLocaleDateString('en-US', options);
             }
             updateClock();
             setInterval(updateClock, 1000);
@@ -631,18 +715,15 @@
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
                 if (currentUser === MASTER_ADMIN) {
-                    document.getElementById('admin-section').classList.remove('hidden');
-                    document.getElementById('regular-trackers-wrapper').classList.add('hidden');
                     if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
                     renderAdminPanel();
                 } else {
-                    document.getElementById('admin-section').classList.add('hidden');
-                    document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                     if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
                 }
 
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
+                switchAppTab('home');
                 render();
             } else {
                 localStorage.removeItem('ghost_current_user');
@@ -727,18 +808,15 @@
 
             const regDeleteBtn = document.getElementById('regular-delete-btn');
             if (currentUser === MASTER_ADMIN) {
-                document.getElementById('admin-section').classList.remove('hidden');
-                document.getElementById('regular-trackers-wrapper').classList.add('hidden');
                 if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
                 renderAdminPanel();
             } else {
-                document.getElementById('admin-section').classList.add('hidden');
-                document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
             }
 
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
+            switchAppTab('home');
             render();
         }
 
@@ -791,6 +869,7 @@
         function checkTodoWeeklyReset() {
             const currentWeekNum = getWeekNumber(new Date());
             if (todoLastResetWeek !== currentWeekNum) {
+                // Keep tasks persistent or initialize fresh for new week without bugs
                 todoLastResetWeek = currentWeekNum;
             }
         }
@@ -847,6 +926,7 @@
 
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
+            if(!container) return;
             container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
             const { data: users, error } = await client.from('profiles').select('username, password, last_action');
@@ -986,7 +1066,6 @@
             tracker.data[dayIndex] = num;
             
             evaluateGoalCompletion(tracker);
-            
             saveAndCloudSync();
         }
 
@@ -1049,8 +1128,10 @@
 
             const total = todos.length;
             const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
-            document.getElementById('todo-donut-pct').innerText = `${percentage}%`;
-            document.getElementById('todo-stats-text').innerText = `${completedCount} / ${total} Done`;
+            const pctEl = document.getElementById('todo-donut-pct');
+            const statsEl = document.getElementById('todo-stats-text');
+            if (pctEl) pctEl.innerText = `${percentage}%`;
+            if (statsEl) statsEl.innerText = `${completedCount} / ${total} Done`;
             drawTodoDonut(completedCount, total);
         }
 
@@ -1089,6 +1170,64 @@
             ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
             ctx.fillStyle = holeBg;
             ctx.fill();
+        }
+
+        function renderWeeklyHistoryView() {
+            const container = document.getElementById('weekly-history-container');
+            if (!container) return;
+
+            if (trackers.length === 0 && todos.length === 0) {
+                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-6">No historical metrics or trackers recorded yet.</p>`;
+                return;
+            }
+
+            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+            // To-Do Weekly Summary Card
+            const totalTodos = todos.length;
+            const completedTodos = todos.filter(t => t.completed).length;
+            const todoPct = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+            const consistencyMsg = todoPct >= 80 ? "🔥 Outstanding consistency! You're crushing your weekly targets." : (todoPct >= 40 ? "⚡ Good steady progress. Keep pushing forward!" : "🌱 Room for growth. Tackle your remaining tasks!");
+
+            html += `
+                <div class="dynamic-card-solid border rounded-2xl p-5 space-y-3">
+                    <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
+                    <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
+                    <div class="flex items-center justify-between pt-2">
+                        <div>
+                            <span class="text-2xl font-bold text-[var(--text-main)]">${todoPct}%</span>
+                            <p class="text-[10px] text-[var(--text-muted)]">${completedTodos} of ${totalTodos} tasks completed</p>
+                        </div>
+                        <span class="dynamic-bg px-3 py-1 rounded-xl text-xs font-bold">Week Ring Active</span>
+                    </div>
+                </div>
+            `;
+
+            // Trackers History Cards
+            trackers.forEach(t => {
+                const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
+                const maxPossible = t.max * 30;
+                const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
+                const activeDays = t.data.filter(v => v > 0).length;
+                const consistency = Math.round((activeDays / 30) * 100);
+
+                html += `
+                    <div class="dynamic-card-solid border rounded-2xl p-5 space-y-3">
+                        <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">${t.title} (${t.timeframe} History)</h4>
+                        <p class="text-xs text-[var(--text-muted)]">Consistency Score: <strong class="dynamic-text">${consistency}%</strong> (${activeDays} active days)</p>
+                        <div class="flex items-center justify-between pt-2">
+                            <div>
+                                <span class="text-2xl font-bold dynamic-text">${percentage}%</span>
+                                <p class="text-[10px] text-[var(--text-muted)]">Total Output: ${totalVal} / ${maxPossible}</p>
+                            </div>
+                            <span class="dynamic-card border px-3 py-1 rounded-xl text-xs font-mono text-[var(--text-main)]">Goal: ${t.goal}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
         }
 
         function escapeHtml(str) {
