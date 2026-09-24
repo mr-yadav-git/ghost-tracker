@@ -2092,129 +2092,171 @@
         };
     </script>
 </body>
-<!-- FIRST-TIME USER SITE TUTORIAL OVERLAY -->
-    <div id="site-tutorial-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
-        <div class="w-full max-w-lg dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden space-y-6">
-            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
+<style>
+    @keyframes borderBlink {
+        0%, 100% { border-color: rgba(var(--primary-rgb, 99, 102, 241), 0.8); box-shadow: 0 0 15px rgba(var(--primary-rgb, 99, 102, 241), 0.4); }
+        50% { border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 0 0px transparent; }
+    }
+    @keyframes floatSlow {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-8px) scale(1.05); }
+    }
+    @keyframes tabPulseTap {
+        0% { transform: scale(0.95); filter: brightness(1.5); }
+        100% { transform: scale(1); filter: brightness(1); }
+    }
+    .animate-border-blink {
+        animation: borderBlink 1.5s infinite ease-in-out;
+    }
+    .animate-float {
+        animation: floatSlow 4s infinite ease-in-out;
+    }
+    .tab-tap-active {
+        animation: tabPulseTap 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+</style>
 
-            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs">
-                        🎓
-                    </div>
-                    <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER TUTORIAL</span>
+<!-- ENHANCED FIRST-TIME USER TUTORIAL OVERLAY -->
+<div id="site-tutorial-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden transition-all duration-500">
+    <div class="w-full max-w-lg dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden space-y-6 animate-border-blink">
+        <!-- Floating Glowing Background Orb -->
+        <div class="absolute -top-16 -right-16 w-40 h-40 dynamic-bg rounded-full blur-3xl opacity-30 pointer-events-none animate-float"></div>
+        <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-20 pointer-events-none animate-float" style="animation-delay: 2s;"></div>
+
+        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 relative z-10">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs shadow-inner animate-bounce">
+                    ✨
                 </div>
-                <div class="text-xs font-mono text-[var(--text-muted)]">
-                    Step <span id="tut-step-current" class="dynamic-text font-bold">1</span> of 3
-                </div>
+                <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST MATRIX // PROTOCOL</span>
             </div>
-
-            <!-- TUTORIAL STEP 1: HOME & SHARING -->
-            <div id="tut-step-1" class="space-y-4 animate-fade-in">
-                <div class="text-center space-y-1.5">
-                    <h2 class="text-lg font-black text-[var(--text-main)]">1. Welcome to Your Home Base 🏠</h2>
-                    <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                        Here you can see your live login streaks, active user counts, and quickly copy your custom gateway link to share with peers.
-                    </p>
-                </div>
-                <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-2">
-                    <span class="text-3xl">🔗</span>
-                    <p class="text-[11px] text-[var(--text-muted)]">Use the sidebar navigation menu to switch between <strong>Tracker</strong>, <strong>To-Do</strong>, <strong>Bad Habits</strong>, and <strong>Stats</strong> anytime.</p>
-                </div>
-            </div>
-
-            <!-- TUTORIAL STEP 2: TRACKERS & MATRIX -->
-            <div id="tut-step-2" class="space-y-4 hidden animate-fade-in">
-                <div class="text-center space-y-1.5">
-                    <h2 class="text-lg font-black text-[var(--text-main)]">2. Mastering Graphs & Metrics 📈</h2>
-                    <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                        Head over to the <strong>Tracker</strong> tab to log daily values (e.g., pushups, study hours). The matrix instantly renders custom visual graphs and alerts you when you hit your target goal!
-                    </p>
-                </div>
-                <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-2">
-                    <span class="text-3xl">🎯</span>
-                    <p class="text-[11px] text-[var(--text-muted)]">Set custom target limits, choose timeframes (Day/Week/Month), and watch your consistency grow.</p>
-                </div>
-            </div>
-
-            <!-- TUTORIAL STEP 3: HABITS & TO-DO -->
-            <div id="tut-step-3" class="space-y-4 hidden animate-fade-in">
-                <div class="text-center space-y-1.5">
-                    <h2 class="text-lg font-black text-[var(--text-main)]">3. Conquering Habits & Tasks 🛡️</h2>
-                    <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                        Use the <strong>Bad Habits</strong> tab to start clean streaks and protect your discipline. Use the <strong>To-Do</strong> tab to check off daily tasks accompanied by a live completion donut ring.
-                    </p>
-                </div>
-                <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-2">
-                    <span class="text-3xl">🚀</span>
-                    <p class="text-[11px] text-[var(--text-muted)]">You are fully prepped. Lock in, leave no trace, and command your discipline!</p>
-                </div>
-            </div>
-
-            <!-- TUTORIAL NAVIGATION CONTROLS -->
-            <div class="flex items-center justify-between pt-2 border-t border-[var(--border-color)]">
-                <button id="tut-prev-btn" onclick="prevTutorialStep()" class="dynamic-card border font-semibold px-4 py-2 rounded-xl text-xs text-[var(--text-main)] opacity-50 cursor-not-allowed" disabled>&larr; Back</button>
-                <button id="tut-next-btn" onclick="nextTutorialStep()" class="dynamic-bg font-bold px-6 py-2 rounded-xl text-xs tracking-wider uppercase">Next &rarr;</button>
+            <div class="text-xs font-mono text-[var(--text-muted)] bg-[var(--card-bg)] px-2.5 py-1 rounded-lg border border-[var(--border-color)]">
+                Stage <span id="tut-step-current" class="dynamic-text font-bold">1</span> / 3
             </div>
         </div>
+
+        <!-- TUTORIAL STEP 1 -->
+        <div id="tut-step-1" class="space-y-4 animate-fade-in relative z-10">
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-3 rounded-2xl dynamic-card-solid border dynamic-border text-2xl shadow-lg mb-1">🏠</div>
+                <h2 class="text-xl font-black text-[var(--text-main)] tracking-wide">Welcome to Your Command Center</h2>
+                <p class="text-xs text-[var(--text-muted)] leading-relaxed max-w-sm mx-auto">
+                    Monitor your live login streaks, active user counts, and quickly copy your custom gateway link to share with peers.
+                </p>
+            </div>
+            <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-1.5 shadow-sm">
+                <p class="text-[11px] font-semibold dynamic-text">💡 Quick Navigation Tip:</p>
+                <p class="text-[11px] text-[var(--text-muted)]">Use the sidebar links to switch seamlessly between Tracker, To-Do, Bad Habits, and Stats.</p>
+            </div>
+        </div>
+
+        <!-- TUTORIAL STEP 2 -->
+        <div id="tut-step-2" class="space-y-4 hidden animate-fade-in relative z-10">
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-3 rounded-2xl dynamic-card-solid border dynamic-border text-2xl shadow-lg mb-1">📈</div>
+                <h2 class="text-xl font-black text-[var(--text-main)] tracking-wide">Dynamic Metrics & Graphs</h2>
+                <p class="text-xs text-[var(--text-muted)] leading-relaxed max-w-sm mx-auto">
+                    Head over to the <strong class="dynamic-text">Tracker</strong> tab to log daily values. The matrix renders instant visual data and fires goal alerts!
+                </p>
+            </div>
+            <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-1.5 shadow-sm">
+                <p class="text-[11px] font-semibold dynamic-text">⚡ Target Control:</p>
+                <p class="text-[11px] text-[var(--text-muted)]">Customize your limits and switch timeframes (Day / Week / Month) on the fly.</p>
+            </div>
+        </div>
+
+        <!-- TUTORIAL STEP 3 -->
+        <div id="tut-step-3" class="space-y-4 hidden animate-fade-in relative z-10">
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-3 rounded-2xl dynamic-card-solid border dynamic-border text-2xl shadow-lg mb-1">🛡️</div>
+                <h2 class="text-xl font-black text-[var(--text-main)] tracking-wide">Habit Shield & Tasks</h2>
+                <p class="text-xs text-[var(--text-muted)] leading-relaxed max-w-sm mx-auto">
+                    Lock down clean streaks using the <strong class="dynamic-text">Bad Habits</strong> tab, and clear daily objectives tracked by the live completion ring.
+                </p>
+            </div>
+            <div class="dynamic-card-solid border rounded-2xl p-4 text-center space-y-1.5 shadow-sm">
+                <p class="text-[11px] font-semibold dynamic-text">🚀 You are fully initialized:</p>
+                <p class="text-[11px] text-[var(--text-muted)]">Leave no trace, stay consistent, and take total command.</p>
+            </div>
+        </div>
+
+        <!-- NAVIGATION CONTROLS -->
+        <div class="flex items-center justify-between pt-3 border-t border-[var(--border-color)] relative z-10">
+            <button id="tut-prev-btn" onclick="prevTutorialStep()" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)] opacity-50 cursor-not-allowed transition-all" disabled>&larr; Back</button>
+            <button id="tut-next-btn" onclick="nextTutorialStep()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase shadow-lg hover:opacity-90 transition-all transform active:scale-95">Next &rarr;</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        let currentTutStep = 1;
+<script>
+    let currentTutStep = 1;
 
-        // Automatically trigger tutorial for first-time visitors once they enter the app
-        function checkFirstTimeTutorial() {
-            const hasSeenTutorial = localStorage.getItem('ghost_site_tutorial_completed');
-            if (!hasSeenTutorial) {
-                // Show after login/app screen renders
+    function checkFirstTimeTutorial() {
+        if (!localStorage.getItem('ghost_site_tutorial_completed')) {
+            setTimeout(() => {
+                const overlay = document.getElementById('site-tutorial-overlay');
+                if (overlay) overlay.classList.remove('hidden');
+            }, 800);
+        }
+    }
+
+    function nextTutorialStep() {
+        if (currentTutStep < 3) {
+            document.getElementById(`tut-step-${currentTutStep}`).classList.add('hidden');
+            currentTutStep++;
+            document.getElementById(`tut-step-${currentTutStep}`).classList.remove('hidden');
+            document.getElementById('tut-step-current').innerText = currentTutStep;
+            
+            const prevBtn = document.getElementById('tut-prev-btn');
+            prevBtn.removeAttribute('disabled');
+            prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            if (currentTutStep === 3) {
+                document.getElementById('tut-next-btn').innerText = 'Initialize Matrix 🚀';
+            }
+        } else {
+            localStorage.setItem('ghost_site_tutorial_completed', 'true');
+            const overlay = document.getElementById('site-tutorial-overlay');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 500);
+        }
+    }
+
+    function prevTutorialStep() {
+        if (currentTutStep > 1) {
+            document.getElementById(`tut-step-${currentTutStep}`).classList.add('hidden');
+            currentTutStep--;
+            document.getElementById(`tut-step-${currentTutStep}`).classList.remove('hidden');
+            document.getElementById('tut-step-current').innerText = currentTutStep;
+            
+            document.getElementById('tut-next-btn').innerText = 'Next \u2192';
+
+            if (currentTutStep === 1) {
+                const prevBtn = document.getElementById('tut-prev-btn');
+                prevBtn.setAttribute('disabled', 'true');
+                prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    }
+
+    // AUTOMATIC TAB BLINKING & TAP ANIMATION EFFECT
+    window.addEventListener('DOMContentLoaded', () => {
+        checkFirstTimeTutorial();
+
+        // Attach tap/click listener to all elements acting as tabs or navigation buttons
+        const potentialTabs = document.querySelectorAll('button, [role="tab"], .nav-item, nav a');
+        potentialTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active blinking style from other tabs if applicable, apply tap flash
+                this.classList.add('tab-tap-active', 'animate-border-blink');
                 setTimeout(() => {
-                    const tutorialOverlay = document.getElementById('site-tutorial-overlay');
-                    if (tutorialOverlay) tutorialOverlay.classList.remove('hidden');
-                }, 800);
-            }
-        }
-
-        function nextTutorialStep() {
-            if (currentTutStep < 3) {
-                document.getElementById(`tut-step-${currentTutStep}`).classList.add('hidden');
-                currentTutStep++;
-                document.getElementById(`tut-step-${currentTutStep}`).classList.remove('hidden');
-                document.getElementById('tut-step-current').innerText = currentTutStep;
-                
-                document.getElementById('tut-prev-btn').removeAttribute('disabled');
-                document.getElementById('tut-prev-btn').classList.remove('opacity-50', 'cursor-not-allowed');
-
-                if (currentTutStep === 3) {
-                    document.getElementById('tut-next-btn').innerText = 'Finish & Enter Matrix 🚀';
-                }
-            } else {
-                // Complete Tutorial
-                localStorage.setItem('ghost_site_tutorial_completed', 'true');
-                document.getElementById('site-tutorial-overlay').classList.add('hidden');
-            }
-        }
-
-        function prevTutorialStep() {
-            if (currentTutStep > 1) {
-                document.getElementById(`tut-step-${currentTutStep}`).classList.add('hidden');
-                currentTutStep--;
-                document.getElementById(`tut-step-${currentTutStep}`).classList.remove('hidden');
-                document.getElementById('tut-step-current').innerText = currentTutStep;
-                
-                document.getElementById('tut-next-btn').innerText = 'Next \u2192';
-
-                if (currentTutStep === 1) {
-                    document.getElementById('tut-prev-btn').setAttribute('disabled', 'true');
-                    document.getElementById('tut-prev-btn').classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        }
-
-        // Hook into your login state restoration so it fires for new visitors upon entering the matrix
-        const originalRestoreSession = window.restoreSession;
-        // Trigger tutorial check on window load or login
-        window.addEventListener('DOMContentLoaded', () => {
-            checkFirstTimeTutorial();
+                    this.classList.remove('tab-tap-active');
+                }, 300);
+                setTimeout(() => {
+                    this.classList.remove('animate-border-blink');
+                }, 1500);
+            });
         });
-    </script>
+    });
+</script>
 </html>
