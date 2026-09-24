@@ -120,27 +120,29 @@
         .animate-border-blink {
             animation: borderBlink 1.5s infinite ease-in-out;
         }
+        /* Performance and display-quality layer */
+        html { -webkit-text-size-adjust:100%; text-size-adjust:100%; scroll-behavior:smooth; }
+        body { font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji",sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility; line-height:1.45; overflow-x:hidden; }
+        *,*::before,*::after { box-sizing:border-box; }
+        img,canvas,svg { image-rendering:auto; max-width:100%; }
+        img { height:auto; vertical-align:middle; }
+        button,input,select,textarea { font:inherit; -webkit-tap-highlight-color:transparent; }
+        #ambient-glow { contain:strict; }
+        #app-screen,#app-nav-container,#app-tab-home,#app-tab-tracker,#app-tab-todo,#app-tab-habits,#app-tab-history,#app-tab-profile { min-width:0; }
+        #app-tab-tracker canvas[id^="canvas-"] { display:block; width:100%!important; height:180px!important; min-width:0; max-width:100%; box-sizing:border-box; image-rendering:auto; contain:strict; }
+        #app-tab-tracker .dynamic-card,#app-tab-tracker .dynamic-card-solid,#app-tab-tracker .space-y-3 { min-width:0; }
+        .animate-fade-in,.animate-pulse,.animate-ping,.animate-bounce,.animate-goal-banner,.animate-border-blink { backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:translateZ(0); }
+        .animate-border-blink { will-change:border-color,box-shadow; }
+        @media (max-width:640px) {
+            body { padding-left:10px!important; padding-right:10px!important; }
+            #app-nav-container { padding-bottom:calc(8px + env(safe-area-inset-bottom)); }
+        }
+        @media (prefers-reduced-motion:reduce) {
+            html { scroll-behavior:auto; }
+            *,*::before,*::after { animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important; }
+        }
+
     </style>
-
-<style id="ghost-graph-fix">
-    /* Graph rendering: keep CSS size separate from the high-resolution canvas bitmap. */
-    #app-tab-tracker canvas[id^="canvas-"] {
-        display: block;
-        width: 100% !important;
-        height: 180px !important;
-        min-width: 0;
-        max-width: 100%;
-        box-sizing: border-box;
-        image-rendering: auto;
-    }
-
-    #app-tab-tracker .dynamic-card,
-    #app-tab-tracker .dynamic-card-solid,
-    #app-tab-tracker .space-y-3 {
-        min-width: 0;
-    }
-</style>
-
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
 
@@ -350,6 +352,23 @@
                                 <span id="home-live-users-count" class="text-3xl font-black text-emerald-400 font-mono">...</span>
                                 <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Registered Operators</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Contribute / Support Card with UPI QR Code -->
+                    <div class="dynamic-card border rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
+                        <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 shrink-0 flex items-center justify-center min-w-[160px] min-h-[160px]">
+                            <!-- UPI QR Code generated for upi://pay?pa=9416711202%40fam&pn=Ghost&cu=INR -->
+                            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA4QAAAOEAQAAAADRNcKWAAAE6klEQVR42u3dS67sJhAA0CJ6c3sH2f+ysgN7BWRgbMDQnZndUg6D1vWPI10mJSiolOPZtv8VTzcikUgkEolEIpFIJBKJRCKRSCQSiUQikUgkEolEIvEtMfLVhkfL9Wgrl+WnflsfnJf/2ZVxJBKJRCKR+Ez700UjW3ORjp9lixTLFbnsKXLsa/NKjj2dl0s+vph1ZRyJRCKRSCS+GOfUkOQMU/IVyeTrQQl79rW5TP0Xs66MI5FIJBKJxHfjnKEd4cwV2Ozp/FnyGcnUe9PAxjgSiUQikUj8zTgnrpWppU+72bvVqGNmx3+VSCQSiUTi78Y5txTic+0pxzBjc87n5OO9IxTaPndlHIlEIpFIJL4o7qlpZ0yTc0prREp/t/utUlrPUOj46/Zg1pVxJBKJRCKR+GRr5nO+V4AoychnRnLdZZWbiZ56zzgSiUQikUh8W0yzkCT1sU9qQpdzS/ls53ieXu5rF/aob0UkEolEIvGplu9tu+5tw0mA5Yut/Wt4bxnOHey6N45EIpFIJBKfac26VWqmaOpu8itWad/LzV/1J66lrWgOC6wzQMaRSCQSiUTiS3FOe7BxXEtW57aqNpn4lqTTfXZ7JRlHIpFIJBKJL4n3datyb+ufbhHDotTSf7b078V8Lcu6FZFIJBKJxMdat24VcRSvqn+VB7fzcyLidpxOWxoihvTlbByJRCKRSCS+vW61dsk3XdTSpuvsaxMFzU9LPgOgpL4VkUgkEonEl8Rx3WqZrEIt7far+UpXnr83GNatiEQikUgkPh/nlBtLG+zc3htimjF750ugJM4hEolEIpH4ZPtcx7M78Xg9FqC67J0hIac9MrmuZXXvGUcikUgkEolvxDltQc5bAYdZHc+z1a3n5fLW3z1xxzgSiUQikUh8qN2OQm63hd8ORS4Rz3Q3eZ60+oV1KyKRSCQSiT9V9+FLks6HtOT25S4/Rx4ykUgkEonEH5jPuRWvat+rl8s8D3n+VxbnEIlEIpFIjNfzkM9UmqFiw1Gt6jpYp2YaR0Q+8nOapOXUpSUbRyKRSCQSie+IMc+22dqyDcNaVlwP8nA5W/Myn0MkEolEIvEH4px6r8Yv36KWvqtt3rM4h0gkEolE4tvinlLOW0RKqfxVApZ/Uio/59OIPaUhUIp2LiiltXRqHIlEIpFIJP7E+TnHWTlrV72zq3lVS1uVe7cKVkuenJpjHIlEIpFIJD7ePh56cztOZ3gQfRmrcc1rnr1j3YpIJBKJROJDrZnPKZM1s8tzxiYdP3WypjsKuRQo7zq43TOORCKRSCQSn2v5axv2UTUxzSQrp/tiflqy+RwikUgkEokPtft8ThfJbFHLcJY6nl1r5266hJx0fRvqWxGJRCKRSPwF8ePcTZRNV3X3VNmS1aXmlI1Y0Z69Ux6sxpFIJBKJROLbYjra2sY+JX5Zcr5tFe/ilyuw2Usf5d7eblE3jkQikUgkEh9rf74/ruUdUp+MXPKLu8oOuVnkqt/edp0bRyKRSCQSib8R5wxVrbogJh/n7MRw9k79Ng1FrowjkUgkEonEd8ShnsO5ClXu1dONl35v1djLeBSycSQSiUQikfhk+5h43B3u19/bJiWwZjHStCvjSCQSiUQi8ZmW8sPgbhyJRCKRSCQSiUQikUgkEolEIpFIJBKJRCKRSCQSif8f8V9GSqM5HZc5eAAAAABJRU5ErkJggg==" alt="UPI Payment QR Code" class="w-36 h-36 sm:w-40 sm:h-40 object-contain rounded-xl block relative z-10" width="900" height="900" decoding="sync" fetchpriority="high" />
+                        </div>
+                        <div class="space-y-3 text-center sm:text-left">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
+                                ☕ Support Developer
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold text-[var(--text-main)]">Contribute & Fuel Future Updates</h3>
+                            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                                Ghost Tracker is built with passion to give you ruthless focus and privacy. If this tool helps you master your discipline, consider supporting ongoing maintenance and new features by scanning the UPI QR code. Thank you!
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -650,7 +669,7 @@
         // TUTORIAL STATE MACHINE WALKING THROUGH TABS
         let currentTutorialStep = 0;
         const tutorialSteps = [
-            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, and active platform operators.' },
+            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, active platform operators, and contribution portal.' },
             { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
             { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
             { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
@@ -785,11 +804,10 @@
         function switchAppTab(tabName) {
             currentAppTab = tabName;
             const tabs = ['home', 'tracker', 'todo', 'habits', 'history', 'profile'];
-
+            
             tabs.forEach(t => {
                 const btn = document.getElementById(`nav-tab-${t}`);
                 const section = document.getElementById(`app-tab-${t}`);
-
                 if (btn) {
                     if (t === tabName) {
                         btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full";
@@ -797,15 +815,16 @@
                         btn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full";
                     }
                 }
-
                 if (section) {
-                    if (t === tabName) section.classList.remove('hidden');
-                    else section.classList.add('hidden');
+                    if (t === tabName) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
                 }
             });
 
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-
             if (tabName === 'tracker') {
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -814,13 +833,13 @@
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
-
-                // Important: the tracker was hidden before this function ran.
-                // Wait until the browser has laid out the visible tab before measuring canvases.
-                scheduleGraphRedraw(12);
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+            }
+
+            if (tabName === 'tracker') {
+                scheduleGraphRedraw();
             }
 
             if (tabName === 'habits') {
@@ -873,14 +892,10 @@
         }
 
         function startLiveClock() {
-            const clockEl = document.getElementById('live-clock');
-            function updateClock() {
-                const now = new Date();
-                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                if (clockEl) clockEl.innerText = now.toLocaleDateString('en-US', options);
-            }
-            updateClock();
-            setInterval(updateClock, 1000);
+            const clockEl=document.getElementById('live-clock'); if(!clockEl)return;
+            const formatter=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            const updateClock=()=>{clockEl.textContent=formatter.format(new Date());};
+            updateClock(); setInterval(updateClock,1000);
         }
 
         async function restoreSession(username) {
@@ -1350,27 +1365,14 @@
         }
 
         function updateValue(id, dayIndex, val) {
-            const tracker = trackers.find(t => t.id === id);
-            if (!tracker) return;
-            if (!Array.isArray(tracker.data)) tracker.data = Array(30).fill(0);
-            if (tracker.data.length < 30) {
-                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
-            }
-
-            let num = parseFloat(val);
-            if (isNaN(num) || val === '') {
-                num = 0;
-            } else if (num > tracker.max) {
-                alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);
-                render();
-                return;
-            }
-            tracker.data[dayIndex] = num;
-            
-            evaluateGoalCompletion(tracker);
-            saveAndCloudSync();
-            
-            drawGraph(tracker, currentUser === MASTER_ADMIN || isAdmin ? '1' : '2');
+            const tracker=trackers.find(t=>t.id===id); if(!tracker)return;
+            let num=parseFloat(val);
+            if(isNaN(num)||val==='') num=0;
+            else if(num<0) num=0;
+            else if(num>Number(tracker.max||1)){alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);scheduleGraphRedraw();return;}
+            if(!Array.isArray(tracker.data))tracker.data=Array(30).fill(0);
+            tracker.data[dayIndex]=num;
+            evaluateGoalCompletion(tracker); saveAndCloudSync(); scheduleGraphRedraw();
         }
 
         function addTodo() {
@@ -1568,7 +1570,7 @@
         function updateHabitsStreaksTimer() {
             if (currentAppTab !== 'habits' || habits.length === 0) return;
             habits.forEach(h => {
-                const cardEl = document.querySelector(`[data-habit-id="${h.id}"]`);
+                const cardEl = document.querySelector(`[data-habit-id="${CSS.escape(String(h.id))}"]`);
                 if (!cardEl) return;
                 const diffMs = new Date() - new Date(h.startDate);
                 const totalSeconds = Math.floor(diffMs / 1000);
@@ -1900,15 +1902,8 @@
                 });
             }
 
-            /*
-             * CRITICAL GRAPH FIX:
-             * Render each user's tracker cards in exactly ONE container.
-             *
-             * The previous code rendered normal users' cards into BOTH the
-             * hidden admin container and the visible regular container.
-             * Both copies had the same canvas ID. getElementById() could then
-             * select the hidden admin copy, so the graph was drawn but invisible.
-             */
+            // Render each tracker into exactly one visible container.
+            // Duplicate hidden/admin canvases previously created identical IDs and blank graphs for users.
             const containers = hasAdminAccess
                 ? [document.getElementById('trackers-container')]
                 : [document.getElementById('regular-trackers-container')];
@@ -1923,16 +1918,12 @@
                 }
 
                 trackers.forEach(t => {
-                    // Keep legacy tracker data valid without changing its meaning.
                     if (!Array.isArray(t.data)) t.data = [];
                     if (t.data.length < 30) t.data = t.data.concat(Array(30 - t.data.length).fill(0));
                     if (t.data.length > 30) t.data = t.data.slice(0, 30);
-
-                    const safeMax = Number(t.max);
-                    if (!Number.isFinite(safeMax) || safeMax <= 0) t.max = 1;
-
+                    if (!Number.isFinite(Number(t.max)) || Number(t.max) <= 0) t.max = 1;
                     if (!t.timeframe) t.timeframe = 'Week';
-                    if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
+                    if (!t.goal) t.goal = Math.round(Number(t.max) / 2);
                     if (t.showSettings === undefined) t.showSettings = false;
 
                     const card = document.createElement('div');
@@ -2018,315 +2009,66 @@
                         ` : ''}
 
                         <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full min-w-0 h-[180px] dynamic-card-solid border rounded-xl block graph-canvas"></canvas>
+                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
                             <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
-                    
-                    
                 });
             });
 
-            renderTodos();
-            renderHabits();
-
-            // Draw only after the complete tracker DOM exists.
-            scheduleGraphRedraw(10);
-        }
-
-        /*
-         * GHOST Tracker graph renderer — robust across laptop, tablet and phone.
-         *
-         * The graph keeps the same data and behavior. Only rendering is improved:
-         * - CSS pixels and backing-store pixels are separated.
-         * - devicePixelRatio makes laptop/Retina lines and text crisp.
-         * - hidden tabs are never measured as zero-width.
-         * - ResizeObserver redraws when mobile layout changes.
-         * - repeated RAF retries handle browser tab/viewport transitions.
-         */
-        const graphResizeObservers = new Map();
-        let graphRedrawTimer = null;
-        let graphResizeFrame = null;
-
-        function getGraphCanvasId(trackerId, suffix) {
-            return `canvas-${trackerId}-${suffix}`;
+            if (currentAppTab === 'tracker') scheduleGraphRedraw();
         }
 
         function drawGraph(t, suffix) {
-            const canvas = document.getElementById(getGraphCanvasId(t.id, suffix));
-            if (!canvas) return false;
-
-            const trackerSection = document.getElementById('app-tab-tracker');
-            if (!trackerSection || trackerSection.classList.contains('hidden')) return false;
-
-            const rect = canvas.getBoundingClientRect();
-            const parent = canvas.parentElement;
-            const parentRect = parent ? parent.getBoundingClientRect() : { width: 0 };
-
-            // A hidden/collapsing mobile tab can report 0. Do not create a 0px bitmap.
-            const measuredWidth = Math.max(
-                rect.width || 0,
-                parentRect.width || 0,
-                canvas.clientWidth || 0
-            );
-
-            // Never draw into a hidden canvas/container.
-            const canvasStyle = window.getComputedStyle(canvas);
-            const parentStyle = parent ? window.getComputedStyle(parent) : null;
-            if (
-                canvasStyle.display === 'none' ||
-                canvasStyle.visibility === 'hidden' ||
-                (parentStyle && parentStyle.display === 'none')
-            ) {
-                return false;
-            }
-
-            if (!Number.isFinite(measuredWidth) || measuredWidth < 80) {
-                return false;
-            }
-
-            const cssWidth = Math.max(220, Math.floor(measuredWidth));
-            const cssHeight = 180;
-            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 4));
-
-            // CSS size is stable; bitmap size is multiplied by DPR for crisp rendering.
-            canvas.style.width = '100%';
-            canvas.style.height = `${cssHeight}px`;
-            canvas.style.display = 'block';
-
-            const bitmapWidth = Math.max(1, Math.round(cssWidth * dpr));
-            const bitmapHeight = Math.max(1, Math.round(cssHeight * dpr));
-
-            if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
-                canvas.width = bitmapWidth;
-                canvas.height = bitmapHeight;
-            }
-
-            const ctx = canvas.getContext('2d', {
-                alpha: true,
-                desynchronized: false
-            });
-            if (!ctx) return false;
-
-            // Reset transform every draw; otherwise repeated redraws can compound transforms.
-            if (typeof ctx.resetTransform === 'function') {
-                ctx.resetTransform();
-            } else {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-            }
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, cssWidth, cssHeight);
-
-            const rawMax = Number(t.max);
-            const maxValue = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 1;
-            const data = Array.isArray(t.data) ? t.data : [];
-
-            const left = cssWidth < 340 ? 34 : 42;
-            const right = 12;
-            const top = 12;
-            const bottom = 30;
-            const plotWidth = Math.max(1, cssWidth - left - right);
-            const plotHeight = Math.max(1, cssHeight - top - bottom);
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
-            const textColor = currentModeKey === 'light' ? '#64748b' : '#94a3b8';
-            const axisColor = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
-            const lineColor = t.color || '#34d399';
-
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            // Horizontal grid and Y labels.
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 1;
-            ctx.font = '10px monospace';
-            ctx.fillStyle = textColor;
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-
-            const rows = 4;
-            for (let i = 0; i <= rows; i++) {
-                const y = top + (plotHeight / rows) * i;
-
-                ctx.beginPath();
-                ctx.moveTo(left, y);
-                ctx.lineTo(left + plotWidth, y);
-                ctx.stroke();
-
-                const labelValue = Math.round(maxValue - (maxValue / rows) * i);
-                ctx.fillText(String(labelValue), left - 6, y);
-            }
-
-            // X axis.
-            ctx.strokeStyle = axisColor;
-            ctx.beginPath();
-            ctx.moveTo(left, top + plotHeight);
-            ctx.lineTo(left + plotWidth, top + plotHeight);
-            ctx.stroke();
-
-            // 30 data points remain exactly as before.
-            const pointCount = 30;
-            const dx = plotWidth / (pointCount - 1);
-
-            // Day labels. Fewer labels on narrow screens prevents overlap.
-            const labelIndexes = cssWidth < 360
-                ? [0, 7, 14, 21, 29]
-                : [0, 6, 13, 20, 29];
-
-            ctx.fillStyle = textColor;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            labelIndexes.forEach(index => {
-                const x = left + index * dx;
-                ctx.fillText(String(index + 1), x, top + plotHeight + 8);
-            });
-
-            const points = [];
-            for (let i = 0; i < pointCount; i++) {
-                const numericValue = Number(data[i]);
-                const value = Number.isFinite(numericValue) ? numericValue : 0;
-                const clampedValue = Math.max(0, Math.min(value, maxValue));
-
-                points.push({
-                    x: left + i * dx,
-                    y: top + plotHeight - (clampedValue / maxValue) * plotHeight,
-                    value
-                });
-            }
-
-            // Main graph line.
-            ctx.strokeStyle = lineColor;
-            ctx.lineWidth = 2.25;
-            ctx.beginPath();
-
-            points.forEach((point, index) => {
-                if (index === 0) ctx.moveTo(point.x, point.y);
-                else ctx.lineTo(point.x, point.y);
-            });
-            ctx.stroke();
-
-            // Small high-DPI points make individual recorded values easier to see.
-            ctx.fillStyle = lineColor;
-            points.forEach(point => {
-                if (point.value !== 0) {
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, 2.25, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-
-            if (points.every(point => point.value === 0)) {
-                ctx.fillStyle = textColor;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText('No values recorded yet', left, top + plotHeight - 6);
-            }
-
+            const canvas=document.getElementById(`canvas-${t.id}-${suffix}`);
+            if(!canvas) return false;
+            const parent=canvas.parentElement;
+            if(!parent) return false;
+            const cs=getComputedStyle(canvas), ps=getComputedStyle(parent);
+            if(cs.display==='none'||cs.visibility==='hidden'||ps.display==='none'||ps.visibility==='hidden') return false;
+            const rect=canvas.getBoundingClientRect();
+            const cssWidth=Math.max(260,Math.floor(rect.width||parent.getBoundingClientRect().width||320));
+            const cssHeight=180, dpr=Math.max(1,Math.min(window.devicePixelRatio||1,3));
+            const pw=Math.floor(cssWidth*dpr), ph=Math.floor(cssHeight*dpr);
+            if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
+            canvas.style.width='100%'; canvas.style.height=cssHeight+'px';
+            const ctx=canvas.getContext('2d'); if(!ctx) return false;
+            ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssWidth,cssHeight);
+            const maxRaw=Number(t.max), maxValue=Number.isFinite(maxRaw)&&maxRaw>0?maxRaw:1;
+            const data=Array.isArray(t.data)?t.data:[], lineColor=t.color||'#34d399';
+            const grid=currentModeKey==='light'?'#e2e8f0':'#1f2937', text=currentModeKey==='light'?'#64748b':'#9ca3af';
+            const axis=currentModeKey==='light'?'#cbd5e1':'#374151', bg=currentModeKey==='light'?'#fff':'#030712';
+            const left=42,right=12,top=12,bottom=28,plotW=Math.max(1,cssWidth-left-right),plotH=Math.max(1,cssHeight-top-bottom);
+            ctx.lineWidth=1; ctx.strokeStyle=grid; ctx.fillStyle=text; ctx.font='11px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace'; ctx.textBaseline='middle'; ctx.textAlign='right';
+            for(let i=0;i<=4;i++){const y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+plotW,y);ctx.stroke();ctx.fillText(String(Math.round(maxValue-maxValue*i/4)),left-7,y);}
+            ctx.strokeStyle=axis;ctx.beginPath();ctx.moveTo(left,top+plotH);ctx.lineTo(left+plotW,top+plotH);ctx.stroke();
+            const labels=cssWidth<380?[0,7,14,21,29]:[0,6,13,20,29], count=30, dx=plotW/(count-1);
+            ctx.fillStyle=text;ctx.font='10px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='top';
+            labels.forEach(i=>ctx.fillText(String(i+1),left+i*dx,top+plotH+8));
+            const points=[];
+            for(let i=0;i<count;i++){const n=Number(data[i]),v=Number.isFinite(n)?n:0,c=Math.max(0,Math.min(v,maxValue));points.push({x:left+i*dx,y:top+plotH-(c/maxValue)*plotH,value:v});}
+            ctx.save();ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+            for(let i=0;i<points.length-1;i++){const mx=(points[i].x+points[i+1].x)/2,my=(points[i].y+points[i+1].y)/2;ctx.quadraticCurveTo(points[i].x,points[i].y,mx,my);}
+            ctx.lineTo(points.at(-1).x,points.at(-1).y);ctx.strokeStyle=lineColor;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+            ctx.lineTo(points.at(-1).x,top+plotH);ctx.lineTo(points[0].x,top+plotH);ctx.closePath();
+            const grad=ctx.createLinearGradient(0,top,0,top+plotH);grad.addColorStop(0,hexToRgba(lineColor,.20));grad.addColorStop(1,hexToRgba(lineColor,0));ctx.fillStyle=grad;ctx.fill();ctx.restore();
+            ctx.fillStyle=lineColor;ctx.strokeStyle=bg;ctx.lineWidth=1.5;
+            for(const p of points){if(p.value===0)continue;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.stroke();}
             return true;
         }
 
-        function getTrackerGraphSuffix() {
-            return (currentUser === MASTER_ADMIN || isAdmin) ? '1' : '2';
-        }
+        let graphRedrawFrame=0, graphResizeTimer=0;
+        function redrawVisibleGraphs(){if(currentAppTab!=='tracker')return;const suffix=currentUser===MASTER_ADMIN||isAdmin?'1':'2';trackers.forEach(t=>drawGraph(t,suffix));}
+        function scheduleGraphRedraw(){if(graphRedrawFrame)cancelAnimationFrame(graphRedrawFrame);graphRedrawFrame=requestAnimationFrame(()=>{graphRedrawFrame=0;redrawVisibleGraphs();});}
+        window.addEventListener('resize',()=>{clearTimeout(graphResizeTimer);graphResizeTimer=setTimeout(scheduleGraphRedraw,120);},{passive:true});
+        window.addEventListener('orientationchange',()=>{clearTimeout(graphResizeTimer);graphResizeTimer=setTimeout(scheduleGraphRedraw,160);},{passive:true});
 
-        function redrawAllGraphs() {
-            if (currentAppTab !== 'tracker') return;
-
-            const suffix = getTrackerGraphSuffix();
-            if (!Array.isArray(trackers)) return;
-
-            trackers.forEach(tracker => {
-                drawGraph(tracker, suffix);
-            });
-        }
-
-        function scheduleGraphRedraw(attempts = 10) {
-            if (graphRedrawTimer) {
-                clearTimeout(graphRedrawTimer);
-                graphRedrawTimer = null;
-            }
-
-            let remaining = attempts;
-
-            const tryDraw = () => {
-                if (currentAppTab !== 'tracker') return;
-
-                const canvases = document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]');
-                let drawn = 0;
-
-                canvases.forEach(canvas => {
-                    const id = canvas.id;
-                    const match = id.match(/^canvas-(.+)-([12])$/);
-                    if (!match) return;
-
-                    const tracker = trackers.find(t => String(t.id) === match[1]);
-                    if (tracker && drawGraph(tracker, match[2])) drawn++;
-                });
-
-                if (drawn < canvases.length && remaining > 0) {
-                    remaining--;
-                    graphRedrawTimer = requestAnimationFrame(() => {
-                        graphRedrawTimer = setTimeout(tryDraw, 20);
-                    });
-                } else {
-                    graphRedrawTimer = null;
-                }
-            };
-
-            requestAnimationFrame(() => {
-                requestAnimationFrame(tryDraw);
-            });
-        }
-
-        function observeGraphCanvas(canvas) {
-            if (!canvas || graphResizeObservers.has(canvas)) return;
-
-            if (typeof ResizeObserver === 'function') {
-                const observer = new ResizeObserver(() => {
-                    if (currentAppTab === 'tracker') {
-                        scheduleGraphRedraw(4);
-                    }
-                });
-
-                observer.observe(canvas);
-                if (canvas.parentElement) observer.observe(canvas.parentElement);
-                graphResizeObservers.set(canvas, observer);
-            }
-        }
-
-        function observeAllGraphCanvases() {
-            document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]').forEach(observeGraphCanvas);
-        }
-
-        function installGraphObservers() {
-            observeAllGraphCanvases();
-
-            const trackerSection = document.getElementById('app-tab-tracker');
-            if (trackerSection && typeof MutationObserver === 'function') {
-                const mutationObserver = new MutationObserver(() => {
-                    observeAllGraphCanvases();
-                    if (currentAppTab === 'tracker') scheduleGraphRedraw(4);
-                });
-                mutationObserver.observe(trackerSection, { childList: true, subtree: true });
-            }
-
-            window.addEventListener('resize', () => scheduleGraphRedraw(6));
-            window.addEventListener('orientationchange', () => scheduleGraphRedraw(12));
-            window.addEventListener('pageshow', () => scheduleGraphRedraw(8));
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) scheduleGraphRedraw(8);
-            });
-
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', () => scheduleGraphRedraw(8));
-            }
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', installGraphObservers, { once: true });
-        } else {
-            installGraphObservers();
+        function hexToRgba(hex, alpha) {
+            let c = hex.replace('#','');
+            if(c.length===3) c = c.split('').map(x=>x+x).join('');
+            const num = parseInt(c, 16);
+            return `rgba(${(num>>16)&255}, ${(num>>8)&255}, ${num&255}, ${alpha})`;
         }
 
         function addNewTracker() {
@@ -2336,24 +2078,21 @@
             const timeframe = document.getElementById('new-timeframe').value;
             const color = document.getElementById('new-color').value;
 
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid title and maximum limit.');
+            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
+                alert('Please enter a valid title, max target limit, and goal value.');
                 return;
             }
 
             trackers.push({
-                id: 'track_' + Date.now(),
+                id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
-                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                goal: goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
+                congratulatedCycle: false
             });
 
             document.getElementById('new-title').value = '';
@@ -2371,24 +2110,21 @@
             const timeframe = document.getElementById('reg-new-timeframe').value;
             const color = document.getElementById('reg-new-color').value;
 
-            if (!title || isNaN(max) || max <= 0) {
-                alert('Please enter a valid title and maximum limit.');
+            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
+                alert('Please enter a valid title, max target limit, and goal value.');
                 return;
             }
 
             trackers.push({
-                id: 'track_' + Date.now(),
+                id: 'tracker_' + Date.now(),
                 title: title,
                 max: max,
-                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                goal: goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false,
-                lastResetPeriod: new Date().toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(new Date()),
-                lastResetMonth: new Date().getMonth()
+                congratulatedCycle: false
             });
 
             document.getElementById('reg-new-title').value = '';
@@ -2400,7 +2136,7 @@
         }
 
         function deleteTracker(id, title) {
-            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
+            if(confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
