@@ -121,6 +121,26 @@
             animation: borderBlink 1.5s infinite ease-in-out;
         }
     </style>
+
+<style id="ghost-graph-fix">
+    /* Graph rendering: keep CSS size separate from the high-resolution canvas bitmap. */
+    #app-tab-tracker canvas[id^="canvas-"] {
+        display: block;
+        width: 100% !important;
+        height: 180px !important;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        image-rendering: auto;
+    }
+
+    #app-tab-tracker .dynamic-card,
+    #app-tab-tracker .dynamic-card-solid,
+    #app-tab-tracker .space-y-3 {
+        min-width: 0;
+    }
+</style>
+
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
 
@@ -762,7 +782,6 @@
             alert('Site sharing URL copied to clipboard!');
         }
 
-
         function switchAppTab(tabName) {
             currentAppTab = tabName;
             const tabs = ['home', 'tracker', 'todo', 'habits', 'history', 'profile'];
@@ -780,11 +799,8 @@
                 }
 
                 if (section) {
-                    if (t === tabName) {
-                        section.classList.remove('hidden');
-                    } else {
-                        section.classList.add('hidden');
-                    }
+                    if (t === tabName) section.classList.remove('hidden');
+                    else section.classList.add('hidden');
                 }
             });
 
@@ -799,8 +815,9 @@
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
 
-                // Let the browser finish layout before measuring canvas width.
-                redrawGraphsWhenVisible();
+                // Important: the tracker was hidden before this function ran.
+                // Wait until the browser has laid out the visible tab before measuring canvases.
+                scheduleGraphRedraw(12);
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -1336,7 +1353,9 @@
             const tracker = trackers.find(t => t.id === id);
             if (!tracker) return;
             if (!Array.isArray(tracker.data)) tracker.data = Array(30).fill(0);
-            if (tracker.data.length < 30) tracker.data.length = 30;
+            if (tracker.data.length < 30) {
+                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+            }
 
             let num = parseFloat(val);
             if (isNaN(num) || val === '') {
@@ -1895,10 +1914,14 @@
                 }
 
                 trackers.forEach(t => {
+                    // Keep legacy tracker data valid without changing its meaning.
                     if (!Array.isArray(t.data)) t.data = [];
                     if (t.data.length < 30) t.data = t.data.concat(Array(30 - t.data.length).fill(0));
                     if (t.data.length > 30) t.data = t.data.slice(0, 30);
-                    if (!t.max || Number(t.max) <= 0) t.max = 1;
+
+                    const safeMax = Number(t.max);
+                    if (!Number.isFinite(safeMax) || safeMax <= 0) t.max = 1;
+
                     if (!t.timeframe) t.timeframe = 'Week';
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
                     if (t.showSettings === undefined) t.showSettings = false;
@@ -1986,74 +2009,121 @@
                         ` : ''}
 
                         <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full min-w-0 h-[180px] dynamic-card-solid border rounded-xl block"></canvas>
+                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full min-w-0 h-[180px] dynamic-card-solid border rounded-xl block graph-canvas"></canvas>
                             <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
                     
-                    drawGraph(t, hasAdminAccess ? '1' : '2');
+                    
                 });
             });
 
             renderTodos();
             renderHabits();
+
+            // Draw only after the complete tracker DOM exists.
+            scheduleGraphRedraw(10);
         }
 
+        /*
+         * GHOST Tracker graph renderer — robust across laptop, tablet and phone.
+         *
+         * The graph keeps the same data and behavior. Only rendering is improved:
+         * - CSS pixels and backing-store pixels are separated.
+         * - devicePixelRatio makes laptop/Retina lines and text crisp.
+         * - hidden tabs are never measured as zero-width.
+         * - ResizeObserver redraws when mobile layout changes.
+         * - repeated RAF retries handle browser tab/viewport transitions.
+         */
+        const graphResizeObservers = new Map();
+        let graphRedrawTimer = null;
+        let graphResizeFrame = null;
+
+        function getGraphCanvasId(trackerId, suffix) {
+            return `canvas-${trackerId}-${suffix}`;
+        }
 
         function drawGraph(t, suffix) {
-            const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
-            if (!canvas) return;
+            const canvas = document.getElementById(getGraphCanvasId(t.id, suffix));
+            if (!canvas) return false;
 
-            const parent = canvas.parentElement;
-            if (!parent) return;
+            const trackerSection = document.getElementById('app-tab-tracker');
+            if (!trackerSection || trackerSection.classList.contains('hidden')) return false;
 
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            // Mobile browsers can report 0 width while a tab is hidden or during
-            // the bottom-nav transition. Measure the visible canvas itself first,
-            // then fall back to its parent/window width.
             const rect = canvas.getBoundingClientRect();
-            const parentRect = parent.getBoundingClientRect();
-            const measuredWidth = rect.width || parentRect.width || window.innerWidth || 320;
+            const parent = canvas.parentElement;
+            const parentRect = parent ? parent.getBoundingClientRect() : { width: 0 };
 
-            // Keep enough room for Y-axis labels without allowing a negative/zero canvas.
-            const cssWidth = Math.max(260, Math.floor(measuredWidth));
+            // A hidden/collapsing mobile tab can report 0. Do not create a 0px bitmap.
+            const measuredWidth = Math.max(
+                rect.width || 0,
+                parentRect.width || 0,
+                canvas.clientWidth || 0
+            );
+
+            if (!Number.isFinite(measuredWidth) || measuredWidth < 80) {
+                return false;
+            }
+
+            const cssWidth = Math.max(220, Math.floor(measuredWidth));
             const cssHeight = 180;
-            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
+            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 4));
 
+            // CSS size is stable; bitmap size is multiplied by DPR for crisp rendering.
             canvas.style.width = '100%';
             canvas.style.height = `${cssHeight}px`;
-            canvas.width = Math.floor(cssWidth * dpr);
-            canvas.height = Math.floor(cssHeight * dpr);
+            canvas.style.display = 'block';
 
-            // Draw in CSS pixels while using a higher backing resolution on phones.
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const bitmapWidth = Math.max(1, Math.round(cssWidth * dpr));
+            const bitmapHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+            if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
+                canvas.width = bitmapWidth;
+                canvas.height = bitmapHeight;
+            }
+
+            const ctx = canvas.getContext('2d', {
+                alpha: true,
+                desynchronized: false
+            });
+            if (!ctx) return false;
+
+            // Reset transform every draw; otherwise repeated redraws can compound transforms.
+            if (typeof ctx.resetTransform === 'function') {
+                ctx.resetTransform();
+            } else {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+            ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, cssWidth, cssHeight);
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
-            const axisColor = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
 
             const rawMax = Number(t.max);
             const maxValue = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 1;
             const data = Array.isArray(t.data) ? t.data : [];
 
-            const left = 36;
+            const left = cssWidth < 340 ? 34 : 42;
             const right = 12;
             const top = 12;
-            const bottom = 26;
+            const bottom = 30;
             const plotWidth = Math.max(1, cssWidth - left - right);
             const plotHeight = Math.max(1, cssHeight - top - bottom);
 
-            // Grid + Y-axis labels.
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
+            const textColor = currentModeKey === 'light' ? '#64748b' : '#94a3b8';
+            const axisColor = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
+            const lineColor = t.color || '#34d399';
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Horizontal grid and Y labels.
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
-            ctx.fillStyle = textColor;
             ctx.font = '10px monospace';
-            ctx.textBaseline = 'middle';
+            ctx.fillStyle = textColor;
             ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
 
             const rows = 4;
             for (let i = 0; i <= rows; i++) {
@@ -2064,41 +2134,33 @@
                 ctx.lineTo(left + plotWidth, y);
                 ctx.stroke();
 
-                const labelVal = Math.round(maxValue - (maxValue / rows) * i);
-                ctx.fillText(String(labelVal), left - 6, y);
+                const labelValue = Math.round(maxValue - (maxValue / rows) * i);
+                ctx.fillText(String(labelValue), left - 6, y);
             }
 
-            // X-axis.
+            // X axis.
             ctx.strokeStyle = axisColor;
             ctx.beginPath();
             ctx.moveTo(left, top + plotHeight);
             ctx.lineTo(left + plotWidth, top + plotHeight);
             ctx.stroke();
 
-            // Day labels. Fewer labels on narrow screens keeps the graph readable.
-            const labelIndexes = cssWidth < 380
+            // 30 data points remain exactly as before.
+            const pointCount = 30;
+            const dx = plotWidth / (pointCount - 1);
+
+            // Day labels. Fewer labels on narrow screens prevents overlap.
+            const labelIndexes = cssWidth < 360
                 ? [0, 7, 14, 21, 29]
                 : [0, 6, 13, 20, 29];
-
-            const pointCount = 30;
-            const dx = pointCount > 1 ? plotWidth / (pointCount - 1) : plotWidth;
 
             ctx.fillStyle = textColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             labelIndexes.forEach(index => {
                 const x = left + index * dx;
-                ctx.fillText(String(index + 1), x, top + plotHeight + 7);
+                ctx.fillText(String(index + 1), x, top + plotHeight + 8);
             });
-
-            const lineColor = t.color || getComputedStyle(document.documentElement)
-                .getPropertyValue('--theme-primary').trim() || '#34d399';
-
-            ctx.strokeStyle = lineColor;
-            ctx.lineWidth = 2.5;
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.beginPath();
 
             const points = [];
             for (let i = 0; i < pointCount; i++) {
@@ -2106,23 +2168,30 @@
                 const value = Number.isFinite(numericValue) ? numericValue : 0;
                 const clampedValue = Math.max(0, Math.min(value, maxValue));
 
-                const x = left + i * dx;
-                const y = top + plotHeight - (clampedValue / maxValue) * plotHeight;
-
-                points.push({ x, y, value });
-
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                points.push({
+                    x: left + i * dx,
+                    y: top + plotHeight - (clampedValue / maxValue) * plotHeight,
+                    value
+                });
             }
 
+            // Main graph line.
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 2.25;
+            ctx.beginPath();
+
+            points.forEach((point, index) => {
+                if (index === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
             ctx.stroke();
 
-            // Small points make phone graphs easier to read without changing data.
+            // Small high-DPI points make individual recorded values easier to see.
             ctx.fillStyle = lineColor;
             points.forEach(point => {
                 if (point.value !== 0) {
                     ctx.beginPath();
-                    ctx.arc(point.x, point.y, 2.5, 0, Math.PI * 2);
+                    ctx.arc(point.x, point.y, 2.25, 0, Math.PI * 2);
                     ctx.fill();
                 }
             });
@@ -2131,14 +2200,20 @@
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'bottom';
-                ctx.fillText('No values recorded yet', left, top + plotHeight - 5);
+                ctx.fillText('No values recorded yet', left, top + plotHeight - 6);
             }
+
+            return true;
+        }
+
+        function getTrackerGraphSuffix() {
+            return (currentUser === MASTER_ADMIN || isAdmin) ? '1' : '2';
         }
 
         function redrawAllGraphs() {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            const suffix = hasAdminAccess ? '1' : '2';
+            if (currentAppTab !== 'tracker') return;
 
+            const suffix = getTrackerGraphSuffix();
             if (!Array.isArray(trackers)) return;
 
             trackers.forEach(tracker => {
@@ -2146,32 +2221,92 @@
             });
         }
 
-        // Redraw after the tracker tab becomes visible. This is important on
-        // mobile Safari/Chrome because hidden elements can report zero width.
-        function redrawGraphsWhenVisible() {
-            if (currentAppTab !== 'tracker') return;
+        function scheduleGraphRedraw(attempts = 10) {
+            if (graphRedrawTimer) {
+                clearTimeout(graphRedrawTimer);
+                graphRedrawTimer = null;
+            }
+
+            let remaining = attempts;
+
+            const tryDraw = () => {
+                if (currentAppTab !== 'tracker') return;
+
+                const canvases = document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]');
+                let drawn = 0;
+
+                canvases.forEach(canvas => {
+                    const id = canvas.id;
+                    const match = id.match(/^canvas-(.+)-([12])$/);
+                    if (!match) return;
+
+                    const tracker = trackers.find(t => String(t.id) === match[1]);
+                    if (tracker && drawGraph(tracker, match[2])) drawn++;
+                });
+
+                if (drawn < canvases.length && remaining > 0) {
+                    remaining--;
+                    graphRedrawTimer = requestAnimationFrame(() => {
+                        graphRedrawTimer = setTimeout(tryDraw, 20);
+                    });
+                } else {
+                    graphRedrawTimer = null;
+                }
+            };
 
             requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    redrawAllGraphs();
-                });
+                requestAnimationFrame(tryDraw);
             });
         }
 
-        window.addEventListener('resize', () => {
-            if (currentAppTab === 'tracker') {
-                redrawGraphsWhenVisible();
-            }
-        });
+        function observeGraphCanvas(canvas) {
+            if (!canvas || graphResizeObservers.has(canvas)) return;
 
-        // Handles mobile browser viewport changes caused by address-bar collapse,
-        // orientation changes, and bottom navigation layout changes.
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                if (currentAppTab === 'tracker') {
-                    redrawGraphsWhenVisible();
-                }
+            if (typeof ResizeObserver === 'function') {
+                const observer = new ResizeObserver(() => {
+                    if (currentAppTab === 'tracker') {
+                        scheduleGraphRedraw(4);
+                    }
+                });
+
+                observer.observe(canvas);
+                if (canvas.parentElement) observer.observe(canvas.parentElement);
+                graphResizeObservers.set(canvas, observer);
+            }
+        }
+
+        function observeAllGraphCanvases() {
+            document.querySelectorAll('#app-tab-tracker canvas[id^="canvas-"]').forEach(observeGraphCanvas);
+        }
+
+        function installGraphObservers() {
+            observeAllGraphCanvases();
+
+            const trackerSection = document.getElementById('app-tab-tracker');
+            if (trackerSection && typeof MutationObserver === 'function') {
+                const mutationObserver = new MutationObserver(() => {
+                    observeAllGraphCanvases();
+                    if (currentAppTab === 'tracker') scheduleGraphRedraw(4);
+                });
+                mutationObserver.observe(trackerSection, { childList: true, subtree: true });
+            }
+
+            window.addEventListener('resize', () => scheduleGraphRedraw(6));
+            window.addEventListener('orientationchange', () => scheduleGraphRedraw(12));
+            window.addEventListener('pageshow', () => scheduleGraphRedraw(8));
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) scheduleGraphRedraw(8);
             });
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => scheduleGraphRedraw(8));
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', installGraphObservers, { once: true });
+        } else {
+            installGraphObservers();
         }
 
         function addNewTracker() {
