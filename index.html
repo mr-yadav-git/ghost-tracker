@@ -135,6 +135,22 @@
         </div>
     </div>
 
+    <!-- SHARE ACCOMPLISHMENT MODAL -->
+    <div id="shareModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="w-full max-w-md dynamic-card border rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 relative space-y-4">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🏆 Share Your Accomplishment</h3>
+                <button onclick="closeShareModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs">✕ Close</button>
+            </div>
+            <p class="text-xs text-[var(--text-muted)]">Copy your progress card summary or share it directly with peers.</p>
+            <textarea id="share-text-output" readonly class="w-full h-32 dynamic-input border rounded-xl p-3 text-xs font-mono focus:outline-none resize-none"></textarea>
+            <div class="flex gap-2">
+                <button onclick="copyShareText()" class="flex-1 dynamic-bg font-bold py-2.5 rounded-xl text-xs shadow-sm">Copy to Clipboard</button>
+                <button onclick="nativeShare()" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">Share Link</button>
+            </div>
+        </div>
+    </div>
+
     <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY[cite: 2] -->
     <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
         <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
@@ -243,9 +259,17 @@
                     <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
                     <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
                 </div>
-                <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                    <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
+                <div class="flex items-center gap-2">
+                    <button onclick="openShareModal()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
+                        🏆 Share Progress
+                    </button>
+                    <button onclick="shareSite()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
+                        🔗 Share Site
+                    </button>
+                    <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                        <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
+                    </div>
                 </div>
             </div>
 
@@ -285,12 +309,15 @@
             <!-- PROMINENTLY PLACED: TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
             <div id="app-tab-todo" class="space-y-6 animate-fade-in">
                 <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 flex-wrap gap-3">
                         <div>
                             <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
                                 📋 Daily To-Do List & Today's Completion Telemetry
                             </h3>
                             <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
+                        </div>
+                        <div id="todo-streak-badge" class="dynamic-card-solid border px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                            🔥 <span id="todo-streak-val">0</span> Day Streak
                         </div>
                     </div>
 
@@ -1155,6 +1182,42 @@
             renderTodos();
         }
 
+        function calculateStreak(dataArray) {
+            let streak = 0;
+            // Count backwards from today (index 0 or last active entry)
+            for (let i = 0; i < dataArray.length; i++) {
+                if (dataArray[i] > 0) {
+                    streak++;
+                } else if (i > 0) {
+                    break; // break streak if a day is missed
+                }
+            }
+            return streak;
+        }
+
+        function calculateTodoStreak() {
+            // Count consecutive days where all or at least some tasks were completed
+            let streak = 0;
+            let checkDate = new Date();
+            
+            for (let i = 0; i < 30; i++) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                const dayTasks = todos.filter(t => t.createdAt <= dateStr);
+                if (dayTasks.length === 0) {
+                    checkDate.setDate(checkDate.getDate() - 1);
+                    continue;
+                }
+                const completedOnDay = dayTasks.every(t => t.completed && t.completedDate === dateStr);
+                if (completedOnDay) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            return streak;
+        }
+
         function renderTodos() {
             const container = document.getElementById('todos-list-container');
             if (!container) return;
@@ -1162,6 +1225,7 @@
             if (todos.length === 0) {
                 container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet. Persistent tasks remain until removed.</p>`;
                 drawTodoDonut(0, 0);
+                document.getElementById('todo-streak-val').innerText = '0';
                 return;
             }
 
@@ -1192,6 +1256,11 @@
             const statsEl = document.getElementById('todo-stats-text');
             if (pctEl) pctEl.innerText = `${percentage}%`;
             if (statsEl) statsEl.innerText = `${completedTodayCount} / ${totalActiveTasks} Done Today`;
+            
+            const streakVal = calculateTodoStreak();
+            const streakEl = document.getElementById('todo-streak-val');
+            if (streakEl) streakEl.innerText = streakVal;
+
             drawTodoDonut(completedTodayCount, totalActiveTasks);
         }
 
@@ -1395,6 +1464,69 @@
             content.classList.add('scale-95');
         }
 
+        function openShareModal() {
+            const modal = document.getElementById('shareModal');
+            const content = modal.querySelector('div');
+            const textarea = document.getElementById('share-text-output');
+
+            let report = `🔥 GHOST TRACKER PROGRESS REPORT (${currentUser})\n`;
+            report += `----------------------------------------\n`;
+            report += `📋 To-Do Streak: ${calculateTodoStreak()} Days\n`;
+            
+            trackers.forEach(t => {
+                const streak = calculateStreak(t.data);
+                report += `📈 ${t.title}: ${streak} Day Streak\n`;
+            });
+            report += `----------------------------------------\n`;
+            report += `Powered by GHOST Tracker Matrix.`;
+
+            textarea.value = report;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('shareModal');
+            const content = modal.querySelector('div');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+
+        function copyShareText() {
+            const textarea = document.getElementById('share-text-output');
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value);
+            alert('Progress report copied to clipboard!');
+        }
+
+        function nativeShare() {
+            const textarea = document.getElementById('share-text-output');
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My GHOST Tracker Progress',
+                    text: textarea.value,
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                copyShareText();
+            }
+        }
+
+        function shareSite() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'GHOST Tracker',
+                    text: 'Check out GHOST Tracker for secure telemetry & habit tracking!',
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Site link copied to clipboard!');
+            }
+        }
+
         function toggleTrackerSettings(id) {
             const tracker = trackers.find(t => t.id === id);
             if (!tracker) return;
@@ -1526,6 +1658,7 @@
                     if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
                     if (t.showSettings === undefined) t.showSettings = false;
 
+                    const streakCount = calculateStreak(t.data);
                     const card = document.createElement('div');
                     card.className = 'dynamic-card border rounded-2xl p-5 shadow-sm space-y-4';
                     
@@ -1557,7 +1690,10 @@
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center flex-wrap gap-2">
-                            <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
+                            <div class="flex items-center gap-3">
+                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
+                                <span class="dynamic-card-solid border px-2 py-0.5 rounded-lg text-[10px] font-bold dynamic-text flex items-center gap-1">🔥 ${streakCount} Day Streak</span>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
                                 <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
