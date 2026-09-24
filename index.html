@@ -332,23 +332,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Contribute / Support Card with UPI QR Code -->
-                    <div class="dynamic-card border rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
-                        <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 shrink-0 flex items-center justify-center min-w-[160px] min-h-[160px]">
-                            <!-- UPI QR Code generated for upi://pay?pa=9416711202%40fam&pn=Ghost&cu=INR -->
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi%3A%2F%2Fpay%3Fpa%3D9416711202%2540fam%26pn%3DGhost%26cu%3DINR" alt="UPI Payment QR Code" class="w-36 h-36 sm:w-40 sm:h-40 object-contain rounded-xl block relative z-10" loading="eager" crossorigin="anonymous" />
-                        </div>
-                        <div class="space-y-3 text-center sm:text-left">
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
-                                ☕ Support Developer
-                            </div>
-                            <h3 class="text-lg sm:text-xl font-bold text-[var(--text-main)]">Contribute & Fuel Future Updates</h3>
-                            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
-                                Ghost Tracker is built with passion to give you ruthless focus and privacy. If this tool helps you master your discipline, consider supporting ongoing maintenance and new features by scanning the UPI QR code. Thank you!
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
@@ -647,7 +630,7 @@
         // TUTORIAL STATE MACHINE WALKING THROUGH TABS
         let currentTutorialStep = 0;
         const tutorialSteps = [
-            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, active platform operators, and contribution portal.' },
+            { tab: 'home', title: 'Welcome to Ghost Tracker!', desc: 'This is your Home sanctuary. Here you can view your personal sharing link, daily login streak, and active platform operators.' },
             { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
             { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
             { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
@@ -757,13 +740,6 @@
             fetchLiveUsersCount();
         });
 
-        // Window resize listener to automatically re-scale graphs when rotated or resized on mobile
-        window.addEventListener('resize', () => {
-            if (currentAppTab === 'tracker') {
-                render();
-            }
-        });
-
         async function fetchLiveUsersCount() {
             try {
                 const { count, error } = await client.from('profiles').select('*', { count: 'exact', head: true });
@@ -818,10 +794,6 @@
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
-                // FIX: Re-render graphs with a slight delay when tab becomes visible so width dimensions are accurate on mobile
-                setTimeout(() => {
-                    render();
-                }, 60);
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -2000,14 +1972,17 @@
 
                         <div class="space-y-3">
                             <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
-                            <!-- FIX: Enabled horizontal scrolling and touch cell padding for mobile date column responsiveness -->
-                            <div class="flex overflow-x-auto gap-2 p-2.5 dynamic-card-solid border rounded-xl scrollbar-thin">${inputsHtml}</div>
+                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
+                    
                     drawGraph(t, hasAdminAccess ? '1' : '2');
                 });
             });
+
+            renderTodos();
+            renderHabits();
         }
 
         function drawGraph(t, suffix) {
@@ -2015,84 +1990,44 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // FIX: Robust dynamic width fallback for laptop and mobile screens
-            const parentWidth = canvas.parentElement.clientWidth || canvas.parentElement.offsetWidth || canvas.offsetWidth || window.innerWidth - 64;
-            canvas.width = parentWidth > 0 ? parentWidth : 320;
+            canvas.width = canvas.parentElement.clientWidth - 20;
             canvas.height = 140;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
-            const textColor = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
+            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
+            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
 
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
-            for (let i = 1; i < 4; i++) {
-                let y = (canvas.height / 4) * i;
+            const rows = 4;
+            for (let i = 0; i <= rows; i++) {
+                let y = (canvas.height / rows) * i;
                 ctx.beginPath();
-                ctx.moveTo(35, y);
-                ctx.lineTo(canvas.width - 10, y);
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
                 ctx.stroke();
+                
+                ctx.fillStyle = textColor;
+                ctx.font = '10px monospace';
+                let labelVal = Math.round(t.max - (t.max / rows) * i);
+                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
             }
 
-            ctx.fillStyle = textColor;
-            ctx.font = '10px monospace';
-            ctx.fillText(t.max, 5, 15);
-            ctx.fillText(Math.round(t.max / 2), 5, canvas.height / 2 + 3);
-            ctx.fillText('0', 5, canvas.height - 5);
-
-            const paddingLeft = 45;
-            const paddingRight = 20;
-            const usableWidth = canvas.width - paddingLeft - paddingRight;
-            const stepX = usableWidth / 29;
-
-            const points = [];
-            for (let i = 0; i < 30; i++) {
-                const val = t.data[i] || 0;
-                const ratio = Math.min(1, Math.max(0, val / (t.max || 1)));
-                const x = paddingLeft + (i * stepX);
-                const y = canvas.height - 10 - ratio * (canvas.height - 25);
-                points.push({ x, y, val });
-            }
-
+            const dx = canvas.width / 29;
+            ctx.strokeStyle = t.color;
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 0; i < points.length - 1; i++) {
-                let xc = (points[i].x + points[i + 1].x) / 2;
-                let yc = (points[i].y + points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-            }
-            ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-            ctx.strokeStyle = t.color || '#34d399';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
 
-            ctx.lineTo(points[points.length - 1].x, canvas.height - 10);
-            ctx.lineTo(points[0].x, canvas.height - 10);
-            ctx.closePath();
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, hexToRgba(t.color || '#34d399', 0.25));
-            gradient.addColorStop(1, hexToRgba(t.color || '#34d399', 0.0));
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            points.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3.5, 0, 2 * Math.PI);
-                ctx.fillStyle = t.color || '#34d399';
-                ctx.fill();
-                ctx.lineWidth = 1.5;
-                ctx.strokeStyle = currentModeKey === 'light' ? '#ffffff' : '#030712';
-                ctx.stroke();
+            t.data.forEach((val, i) => {
+                let x = i * dx;
+                let actualVal = val || 0;
+                let clampedVal = Math.min(actualVal, t.max);
+                let y = canvas.height - (clampedVal / t.max) * canvas.height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
-        }
-
-        function hexToRgba(hex, alpha) {
-            let c = hex.replace('#','');
-            if(c.length===3) c = c.split('').map(x=>x+x).join('');
-            const num = parseInt(c, 16);
-            return `rgba(${(num>>16)&255}, ${(num>>8)&255}, ${num&255}, ${alpha})`;
+            ctx.stroke();
         }
 
         function addNewTracker() {
@@ -2102,21 +2037,24 @@
             const timeframe = document.getElementById('new-timeframe').value;
             const color = document.getElementById('new-color').value;
 
-            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
-                alert('Please enter a valid title, max target limit, and goal value.');
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
             trackers.push({
-                id: 'tracker_' + Date.now(),
+                id: 'track_' + Date.now(),
                 title: title,
                 max: max,
-                goal: goal,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
             document.getElementById('new-title').value = '';
@@ -2134,21 +2072,24 @@
             const timeframe = document.getElementById('reg-new-timeframe').value;
             const color = document.getElementById('reg-new-color').value;
 
-            if(!title || isNaN(max) || max <= 0 || isNaN(goal) || goal <= 0) {
-                alert('Please enter a valid title, max target limit, and goal value.');
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
             trackers.push({
-                id: 'tracker_' + Date.now(),
+                id: 'track_' + Date.now(),
                 title: title,
                 max: max,
-                goal: goal,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
                 showSettings: false,
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
             document.getElementById('reg-new-title').value = '';
@@ -2160,7 +2101,7 @@
         }
 
         function deleteTracker(id, title) {
-            if(confirm(`Are you sure you want to delete the graph "${title}"?`)) {
+            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
