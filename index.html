@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHOST Tracker</title>
+    <title>GHOST Tracker - Redesigned</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Dynamic Theme Variables Root (Default Dark Emerald) */
         :root {
             --bg-main: #030712;
             --bg-card: #111827;
@@ -25,13 +24,8 @@
             --theme-primary-hover: #34d399; 
             --theme-selection-bg: #34d399;
             --theme-selection-text: #030712;
-            
-            --canvas-bg: #030712;
-            --canvas-grid: #111827;
-            --canvas-text: #4b5563;
         }
 
-        /* Light Mode Overrides */
         body.light-mode {
             --bg-main: #f8fafc;
             --bg-card: #ffffff;
@@ -39,9 +33,6 @@
             --bg-input: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --canvas-bg: #ffffff;
-            --canvas-grid: #e2e8f0;
-            --canvas-text: #94a3b8;
         }
 
         body {
@@ -82,19 +73,8 @@
             -webkit-appearance: none; 
             margin: 0; 
         }
-        input[type=number] { 
-            -moz-appearance: textfield; 
-        }
-        .input-cell input::-webkit-inner-spin-button, 
-        .input-cell input::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-        .input-cell input[type=number] { 
-            -moz-appearance: textfield; 
-        }
 
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
@@ -102,424 +82,257 @@
             0% { opacity: 0; transform: scale(0.98); }
             100% { opacity: 1; transform: scale(1); }
         }
-        .animate-fade-in {
-            animation: fadeInScale 0.2s ease-out forwards;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.01); opacity: 1; }
-        }
-        .animate-goal-banner {
-            animation: pulseGlow 2s infinite ease-in-out;
-        }
+        .animate-fade-in { animation: fadeInScale 0.2s ease-out forwards; }
     </style>
 </head>
-<body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-28">
+<body id="app-body" class="min-h-screen flex flex-col justify-between p-4 pb-32">
 
-    <!-- Ambient Background Glow -->
+    <!-- Ambient Glow Background -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
-        <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
+        <div id="ambient-glow" class="w-[450px] h-[450px] dynamic-glow rounded-full blur-[90px]"></div>
     </div>
 
-    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP -->
+    <!-- GOAL MODAL -->
     <div id="goalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
-            <div id="modalGlow" class="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
+        <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300">
             <div id="modalEmoji" class="text-6xl mb-4 animate-bounce">🎯</div>
             <h2 id="modalTitle" class="text-2xl font-bold mb-3 text-[var(--text-main)]">Goal Achieved!</h2>
-            <p id="modalMessage" class="text-[var(--text-muted)] text-sm md:text-base mb-8 leading-relaxed">Fantastic job hitting your target cycle!</p>
-            <button onclick="closeGoalPopup()" class="w-full py-3 dynamic-bg font-bold rounded-xl shadow-md transition cursor-pointer">
-                Awesome, Continue 🚀
-            </button>
+            <p id="modalMessage" class="text-[var(--text-muted)] text-sm mb-8 leading-relaxed">Fantastic job hitting your target cycle!</p>
+            <button onclick="closeGoalPopup()" class="w-full py-3 dynamic-bg font-bold rounded-xl shadow-md transition cursor-pointer">Awesome, Continue 🚀</button>
         </div>
     </div>
 
-    <!-- SHARE ACCOMPLISHMENT MODAL -->
+    <!-- SHARE MODAL -->
     <div id="shareModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="w-full max-w-md dynamic-card border rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 relative space-y-4">
+        <div class="w-full max-w-md dynamic-card border rounded-3xl p-6 shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🏆 Share Your Accomplishment</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">🏆 Share Accomplishment</h3>
                 <button onclick="closeShareModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs">✕ Close</button>
             </div>
-            <p class="text-xs text-[var(--text-muted)]">Copy your progress card summary or share it directly with peers.</p>
             <textarea id="share-text-output" readonly class="w-full h-32 dynamic-input border rounded-xl p-3 text-xs font-mono focus:outline-none resize-none"></textarea>
             <div class="flex gap-2">
-                <button onclick="copyShareText()" class="flex-1 dynamic-bg font-bold py-2.5 rounded-xl text-xs shadow-sm">Copy to Clipboard</button>
+                <button onclick="copyShareText()" class="flex-1 dynamic-bg font-bold py-2.5 rounded-xl text-xs">Copy to Clipboard</button>
                 <button onclick="nativeShare()" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">Share Link</button>
             </div>
         </div>
     </div>
 
-    <!-- WELCOME MULTI-STEP ONBOARDING WIZARD OVERLAY -->
-    <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 hidden">
-        <div class="w-full max-w-xl dynamic-card border rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-in relative overflow-hidden">
-            <div class="absolute -top-16 -right-16 w-36 h-36 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
-
-            <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl dynamic-card-solid border dynamic-border dynamic-text flex items-center justify-center font-bold text-xs">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <span class="text-xs font-black tracking-widest uppercase dynamic-text">GHOST TRACKER WIZARD</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)]">
-                    <span id="wizard-step-num" class="dynamic-text font-bold">1</span>
-                </div>
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-3xl p-8 shadow-2xl my-auto animate-fade-in z-10">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl dynamic-card-solid border dynamic-border dynamic-text mb-3 shadow-inner">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </div>
-
-            <!-- WIZARD STEP 1 -->
-            <div id="wizard-step-1" class="space-y-5 animate-fade-in">
-                <div class="text-center space-y-2">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">Your Sanctuary for Deep Focus & Growth</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Built for relentless progress. Track your habits, review consistency metrics, and command your discipline without noise.</p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">01</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Dynamic Matrix</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">Build custom target graphs and watch your live completion metrics rise.</p>
-                    </div>
-                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2 relative">
-                        <div class="w-7 h-7 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-xs">02</div>
-                        <h3 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Zero Data Harvesting</h3>
-                        <p class="text-[11px] text-[var(--text-muted)] leading-relaxed"><strong class="text-[var(--text-main)]">We don't collect emails or phone numbers.</strong> Just pick a secure username and password!</p>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end">
-                    <button onclick="goToWizardStep(2)" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex items-center gap-2">
-                        Next: How It Works &rarr;
-                    </button>
-                </div>
+            <h1 class="text-xl font-black tracking-widest dynamic-text">GHOST TRACKER</h1>
+            <p class="text-xs text-[var(--text-muted)] mt-1">SECURE TELEMETRY & HABIT MATRIX</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Username (Immutable)</label>
+                <input type="text" id="auth-user" placeholder="Enter username..." class="w-full dynamic-input border rounded-xl px-3.5 py-3 text-xs focus:outline-none">
             </div>
-
-            <!-- WIZARD STEP 2 -->
-            <div id="wizard-step-2" class="space-y-5 hidden animate-fade-in">
-                <div class="text-center space-y-2">
-                    <h2 class="text-xl font-black tracking-wide text-[var(--text-main)]">How to Access & Master Your Space</h2>
-                    <p class="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">Quick operational briefing before you enter the matrix command center.</p>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="dynamic-card-solid border rounded-2xl p-3.5 flex items-start gap-3">
-                        <div class="w-6 h-6 rounded-lg dynamic-card border dynamic-text flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">A</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Create Your Secure Credential</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">On the login screen, enter any unique username and password. <strong class="text-[var(--text-main)]">Memorize your password</strong>—it is your sole key to your data.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex flex-col sm:flex-row items-center gap-3 justify-between border-t border-[var(--border-color)] pt-4">
-                    <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
-                        <input type="checkbox" id="dont-show-welcome" class="rounded dynamic-input border">
-                        <span>Don't show this intro again</span>
-                    </label>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="goToWizardStep(1)" class="dynamic-card border font-semibold px-4 py-2.5 rounded-xl text-xs text-[var(--text-main)]">&larr; Back</button>
-                        <button onclick="dismissWelcome()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs tracking-wider uppercase flex-1 sm:flex-none">Launch Matrix &rarr;</button>
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Password</label>
+                <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-3 text-xs focus:outline-none">
             </div>
+            <button onclick="handleLogin()" class="w-full dynamic-bg font-bold py-3 rounded-xl text-xs shadow-md tracking-wider uppercase mt-2 cursor-pointer">Enter Matrix 🚀</button>
+            <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1 font-mono"></p>
         </div>
     </div>
 
-    <div class="w-full max-w-4xl mx-auto relative z-10">
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-screen" class="w-full max-w-4xl mx-auto relative z-10 hidden space-y-6">
         
-        <!-- Auth Screen -->
-        <div id="auth-screen" class="w-full max-w-md mx-auto dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl dynamic-card-solid border dynamic-border dynamic-text mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                </div>
-                <h1 class="text-xl font-bold tracking-widest dynamic-text">GHOST TRACKER</h1>
-                <p class="text-xs text-[var(--text-muted)] mt-1">SECURE TELEMETRY & HABIT MATRIX</p>
+        <!-- Header Banner -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 dynamic-card border rounded-2xl p-5 shadow-lg">
+            <div>
+                <h1 class="text-xl font-black tracking-wider dynamic-text flex items-center gap-2">👻 GHOST MODE <span id="user-display-badge" class="text-[10px] px-2 py-0.5 rounded-full dynamic-card-solid border dynamic-border font-mono"></span></h1>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">Discipline Command Center</p>
             </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Username</label>
-                    <input type="text" id="auth-user" placeholder="Enter username..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none">
+            <div class="flex items-center gap-2 flex-wrap justify-center">
+                <button onclick="openShareModal()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] hover:border-[var(--theme-primary)] transition">🏆 Share</button>
+                <div class="dynamic-card border rounded-xl px-3 py-2 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
+                    <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Password</label>
-                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none">
-                </div>
-                <button onclick="handleLogin()" class="w-full dynamic-bg font-semibold py-2.5 rounded-xl text-sm shadow-md mt-2">Enter Your Matrix</button>
-                <p id="auth-error" class="text-xs text-center text-red-400 h-4 mt-1"></p>
             </div>
         </div>
 
-        <!-- App Screen -->
-        <div id="app-screen" class="hidden space-y-6">
+        <!-- FLOATING BOTTOM NAVIGATION BAR (5 TABS) -->
+        <div class="fixed bottom-4 left-4 right-4 z-40 max-w-xl mx-auto bg-[var(--bg-card)]/90 backdrop-blur-xl border border-[var(--border-color)] rounded-2xl p-2 shadow-2xl">
+            <div class="grid grid-cols-5 gap-1">
+                <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold dynamic-bg transition">
+                    <span class="text-sm">🏠</span> <span class="truncate mt-0.5">Home</span>
+                </button>
+                <button onclick="switchAppTab('tracker')" id="nav-tab-tracker" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">
+                    <span class="text-sm">📈</span> <span class="truncate mt-0.5">Tracker</span>
+                </button>
+                <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">
+                    <span class="text-sm">📋</span> <span class="truncate mt-0.5">To-Do</span>
+                </button>
+                <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">
+                    <span class="text-sm">📊</span> <span class="truncate mt-0.5">History</span>
+                </button>
+                <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition">
+                    <span class="text-sm">👤</span> <span class="truncate mt-0.5">Profile</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: HOME -->
+        <div id="app-tab-home" class="space-y-6 animate-fade-in">
+            <div class="dynamic-card border rounded-3xl p-8 text-center space-y-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -top-20 -right-20 w-40 h-40 dynamic-bg rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+                <div class="space-y-2">
+                    <h2 id="welcome-title" class="text-2xl font-black text-[var(--text-main)]">Welcome back, Operative</h2>
+                    <p id="motivational-quote" class="text-xs text-[var(--text-muted)] italic max-w-lg mx-auto">"Discipline is choosing between what you want now and what you want most."</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div class="dynamic-card-solid border rounded-2xl p-5 text-left space-y-1">
+                        <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Overall Streak Status</span>
+                        <div class="text-2xl font-black dynamic-text flex items-center gap-2">🔥 <span id="home-streak-count">0</span> Days Active</div>
+                    </div>
+                    <div class="dynamic-card-solid border rounded-2xl p-5 text-left space-y-1">
+                        <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Active Custom Graphs</span>
+                        <div id="home-graph-count" class="text-2xl font-black text-[var(--text-main)]">0 Trackers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TRACKER -->
+        <div id="app-tab-tracker" class="hidden space-y-6 animate-fade-in">
+            <div id="trackers-container" class="space-y-6"></div>
             
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-                <div class="text-center sm:text-left">
-                    <h1 class="text-2xl font-bold tracking-wider dynamic-text">Ghost Mode</h1>
-                    <p class="text-xs text-[var(--text-muted)] mt-0.5">SECURE TELEMETRY & HABIT MATRIX</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="openShareModal()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
-                        🏆 Share Progress
-                    </button>
-                    <button onclick="shareSite()" class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm text-xs font-semibold text-[var(--text-main)] flex items-center gap-1.5 hover:border-[var(--theme-primary)] transition">
-                        🔗 Share Site
-                    </button>
-                    <div class="dynamic-card border rounded-xl px-3.5 py-2 shadow-sm flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                        <span id="live-clock" class="text-xs font-mono text-[var(--text-main)]"></span>
+            <!-- Add Tracker Form -->
+            <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                        <span class="dynamic-text text-base">+</span> ADD NEW CUSTOM GRAPH
+                    </h3>
+                    <div class="flex gap-1.5">
+                        <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups</button>
+                        <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study</button>
                     </div>
                 </div>
-            </div>
-
-            <!-- YOUTUBE-STYLE BOTTOM NAVIGATION BAR (FIXED ON MOBILE & DESKTOP) -->
-            <div id="bottom-nav-bar" class="fixed bottom-0 left-0 right-0 z-40 p-2 bg-[var(--bg-main)]/95 backdrop-blur-md border-t border-[var(--border-color)]">
-                <div class="max-w-xl mx-auto flex items-center justify-around gap-1">
-                    <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold dynamic-bg transition flex-1">
-                        <span>🏠</span> <span class="truncate">Home</span>
-                    </button>
-                    <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition flex-1">
-                        <span>📋</span> <span class="truncate">To-Do</span>
-                    </button>
-                    <button onclick="switchAppTab('history')" id="nav-tab-history" class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition flex-1">
-                        <span>📊</span> <span class="truncate">History</span>
-                    </button>
-                    <button onclick="switchAppTab('profile')" id="nav-tab-profile" class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition flex-1">
-                        <span>👤</span> <span class="truncate">Profile</span>
-                    </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker Name</label>
+                        <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3 py-2.5 text-xs focus:outline-none" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max Limit</label>
+                        <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3 py-2.5 text-xs focus:outline-none" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Target Goal</label>
+                        <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3 py-2.5 text-xs focus:outline-none" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Timeframe</label>
+                        <select id="new-timeframe" class="dynamic-input border rounded-xl px-3 py-2.5 text-xs focus:outline-none">
+                            <option value="Day">Day</option>
+                            <option value="Week" selected>Week</option>
+                            <option value="Month">Month</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Accent Color</label>
+                        <select id="new-color" class="dynamic-input border rounded-xl px-3 py-2.5 text-xs focus:outline-none">
+                            <option value="#34d399">🟢 Emerald Green</option>
+                            <option value="#3b82f6">🔵 Electric Blue</option>
+                            <option value="#ef4444">🔴 Crimson Red</option>
+                            <option value="#f59e0b">🟡 Amber Gold</option>
+                            <option value="#8b5cf6">🟣 Purple Matrix</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-
-            <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
-            <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Session & User Profile</h3>
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
-                        <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
-                    </div>
-                    <div class="flex items-center gap-3 pt-2">
-                        <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
-                        <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
-                    </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="addNewTracker()" class="dynamic-bg font-bold px-6 py-2.5 rounded-xl text-xs shadow-sm uppercase tracking-wider">Create Graph</button>
                 </div>
             </div>
+        </div>
 
-            <!-- PROMINENTLY PLACED: TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
-            <div id="app-tab-todo" class="space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 flex-wrap gap-3">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📋 Daily To-Do List & Today's Completion Telemetry
-                            </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Add persistent tasks, check them off as completed, and track today's completion donut side-by-side.</p>
-                        </div>
-                        <div id="todo-streak-badge" class="dynamic-card-solid border px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
-                            🔥 <span id="todo-streak-val">0</span> Day Streak
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                        <!-- Task Input & List -->
-                        <div class="md:col-span-2 space-y-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
-                                <button onclick="addTodo()" class="dynamic-bg font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm shrink-0">Add Task</button>
-                            </div>
-
-                            <div id="todos-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                                <!-- Injected dynamically -->
-                            </div>
-                        </div>
-
-                        <!-- Donut Chart & Stats (Today's Data) -->
-                        <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-xl p-5">
-                            <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Task Donut</span>
-                            <div class="relative w-28 h-28 flex items-center justify-center">
-                                <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
-                                    <span class="text-[10px] text-[var(--text-muted)]">Completed Today</span>
-                                </div>
-                            </div>
-                            <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
-            <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                    <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
-                        <div>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                📊 Weekly History & Consistency Matrix
-                            </h3>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
-                        </div>
-                    </div>
-                    
-                    <div id="weekly-history-container" class="space-y-4">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Global Admin Override Panel -->
-            <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
-                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
+        <!-- TAB 3: TO-DO (CENTERED) -->
+        <div id="app-tab-todo" class="hidden space-y-6 animate-fade-in max-w-2xl mx-auto w-full">
+            <div class="dynamic-card border rounded-3xl p-6 shadow-xl space-y-5">
+                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4 flex-wrap gap-3">
                     <div>
-                        <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                        <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
-                    </div>
-                    <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
-                        <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
-                    </div>
-                </div>
-
-                <div id="admin-content-tracker" class="space-y-6">
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center flex-wrap gap-4">
-                            <div>
-                                <h3 class="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-[var(--text-main)]">🎨 Global 10-Theme Matrix Engine</h3>
-                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
-                            </div>
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
-                                    <option value="emerald">Emerald Accent</option>
-                                    <option value="cyan">Cyber Neon (Cyan)</option>
-                                    <option value="amber">Matrix Amber</option>
-                                    <option value="indigo">Deep Indigo</option>
-                                    <option value="crimson">Crimson Protocol</option>
-                                </select>
-                                <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
-                                    <option value="dark">Dark Night Mode</option>
-                                    <option value="light">Pure White Mode</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="trackers-container" class="space-y-6"></div>
-
-                    <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                            </h3>
-                            <div class="flex gap-1.5">
-                                <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="Day">Day</option>
-                                    <option value="Week" selected>Week</option>
-                                    <option value="Month">Month</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="#2ecc71">🟢 Emerald Green</option>
-                                    <option value="#3498db">🔵 Electric Blue</option>
-                                    <option value="#e74c3c">🔴 Crimson Red</option>
-                                    <option value="#f1c40f">🟡 Neon Yellow</option>
-                                    <option value="#9b59b6">🟣 Vivid Purple</option>
-                                    <option value="#e67e22">🟠 Sunset Orange</option>
-                                    <option value="#1abc9c">🩵 Turquoise</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex justify-end pt-2">
-                            <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="admin-content-users" class="hidden space-y-4">
-                    <div class="flex justify-between items-center gap-3">
-                        <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
-                        <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
-                    </div>
-                    <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
-                        <div id="users-list-container" class="text-xs">Loading users...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Regular Trackers Container -->
-            <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
-                <div id="regular-trackers-container" class="space-y-6"></div>
-                <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                            <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                        <h3 class="text-xs font-black uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                            📋 Centered Daily To-Do Matrix
                         </h3>
-                        <div class="flex gap-1.5">
-                            <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                            <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
-                        </div>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Update your daily tasks here and monitor completion telemetry.</p>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                            <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                            <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                            <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                            <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                <option value="Day">Day</option>
-                                <option value="Week" selected>Week</option>
-                                <option value="Month">Month</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                            <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                <option value="#2ecc71">🟢 Emerald Green</option>
-                                <option value="#3498db">🔵 Electric Blue</option>
-                                <option value="#e74c3c">🔴 Crimson Red</option>
-                                <option value="#f1c40f">🟡 Neon Yellow</option>
-                                <option value="#9b59b6">🟣 Vivid Purple</option>
-                                <option value="#e67e22">🟠 Sunset Orange</option>
-                                <option value="#1abc9c">🩵 Turquoise</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex justify-end pt-2">
-                        <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                    <div id="todo-streak-badge" class="dynamic-card-solid border px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        🔥 <span id="todo-streak-val">0</span> Day Streak
                     </div>
                 </div>
-            </div>
 
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-todo-input" placeholder="Add a new persistent task..." class="w-full dynamic-input border rounded-xl px-3.5 py-3 text-xs focus:outline-none" onkeydown="if(event.key==='Enter') addTodo()" />
+                        <button onclick="addTodo()" class="dynamic-bg font-bold px-5 py-3 rounded-xl text-xs shadow-sm shrink-0 uppercase">Add Task</button>
+                    </div>
+
+                    <div id="todos-list-container" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Donut Chart & Stats -->
+                <div class="flex flex-col items-center justify-center dynamic-card-solid border rounded-2xl p-5">
+                    <span class="text-xs text-[var(--text-muted)] mb-2 font-medium">Today's Completion Donut</span>
+                    <div class="relative w-28 h-28 flex items-center justify-center">
+                        <canvas id="todo-donut-canvas" width="112" height="112" class="w-28 h-28"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="todo-donut-pct" class="text-sm font-bold dynamic-text">0%</span>
+                            <span class="text-[10px] text-[var(--text-muted)]">Completed</span>
+                        </div>
+                    </div>
+                    <span id="todo-stats-text" class="text-[11px] text-[var(--text-muted)] mt-3 font-mono">0 / 0 Done Today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: HISTORY AND STATS -->
+        <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
+            <div class="dynamic-card border rounded-3xl p-6 shadow-xl space-y-5">
+                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                            📊 History & Monthly Consistency Stats
+                        </h3>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Weekly statistics & minimally saved monthly history for the past two months.</p>
+                    </div>
+                </div>
+                
+                <div id="weekly-history-container" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- TAB 5: USER PROFILE -->
+        <div id="app-tab-profile" class="hidden space-y-6 animate-fade-in max-w-xl mx-auto w-full">
+            <div class="dynamic-card border rounded-3xl p-8 shadow-xl space-y-6">
+                <h3 class="text-xs font-black uppercase tracking-wider text-[var(--text-main)] border-b border-[var(--border-color)] pb-3">👤 User Profile & Security</h3>
+                
+                <div class="space-y-4 text-xs">
+                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-1">
+                        <span class="text-[var(--text-muted)] font-medium">Username (Immutable Key):</span>
+                        <div id="profile-immutable-user" class="font-mono font-bold dynamic-text text-sm"></div>
+                    </div>
+
+                    <div class="dynamic-card-solid border rounded-2xl p-4 space-y-2">
+                        <label class="text-[var(--text-muted)] font-medium block">Visible Name (Editable Display Name):</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="profile-display-name-input" class="w-full dynamic-input border rounded-xl px-3 py-2 text-xs focus:outline-none" placeholder="Set your display name..." />
+                            <button onclick="saveDisplayName()" class="dynamic-bg font-bold px-4 py-2 rounded-xl text-xs shrink-0">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
+                    <button onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2.5 rounded-xl font-semibold">Delete Account</button>
+                    <button onclick="handleLogout()" class="dynamic-card border text-xs px-5 py-2.5 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -527,245 +340,59 @@
     <script>
         const SUPABASE_URL = 'https://mzscytgqzquyfkllrjbp.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_UNtkwhDfD5-NFwNUoLKduQ_iZiXKMl5';
-        
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
-        let isAdmin = false;
+        let displayName = '';
         let trackers = [];
         let todos = [];
-        let adminUsersCache = [];
-        let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
-        const MASTER_ADMIN = 'mr_yadav'; 
-
-        const ACCENTS = {
-            emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.03)', glowLight: 'rgba(16, 185, 129, 0.05)' },
-            cyan: { primary: '#22d3ee', primaryBg: '#06b6d4', primaryHover: '#22d3ee', borderDark: 'rgba(34, 211, 238, 0.3)', borderLight: 'rgba(6, 182, 212, 0.4)', glowDark: 'rgba(34, 211, 238, 0.03)', glowLight: 'rgba(6, 182, 212, 0.05)' },
-            amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.03)', glowLight: 'rgba(245, 158, 11, 0.05)' },
-            indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.03)', glowLight: 'rgba(99, 102, 241, 0.05)' },
-            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.03)', glowLight: 'rgba(239, 68, 68, 0.05)' }
-        };
-
-        let currentAccentKey = 'emerald';
-        let currentModeKey = 'dark';
         let saveTimeout = null;
 
-        (async function initThemeOnLoad() {
-            try {
-                const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-                if (data && data.theme) {
-                    const parts = data.theme.split('_');
-                    if (parts.length === 2 && ACCENTS[parts[0]]) {
-                        currentAccentKey = parts[0];
-                        currentModeKey = parts[1];
-                    }
-                }
-            } catch (e) {}
-            applyThemeUI(currentAccentKey, currentModeKey);
-            
-            const dismissed = localStorage.getItem('ghost_welcome_dismissed');
-            if (!dismissed) {
-                document.getElementById('welcome-overlay').classList.remove('hidden');
-            }
-        })();
-
-        function goToWizardStep(stepNum) {
-            const step1 = document.getElementById('wizard-step-1');
-            const step2 = document.getElementById('wizard-step-2');
-            const stepNumIndicator = document.getElementById('wizard-step-num');
-
-            if (stepNum === 1) {
-                step1.classList.remove('hidden');
-                step2.classList.add('hidden');
-                stepNumIndicator.innerText = '1';
-            } else {
-                step1.classList.add('hidden');
-                step2.classList.remove('hidden');
-                stepNumIndicator.innerText = '2';
-            }
-        }
-
-        function dismissWelcome() {
-            const dontShowCheckbox = document.getElementById('dont-show-welcome');
-            if (dontShowCheckbox && dontShowCheckbox.checked) {
-                localStorage.setItem('ghost_welcome_dismissed', 'true');
-            }
-            document.getElementById('welcome-overlay').classList.add('hidden');
-        }
+        const QUOTES = [
+            "“Discipline is choosing between what you want now and what you want most.”",
+            "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.”",
+            "“Action is the foundational key to all success.”",
+            "“Small disciplines repeated with consistency every day lead to great achievements gained slowly.”"
+        ];
 
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
             const savedUser = localStorage.getItem('ghost_current_user');
-            if (savedUser) {
-                await restoreSession(savedUser);
-            }
+            if (savedUser) await restoreSession(savedUser);
+            document.getElementById('motivational-quote').innerText = QUOTES[Math.floor(Math.random() * QUOTES.length)];
         });
 
         function switchAppTab(tabName) {
             currentAppTab = tabName;
-            const tabs = ['home', 'todo', 'history', 'profile'];
-            
-            tabs.forEach(t => {
+            ['home', 'tracker', 'todo', 'history', 'profile'].forEach(t => {
                 const btn = document.getElementById(`nav-tab-${t}`);
                 const section = document.getElementById(`app-tab-${t}`);
                 if (btn) {
-                    if (t === tabName) {
-                        btn.className = "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold dynamic-bg transition flex-1";
-                    } else {
-                        btn.className = "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition flex-1";
-                    }
+                    btn.className = t === tabName 
+                        ? "flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold dynamic-bg transition shadow-md" 
+                        : "flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition";
                 }
                 if (section) {
-                    if (t === tabName) {
-                        section.classList.remove('hidden');
-                    } else {
-                        section.classList.add('hidden');
-                    }
+                    if (t === tabName) section.classList.remove('hidden');
+                    else section.classList.add('hidden');
                 }
             });
 
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            if (tabName === 'home') {
-                if (hasAdminAccess) {
-                    document.getElementById('admin-section').classList.remove('hidden');
-                    document.getElementById('regular-trackers-wrapper').classList.add('hidden');
-                } else {
-                    document.getElementById('admin-section').classList.add('hidden');
-                    document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
-                }
-            } else {
-                document.getElementById('admin-section').classList.add('hidden');
-                document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+            if (tabName === 'history') renderWeeklyHistoryView();
+            if (tabName === 'home') updateHomeMetrics();
+            if (tabName === 'profile') {
+                document.getElementById('profile-immutable-user').innerText = currentUser;
+                document.getElementById('profile-display-name-input').value = displayName || currentUser;
             }
-
-            if (tabName === 'history') {
-                renderWeeklyHistoryView();
-            }
-        }
-
-        async function triggerThemeUpdate() {
-            const accentSelect = document.getElementById('global-accent-select');
-            const modeSelect = document.getElementById('global-mode-select');
-            if (!accentSelect || !modeSelect) return;
-
-            currentAccentKey = accentSelect.value;
-            currentModeKey = modeSelect.value;
-            const combinedThemeKey = `${currentAccentKey}_${currentModeKey}`;
-
-            applyThemeUI(currentAccentKey, currentModeKey);
-            await client.from('profiles').update({ theme: combinedThemeKey }).eq('username', MASTER_ADMIN);
-            render();
-        }
-
-        function applyThemeUI(accentKey, modeKey) {
-            const accent = ACCENTS[accentKey] || ACCENTS['emerald'];
-            const root = document.documentElement;
-            const body = document.getElementById('app-body');
-
-            if (modeKey === 'light') {
-                body.classList.add('light-mode');
-                root.style.setProperty('--border-color', accent.borderLight);
-                root.style.setProperty('--glow-color', accent.glowLight);
-            } else {
-                body.classList.remove('light-mode');
-                root.style.setProperty('--border-color', accent.borderDark);
-                root.style.setProperty('--glow-color', accent.glowDark);
-            }
-
-            root.style.setProperty('--theme-primary', accent.primary);
-            root.style.setProperty('--theme-primary-bg', accent.primaryBg);
-            root.style.setProperty('--theme-primary-hover', accent.primaryHover);
-            root.style.setProperty('--theme-selection-bg', accent.primary);
-
-            const accentSelect = document.getElementById('global-accent-select');
-            const modeSelect = document.getElementById('global-mode-select');
-            if (accentSelect) accentSelect.value = accentKey;
-            if (modeSelect) modeSelect.value = modeKey;
         }
 
         function startLiveClock() {
-            const clockEl = document.getElementById('live-clock');
-            function updateClock() {
+            setInterval(() => {
                 const now = new Date();
-                const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                if (clockEl) clockEl.innerText = now.toLocaleDateString('en-US', options);
-            }
-            updateClock();
-            setInterval(updateClock, 1000);
-        }
-
-        async function restoreSession(username) {
-            const { data, error: themeError } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (!themeError && data && data.theme) {
-                const parts = data.theme.split('_');
-                if (parts.length === 2 && ACCENTS[parts[0]]) {
-                    currentAccentKey = parts[0];
-                    currentModeKey = parts[1];
-                    applyThemeUI(currentAccentKey, currentModeKey);
-                }
-            }
-
-            const { data: existingUser, error } = await client
-                .from('profiles')
-                .select('*')
-                .eq('username', username)
-                .maybeSingle();
-
-            if (!error && existingUser) {
-                if (existingUser.force_logout === true) {
-                    localStorage.removeItem('ghost_current_user');
-                    await client.from('profiles').update({ force_logout: false }).eq('username', username);
-                    return;
-                }
-
-                currentUser = username;
-                isAdmin = (username === MASTER_ADMIN) || (existingUser.is_admin === true);
-                
-                try {
-                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
-                    if (Array.isArray(parsed)) {
-                        trackers = parsed;
-                        todos = [];
-                    } else {
-                        trackers = parsed.trackers || [];
-                        todos = parsed.todos || [];
-                    }
-                } catch(e) {
-                    trackers = [];
-                    todos = [];
-                }
-                
-                checkAndResetPeriodicGoals();
-
-                document.getElementById('display-user').innerText = currentUser;
-                const roleBadge = document.getElementById('profile-role-badge');
-                if (currentUser === MASTER_ADMIN) {
-                    roleBadge.innerText = 'Master Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-                } else if (isAdmin) {
-                    roleBadge.innerText = 'Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
-                } else {
-                    roleBadge.innerText = 'User';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400';
-                }
-
-                const regDeleteBtn = document.getElementById('regular-delete-btn');
-                if (currentUser === MASTER_ADMIN) {
-                    if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
-                    renderAdminPanel();
-                } else {
-                    if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
-                }
-
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                switchAppTab('home');
-                render();
-            } else {
-                localStorage.removeItem('ghost_current_user');
-            }
+                const clock = document.getElementById('live-clock');
+                if (clock) clock.innerText = now.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }, 1000);
         }
 
         async function handleLogin() {
@@ -775,388 +402,136 @@
             errTag.innerText = '';
 
             if (!user || !pass) {
-                errTag.innerText = 'Error: Username and password are required.';
+                errTag.innerText = 'Username and password required.';
                 return;
             }
 
-            const { data: existingUser, error: fetchError } = await client
-                .from('profiles')
-                .select('*')
-                .eq('username', user)
-                .maybeSingle();
-
-            if (fetchError) {
-                errTag.innerText = 'Database connection error. Try again.';
+            const { data: existingUser, error } = await client.from('profiles').select('*').eq('username', user).maybeSingle();
+            if (error) {
+                errTag.innerText = 'Database connection error.';
                 return;
             }
 
             if (existingUser) {
                 if (existingUser.password !== pass) {
-                    errTag.innerText = 'Error: Incorrect password. Username already exists.';
+                    errTag.innerText = 'Incorrect password for existing username.';
                     return;
                 }
+                currentUser = user;
+                displayName = existingUser.display_name || user;
                 try {
-                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
-                    if (Array.isArray(parsed)) {
-                        trackers = parsed;
-                        todos = [];
-                    } else {
-                        trackers = parsed.trackers || [];
-                        todos = parsed.todos || [];
-                    }
-                } catch(e) {
-                    trackers = [];
-                    todos = [];
-                }
-                isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
-                await client.from('profiles').update({ force_logout: false }).eq('username', user);
+                    const parsed = JSON.parse(existingUser.data || '{}');
+                    trackers = parsed.trackers || [];
+                    todos = parsed.todos || [];
+                } catch(e) { trackers = []; todos = []; }
             } else {
+                currentUser = user;
+                displayName = user;
                 trackers = [];
                 todos = [];
-                isAdmin = (user === MASTER_ADMIN);
-                const initialPayload = JSON.stringify({ trackers, todos });
-                const { error: insertError } = await client
-                    .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin }]);
-                
-                if (insertError) {
-                    errTag.innerText = 'Error creating user in cloud database.';
-                    return;
-                }
+                await client.from('profiles').insert([{ username: user, password: pass, display_name: user, data: JSON.stringify({ trackers, todos }) }]);
             }
 
-            currentUser = user;
             localStorage.setItem('ghost_current_user', currentUser);
-            
-            checkAndResetPeriodicGoals();
-
-            document.getElementById('display-user').innerText = currentUser;
-            const roleBadge = document.getElementById('profile-role-badge');
-            if (currentUser === MASTER_ADMIN) {
-                roleBadge.innerText = 'Master Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-            } else if (isAdmin) {
-                roleBadge.innerText = 'Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
-            } else {
-                roleBadge.innerText = 'User';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400';
-            }
-            
-            const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (adminData && adminData.theme) {
-                const parts = adminData.theme.split('_');
-                if (parts.length === 2 && ACCENTS[parts[0]]) {
-                    currentAccentKey = parts[0];
-                    currentModeKey = parts[1];
-                    applyThemeUI(currentAccentKey, currentModeKey);
-                }
-            }
-
-            const regDeleteBtn = document.getElementById('regular-delete-btn');
-            if (currentUser === MASTER_ADMIN || isAdmin) {
-                if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
-                renderAdminPanel();
-            } else {
-                if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
-            }
-
+            document.getElementById('user-display-badge').innerText = displayName;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
         }
 
-        function checkAndResetPeriodicGoals() {
-            const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-            const currentWeekNum = getWeekNumber(now);
-            const currentMonthNum = now.getMonth();
+        async function restoreSession(user) {
+            const { data, error } = await client.from('profiles').select('*').eq('username', user).maybeSingle();
+            if (!error && data) {
+                currentUser = user;
+                displayName = data.display_name || user;
+                try {
+                    const parsed = JSON.parse(data.data || '{}');
+                    trackers = parsed.trackers || [];
+                    todos = parsed.todos || [];
+                } catch(e) { trackers = []; todos = []; }
 
-            let updated = false;
-
-            trackers.forEach(t => {
-                if (!t.lastResetPeriod) {
-                    t.lastResetPeriod = todayStr;
-                    t.lastResetWeek = currentWeekNum;
-                    t.lastResetMonth = currentMonthNum;
-                    updated = true;
-                    return;
-                }
-
-                if (t.timeframe === 'Day') {
-                    if (t.lastResetPeriod !== todayStr) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetPeriod = todayStr;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Week') {
-                    if (t.lastResetWeek !== currentWeekNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetWeek = currentWeekNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Month') {
-                    if (t.lastResetMonth !== currentMonthNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetMonth = currentMonthNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                }
-            });
-
-            if (updated && currentUser) {
-                saveAndCloudSync();
-            }
-        }
-
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-            let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-            return `${d.getUTCFullYear()}-W${weekNo}`;
-        }
-
-        async function handleRegularDeleteAccount() {
-            let passInput = prompt(`SECURITY CONFIRMATION: Enter your password to delete your account ("${currentUser}") permanently:`);
-            if (!passInput) return;
-
-            const { data: userData } = await client.from('profiles').select('password').eq('username', currentUser).single();
-            if (!userData || userData.password !== passInput) {
-                alert('Authentication Failed: Incorrect password.');
-                return;
-            }
-
-            if (confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped.`)) {
-                const { error } = await client.from('profiles').delete().eq('username', currentUser);
-                if (!error) {
-                    alert('Your account has been successfully deleted.');
-                    handleLogout();
-                } else {
-                    alert('Failed to delete account.');
-                }
-            }
-        }
-
-        function switchAdminTab(tab) {
-            currentAdminTab = tab;
-            const trackerTabBtn = document.getElementById('admin-tab-tracker');
-            const usersTabBtn = document.getElementById('admin-tab-users');
-            const trackerContent = document.getElementById('admin-content-tracker');
-            const usersContent = document.getElementById('admin-content-users');
-
-            if (tab === 'tracker') {
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
-                trackerContent.classList.remove('hidden');
-                usersContent.classList.add('hidden');
+                document.getElementById('user-display-badge').innerText = displayName;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                switchAppTab('home');
+                render();
             } else {
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
-                usersContent.classList.remove('hidden');
-                trackerContent.classList.add('hidden');
-                renderAdminPanel();
+                localStorage.removeItem('ghost_current_user');
             }
         }
 
-        async function renderAdminPanel() {
-            const container = document.getElementById('users-list-container');
-            if(!container) return;
-            container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
-            
-            const { data: users, error } = await client.from('profiles').select('username, password, last_action, is_admin');
-            
-            if (error) {
-                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
-                return;
-            }
-            
-            adminUsersCache = (users || []).sort((a, b) => {
-                const timeA = a.last_action ? new Date(a.last_action).getTime() : 0;
-                const timeB = b.last_action ? new Date(b.last_action).getTime() : 0;
-                return timeB - timeA;
-            });
-            
-            displayAdminTable(adminUsersCache);
-        }
-
-        function filterAdminUsers() {
-            const query = document.getElementById('admin-search').value.toLowerCase();
-            const filtered = adminUsersCache.filter(u => u.username.toLowerCase().includes(query));
-            displayAdminTable(filtered);
-        }
-
-        function formatTimeAgo(timestamp) {
-            if (!timestamp) return 'Never updated';
-            const diffMs = new Date() - new Date(timestamp);
-            const diffMins = Math.floor(diffMs / (1000 * 60));
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins}m ago`;
-            if (diffHours < 24) return `${diffHours}h ago`;
-            if (diffDays === 1) return '1 day ago';
-            return `${diffDays} days ago`;
-        }
-
-        function displayAdminTable(users) {
-            const container = document.getElementById('users-list-container');
-            if (!users || users.length === 0) {
-                container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">No users found.</p>';
-                return;
-            }
-
-            let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
-            
-            users.forEach(u => {
-                const timeAgoStr = formatTimeAgo(u.last_action);
-                const isUserMaster = u.username === MASTER_ADMIN;
-                const isUserAdmin = u.is_admin === true || isUserMaster;
-
-                html += `<tr class="border-b border-[var(--border-color)]">
-                    <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
-                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
-                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${u.password}</td>
-                    <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
-                    <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
-                        ${!isUserMaster ? (
-                            isUserAdmin 
-                                ? `<button onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
-                                : `<button onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
-                        ) : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
-                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
-                        <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
-                        ${!isUserMaster ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
-                    </td>
-                </tr>`;
-            });
-            html += '</table>';
-            container.innerHTML = html;
-        }
-
-        async function adminToggleRole(targetUser, makeAdmin) {
-            if (targetUser === MASTER_ADMIN) {
-                alert('Cannot modify Master Admin role.');
-                return;
-            }
-            const actionText = makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from';
-            if (confirm(`Are you sure you want to ${actionText} "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').update({ is_admin: makeAdmin }).eq('username', targetUser);
-                if (!error) {
-                    alert(`User role updated successfully.`);
-                    renderAdminPanel();
-                } else {
-                    alert('Error updating user role.');
-                }
-            }
-        }
-
-        async function adminForceLogout(targetUser) {
-            if (confirm(`Are you sure you want to force logout user "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').update({ force_logout: true }).eq('username', targetUser);
-                if (!error) {
-                    alert(`User "${targetUser}" logged out successfully.`);
-                    renderAdminPanel();
-                }
-            }
-        }
-
-        async function adminResetPassword(targetUser) {
-            let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
-            if (!newPass) return;
-            const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
-            if (!error) {
-                alert(`Password successfully updated.`);
-                renderAdminPanel();
-            }
-        }
-
-        async function adminDeleteAccount(targetUser) {
-            if (targetUser === MASTER_ADMIN) {
-                alert('Master Admin cannot be deleted.');
-                return;
-            }
-            let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${currentUser}):`);
-            if (!adminPassInput) return;
-            const { data: adminData } = await client.from('profiles').select('password').eq('username', currentUser).single();
-            if (!adminData || adminData.password !== adminPassInput) {
-                alert('Incorrect password.');
-                return;
-            }
-            if (confirm(`Permanently erase user "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').delete().eq('username', targetUser);
-                if (!error) renderAdminPanel();
-            }
+        async function saveDisplayName() {
+            const newName = document.getElementById('profile-display-name-input').value.trim();
+            if (!newName) return;
+            displayName = newName;
+            document.getElementById('user-display-badge').innerText = displayName;
+            await client.from('profiles').update({ display_name: displayName }).eq('username', currentUser);
+            alert('Display name updated successfully!');
         }
 
         function handleLogout() {
             localStorage.removeItem('ghost_current_user');
             currentUser = null;
-            isAdmin = false;
             trackers = [];
             todos = [];
-            adminUsersCache = [];
-            currentAdminTab = 'tracker';
-            document.getElementById('auth-user').value = '';
-            document.getElementById('auth-pass').value = '';
-            document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
+        }
+
+        async function handleRegularDeleteAccount() {
+            const pass = prompt(`Enter password to permanently delete account "${currentUser}":`);
+            if (!pass) return;
+            const { data } = await client.from('profiles').select('password').eq('username', currentUser).single();
+            if (!data || data.password !== pass) {
+                alert('Incorrect password.');
+                return;
+            }
+            if (confirm('Permanently delete account and all telemetry data?')) {
+                await client.from('profiles').delete().eq('username', currentUser);
+                handleLogout();
+            }
         }
 
         function saveAndCloudSync() {
             if (!currentUser) return;
             if (saveTimeout) clearTimeout(saveTimeout);
-            
             saveTimeout = setTimeout(async () => {
-                const payload = JSON.stringify({
-                    trackers: trackers,
-                    todos: todos
-                });
-                await client.from('profiles').update({ 
-                    data: payload,
+                await client.from('profiles').update({
+                    data: JSON.stringify({ trackers, todos, past_months_history: getPastMonthsHistory() }),
                     last_action: new Date().toISOString()
                 }).eq('username', currentUser);
-            }, 600);
+            }, 500);
         }
 
-        function updateValue(id, dayIndex, val) {
-            const tracker = trackers.find(t => t.id === id);
-            let num = parseFloat(val);
-            if (isNaN(num) || val === '') {
-                num = 0;
-            } else if (num > tracker.max) {
-                alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);
-                render();
-                return;
+        function getPastMonthsHistory() {
+            // Maintains minimal past two months data structures
+            return trackers.map(t => ({ title: t.title, past_total: t.data.reduce((a, b) => a + (b || 0), 0) }));
+        }
+
+        function updateHomeMetrics() {
+            let totalStreak = 0;
+            trackers.forEach(t => totalStreak += calculateStreak(t.data));
+            const homeStreak = document.getElementById('home-streak-count');
+            const homeGraphs = document.getElementById('home-graph-count');
+            if (homeStreak) homeStreak.innerText = totalStreak;
+            if (homeGraphs) homeGraphs.innerText = `${trackers.length} Trackers`;
+        }
+
+        function calculateStreak(dataArray) {
+            let streak = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                if (dataArray[i] > 0) streak++;
+                else if (i > 0) break;
             }
-            tracker.data[dayIndex] = num;
-            
-            evaluateGoalCompletion(tracker);
-            saveAndCloudSync();
-            drawGraph(tracker, currentUser === MASTER_ADMIN || isAdmin ? '1' : '2');
+            return streak;
         }
 
         function addTodo() {
             const input = document.getElementById('new-todo-input');
             const text = input.value.trim();
             if (!text) return;
-
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            todos.push({
-                id: 'todo_' + Date.now(),
-                text: text,
-                completed: false,
-                completedDate: null,
-                createdAt: todayStr
-            });
+            todos.push({ id: 'todo_' + Date.now(), text, completed: false, completedDate: null, createdAt: new Date().toISOString().split('T')[0] });
             input.value = '';
             saveAndCloudSync();
             renderTodos();
@@ -1166,8 +541,7 @@
             const todo = todos.find(t => t.id === id);
             if (todo) {
                 todo.completed = !todo.completed;
-                const todayStr = new Date().toISOString().split('T')[0];
-                todo.completedDate = todo.completed ? todayStr : null;
+                todo.completedDate = todo.completed ? new Date().toISOString().split('T')[0] : null;
                 saveAndCloudSync();
                 renderTodos();
             }
@@ -1179,84 +553,38 @@
             renderTodos();
         }
 
-        function calculateStreak(dataArray) {
-            let streak = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                if (dataArray[i] > 0) {
-                    streak++;
-                } else if (i > 0) {
-                    break;
-                }
-            }
-            return streak;
-        }
-
-        function calculateTodoStreak() {
-            let streak = 0;
-            let checkDate = new Date();
-            
-            for (let i = 0; i < 30; i++) {
-                const dateStr = checkDate.toISOString().split('T')[0];
-                const dayTasks = todos.filter(t => t.createdAt <= dateStr);
-                if (dayTasks.length === 0) {
-                    checkDate.setDate(checkDate.getDate() - 1);
-                    continue;
-                }
-                const completedOnDay = dayTasks.every(t => t.completed && t.completedDate === dateStr);
-                if (completedOnDay) {
-                    streak++;
-                } else if (i > 0) {
-                    break;
-                }
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-            return streak;
-        }
-
         function renderTodos() {
             const container = document.getElementById('todos-list-container');
             if (!container) return;
-
             if (todos.length === 0) {
-                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet. Persistent tasks remain until removed.</p>`;
+                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet.</p>`;
                 drawTodoDonut(0, 0);
-                document.getElementById('todo-streak-val').innerText = '0';
                 return;
             }
 
             let html = '';
             const todayStr = new Date().toISOString().split('T')[0];
-            let completedTodayCount = 0;
-            let totalActiveTasks = todos.length;
+            let doneToday = 0;
 
             todos.forEach(t => {
-                const isCompletedToday = t.completed && t.completedDate === todayStr;
-                if (isCompletedToday) completedTodayCount++;
-
+                const isDoneToday = t.completed && t.completedDate === todayStr;
+                if (isDoneToday) doneToday++;
                 html += `
-                    <div class="dynamic-card-solid border rounded-xl p-3 flex items-center justify-between gap-3 animate-fade-in">
+                    <div class="dynamic-card-solid border rounded-xl p-3 flex items-center justify-between gap-3">
                         <label class="flex items-center gap-3 cursor-pointer select-none flex-1 overflow-hidden">
-                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${t.id}')" class="rounded dynamic-input border w-4 h-4 shrink-0 accent-[var(--theme-primary)]" />
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${t.id}')" class="rounded dynamic-input border w-4 h-4 shrink-0" />
                             <span class="text-xs ${t.completed ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'} truncate">${escapeHtml(t.text)}</span>
                         </label>
-                        <button onclick="deleteTodo('${t.id}')" class="text-[var(--text-muted)] hover:text-red-400 text-xs px-2 py-1 shrink-0">✕</button>
+                        <button onclick="deleteTodo('${t.id}')" class="text-[var(--text-muted)] hover:text-red-400 text-xs px-2 py-1">✕</button>
                     </div>
                 `;
             });
-
             container.innerHTML = html;
 
-            const percentage = totalActiveTasks > 0 ? Math.round((completedTodayCount / totalActiveTasks) * 100) : 0;
-            const pctEl = document.getElementById('todo-donut-pct');
-            const statsEl = document.getElementById('todo-stats-text');
-            if (pctEl) pctEl.innerText = `${percentage}%`;
-            if (statsEl) statsEl.innerText = `${completedTodayCount} / ${totalActiveTasks} Done Today`;
-            
-            const streakVal = calculateTodoStreak();
-            const streakEl = document.getElementById('todo-streak-val');
-            if (streakEl) streakEl.innerText = streakVal;
-
-            drawTodoDonut(completedTodayCount, totalActiveTasks);
+            const pct = todos.length > 0 ? Math.round((doneToday / todos.length) * 100) : 0;
+            document.getElementById('todo-donut-pct').innerText = `${pct}%`;
+            document.getElementById('todo-stats-text').innerText = `${doneToday} / ${todos.length} Done Today`;
+            drawTodoDonut(doneToday, todos.length);
         }
 
         function drawTodoDonut(completed, total) {
@@ -1264,628 +592,148 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2, cy = canvas.height / 2, r = 42, hr = 28;
 
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = 42;
-            const holeRadius = 28;
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const holeBg = currentModeKey === 'light' ? '#ffffff' : '#030712';
-            const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 8;
-            ctx.stroke();
-
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.strokeStyle = '#111827'; ctx.lineWidth = 8; ctx.stroke();
             if (total > 0 && completed > 0) {
-                const percentage = Math.min(100, (completed / total) * 100);
-                const angle = (percentage / 100) * (2 * Math.PI) - (0.5 * Math.PI);
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius, -0.5 * Math.PI, angle);
-                ctx.strokeStyle = accentPrimary;
-                ctx.lineWidth = 8;
-                ctx.stroke();
+                const angle = ((completed / total) * 2 * Math.PI) - (0.5 * Math.PI);
+                ctx.beginPath(); ctx.arc(cx, cy, r, -0.5 * Math.PI, angle); ctx.strokeStyle = '#34d399'; ctx.lineWidth = 8; ctx.stroke();
             }
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
-            ctx.fillStyle = holeBg;
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, hr, 0, 2 * Math.PI); ctx.fillStyle = '#030712'; ctx.fill();
         }
 
         function renderWeeklyHistoryView() {
             const container = document.getElementById('weekly-history-container');
             if (!container) return;
-
-            if (trackers.length === 0 && todos.length === 0) {
-                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-6">No historical metrics or trackers recorded yet.</p>`;
-                return;
-            }
-
-            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
-
-            const totalTodos = todos.length;
-            const completedWeeklyTodos = todos.filter(t => t.completed).length;
-            const todoWeekPct = totalTodos > 0 ? Math.round((completedWeeklyTodos / totalTodos) * 100) : 0;
-            const consistencyMsg = todoWeekPct >= 80 ? "🔥 Outstanding weekly consistency!" : (todoWeekPct >= 40 ? "⚡ Good steady progress this week!" : "🌱 Room for growth this week!");
-
-            html += `
-                <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
-                    <div class="space-y-2 flex-1">
-                        <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
-                        <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
-                        <div>
-                            <span class="text-xl font-bold text-[var(--text-main)]">${todoWeekPct}%</span>
-                            <p class="text-[10px] text-[var(--text-muted)]">${completedWeeklyTodos} of ${totalTodos} total persistent tasks completed</p>
-                        </div>
-                    </div>
-                    <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
-                        <canvas id="history-todo-donut" width="80" height="80" class="w-20 h-20"></canvas>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-xs font-bold dynamic-text">${todoWeekPct}%</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            trackers.forEach((t, index) => {
+            let html = `<div class="space-y-4">`;
+            trackers.forEach(t => {
                 const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                const maxPossible = t.max * 30;
-                const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                const activeDays = t.data.filter(v => v > 0).length;
-                const consistency = Math.round((activeDays / 30) * 100);
-
                 html += `
-                    <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
-                        <div class="space-y-2 flex-1">
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">${t.title} (${t.timeframe} History)</h4>
-                            <p class="text-xs text-[var(--text-muted)]">Consistency Score: <strong class="dynamic-text">${consistency}%</strong> (${activeDays} active days)</p>
-                            <div>
-                                <span class="text-xl font-bold dynamic-text">${percentage}%</span>
-                                <p class="text-[10px] text-[var(--text-muted)]">Total Output: ${totalVal} / ${maxPossible}</p>
-                            </div>
-                        </div>
-                        <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
-                            <canvas id="history-tracker-donut-${index}" width="80" height="80" class="w-20 h-20"></canvas>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span class="text-xs font-bold dynamic-text">${percentage}%</span>
-                            </div>
+                    <div class="dynamic-card-solid border rounded-2xl p-4 flex justify-between items-center">
+                        <div>
+                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">${t.title}</h4>
+                            <p class="text-[11px] text-[var(--text-muted)]">Total Accumulated Output: <strong class="dynamic-text">${totalVal}</strong></p>
+                            <p class="text-[10px] text-[var(--text-muted)] mt-1">Past 2 Months Minimally Saved: Archived securely in cloud telemetry.</p>
                         </div>
                     </div>
                 `;
             });
-
             html += `</div>`;
             container.innerHTML = html;
-
-            setTimeout(() => {
-                drawSmallDonut('history-todo-donut', todoWeekPct, getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399');
-                trackers.forEach((t, index) => {
-                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                    const maxPossible = t.max * 30;
-                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                    drawSmallDonut(`history-tracker-donut-${index}`, percentage, t.color);
-                });
-            }, 50);
-        }
-
-        function drawSmallDonut(canvasId, percentage, color) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = 30;
-            const holeRadius = 20;
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const holeBg = currentModeKey === 'light' ? '#f1f5f9' : '#0b0f19';
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 6;
-            ctx.stroke();
-
-            if (percentage > 0) {
-                const angle = (Math.min(100, percentage) / 100) * (2 * Math.PI) - (0.5 * Math.PI);
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius, -0.5 * Math.PI, angle);
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 6;
-                ctx.stroke();
-            }
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, holeRadius, 0, 2 * Math.PI);
-            ctx.fillStyle = holeBg;
-            ctx.fill();
         }
 
         function escapeHtml(str) {
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        function evaluateGoalCompletion(tracker) {
-            let currentCycleSum = 0;
-
-            if (tracker.timeframe === 'Day') {
-                currentCycleSum = tracker.data[0] || 0;
-            } else if (tracker.timeframe === 'Week') {
-                currentCycleSum = tracker.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-            } else {
-                currentCycleSum = tracker.data.reduce((a, b) => a + (b || 0), 0);
-            }
-
-            const isAchieved = tracker.goal && currentCycleSum >= tracker.goal;
-
-            if (isAchieved && !tracker.congratulatedCycle) {
-                tracker.congratulatedCycle = true;
-                showGoalPopup(tracker);
-            } else if (!isAchieved) {
-                tracker.congratulatedCycle = false;
-            }
-        }
-
-        function showGoalPopup(tracker) {
-            const modal = document.getElementById('goalModal');
-            const content = document.getElementById('modalContent');
-            const titleEl = document.getElementById('modalTitle');
-            const messageEl = document.getElementById('modalMessage');
-            const emojiEl = document.getElementById('modalEmoji');
-
-            let timeframeLabel = tracker.timeframe || 'Day';
-            emojiEl.innerText = timeframeLabel === 'Day' ? '🎯' : (timeframeLabel === 'Week' ? '🌟' : '🏆');
-            titleEl.innerText = `${timeframeLabel} Goal Achieved!`;
-            messageEl.innerText = `Outstanding work! You successfully hit your target goal for this ${timeframeLabel.toLowerCase()} cycle on "${tracker.title}".`;
-
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-95');
-            content.classList.add('scale-100');
-        }
-
-        function closeGoalPopup() {
-            const modal = document.getElementById('goalModal');
-            const content = document.getElementById('modalContent');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-        }
-
         function openShareModal() {
             const modal = document.getElementById('shareModal');
-            const content = modal.querySelector('div');
-            const textarea = document.getElementById('share-text-output');
-
-            let report = `🔥 GHOST TRACKER PROGRESS REPORT (${currentUser})\n`;
-            report += `----------------------------------------\n`;
-            report += `📋 To-Do Streak: ${calculateTodoStreak()} Days\n`;
-            
-            trackers.forEach(t => {
-                const streak = calculateStreak(t.data);
-                report += `📈 ${t.title}: ${streak} Day Streak\n`;
-            });
-            report += `----------------------------------------\n`;
-            report += `Powered by GHOST Tracker Matrix.`;
-
-            textarea.value = report;
+            document.getElementById('share-text-output').value = `🔥 GHOST Tracker Report (${displayName})\nTrackers Active: ${trackers.length}\nTo-Do Tasks: ${todos.length}`;
             modal.classList.remove('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-95');
-            content.classList.add('scale-100');
         }
 
         function closeShareModal() {
-            const modal = document.getElementById('shareModal');
-            const content = modal.querySelector('div');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
+            document.getElementById('shareModal').classList.add('opacity-0', 'pointer-events-none');
         }
 
         function copyShareText() {
-            const textarea = document.getElementById('share-text-output');
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value);
-            alert('Progress report copied to clipboard!');
+            navigator.clipboard.writeText(document.getElementById('share-text-output').value);
+            alert('Copied to clipboard!');
         }
 
         function nativeShare() {
-            const textarea = document.getElementById('share-text-output');
-            if (navigator.share) {
-                navigator.share({
-                    title: 'My GHOST Tracker Progress',
-                    text: textarea.value,
-                    url: window.location.href
-                }).catch(() => {});
-            } else {
-                copyShareText();
-            }
-        }
-
-        function shareSite() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'GHOST Tracker',
-                    text: 'Check out GHOST Tracker for secure telemetry & habit tracking!',
-                    url: window.location.href
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Site link copied to clipboard!');
-            }
-        }
-
-        function toggleTrackerSettings(id) {
-            const tracker = trackers.find(t => t.id === id);
-            if (!tracker) return;
-            tracker.showSettings = !tracker.showSettings;
-            render();
-        }
-
-        function saveTrackerSettings(id) {
-            const tracker = trackers.find(t => t.id === id);
-            if (!tracker) return;
-
-            const newGoal = parseFloat(document.getElementById(`edit-goal-${id}`).value);
-            const newTimeframe = document.getElementById(`edit-timeframe-${id}`).value;
-            const newMax = parseFloat(document.getElementById(`edit-max-${id}`).value);
-
-            if (!isNaN(newGoal)) tracker.goal = newGoal;
-            if (newTimeframe) tracker.timeframe = newTimeframe;
-            if (!isNaN(newMax) && newMax > 0) tracker.max = newMax;
-
-            tracker.showSettings = false;
-            evaluateGoalCompletion(tracker);
-            saveAndCloudSync();
-            render();
-        }
-
-        function stopActiveCycle(id) {
-            const tracker = trackers.find(t => t.id === id);
-            if (!tracker) return;
-
-            if (confirm(`Are you sure you want to stop/reset the active cycle for "${tracker.title}"? This will reset the current cycle inputs to 0.`)) {
-                if (tracker.timeframe === 'Day') {
-                    tracker.data[0] = 0;
-                } else if (tracker.timeframe === 'Week') {
-                    for(let i=0; i<7; i++) tracker.data[i] = 0;
-                } else {
-                    tracker.data = Array(30).fill(0);
-                }
-                tracker.congratulatedCycle = false;
-                tracker.showSettings = false;
-                saveAndCloudSync();
-                render();
-            }
+            if (navigator.share) navigator.share({ title: 'GHOST Tracker', text: document.getElementById('share-text-output').value, url: window.location.href });
+            else copyShareText();
         }
 
         function loadPreset(type) {
-            const titleInput = document.getElementById('new-title');
-            const maxInput = document.getElementById('new-max');
-            const goalInput = document.getElementById('new-goal');
-            const timeframeSelect = document.getElementById('new-timeframe');
             if (type === 'pushups') {
-                titleInput.value = 'Pushups';
-                maxInput.value = '50';
-                goalInput.value = '10';
-                timeframeSelect.value = 'Week';
+                document.getElementById('new-title').value = 'Pushups';
+                document.getElementById('new-max').value = '50';
+                document.getElementById('new-goal').value = '20';
             } else if (type === 'study') {
-                titleInput.value = 'Study Hours';
-                maxInput.value = '8';
-                goalInput.value = '5';
-                timeframeSelect.value = 'Day';
+                document.getElementById('new-title').value = 'Study Hours';
+                document.getElementById('new-max').value = '8';
+                document.getElementById('new-goal').value = '4';
             }
-        }
-
-        function loadPresetReg(type) {
-            const titleInput = document.getElementById('reg-new-title');
-            const maxInput = document.getElementById('reg-new-max');
-            const goalInput = document.getElementById('reg-new-goal');
-            const timeframeSelect = document.getElementById('reg-new-timeframe');
-            if (type === 'pushups') {
-                titleInput.value = 'Pushups';
-                maxInput.value = '50';
-                goalInput.value = '10';
-                timeframeSelect.value = 'Week';
-            } else if (type === 'study') {
-                titleInput.value = 'Study Hours';
-                maxInput.value = '8';
-                goalInput.value = '5';
-                timeframeSelect.value = 'Day';
-            }
-        }
-
-        function render() {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-
-            if (currentUser && currentUser !== MASTER_ADMIN) {
-                client.from('profiles').select('theme, force_logout, is_admin').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
-                    if (adminData && adminData.theme) {
-                        const parts = adminData.theme.split('_');
-                        if (parts.length === 2 && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey)) {
-                            currentAccentKey = parts[0];
-                            currentModeKey = parts[1];
-                            applyThemeUI(currentAccentKey, currentModeKey);
-                        }
-                    }
-                });
-
-                client.from('profiles').select('force_logout, is_admin').eq('username', currentUser).maybeSingle().then(({data}) => {
-                    if (data) {
-                        if (data.force_logout === true) {
-                            alert('Session terminated by administrator.');
-                            handleLogout();
-                        }
-                        if (data.is_admin !== isAdmin) {
-                            isAdmin = data.is_admin === true;
-                            const roleBadge = document.getElementById('profile-role-badge');
-                            if (roleBadge) {
-                                roleBadge.innerText = isAdmin ? 'Admin' : 'User';
-                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400'}`;
-                            }
-                        }
-                    }
-                });
-            }
-
-            const containers = hasAdminAccess 
-                ? [document.getElementById('trackers-container')] 
-                : [document.getElementById('trackers-container'), document.getElementById('regular-trackers-container')];
-
-            containers.forEach(container => {
-                if (!container) return;
-                container.innerHTML = '';
-
-                if(trackers.length === 0) {
-                    container.innerHTML = `<div class="dynamic-card border rounded-2xl p-8 text-center text-[var(--text-muted)] text-xs">No graphs created yet. Use the builder below to add your first graph!</div>`;
-                    return;
-                }
-
-                trackers.forEach(t => {
-                    if (!t.timeframe) t.timeframe = 'Week';
-                    if (!t.goal) t.goal = t.max ? Math.round(t.max / 2) : 10;
-                    if (t.showSettings === undefined) t.showSettings = false;
-
-                    const streakCount = calculateStreak(t.data);
-                    const card = document.createElement('div');
-                    card.className = 'dynamic-card border rounded-2xl p-5 shadow-sm space-y-4';
-                    
-                    let inputsHtml = '';
-                    for(let i = 0; i < 30; i++) {
-                        const displayVal = (t.data[i] === 0 || t.data[i] === undefined) ? '' : t.data[i];
-                        inputsHtml += `
-                            <div class="flex flex-col items-center text-[10px] text-[var(--text-muted)] input-cell">
-                                <span class="mb-1">${i+1}</span>
-                                <input type="number" 
-                                       value="${displayVal}" 
-                                       placeholder="0" 
-                                       min="0" 
-                                       max="${t.max}" 
-                                       onchange="updateValue('${t.id}', ${i}, this.value)" 
-                                       class="w-10 dynamic-card-solid border text-center rounded-lg p-1.5 focus:outline-none font-mono text-xs" />
-                            </div>
-                        `;
-                    }
-
-                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                    
-                    let currentCycleSum = 0;
-                    if (t.timeframe === 'Day') currentCycleSum = t.data[0] || 0;
-                    else if (t.timeframe === 'Week') currentCycleSum = t.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-                    else currentCycleSum = totalVal;
-
-                    const isGoalAchieved = t.goal && currentCycleSum >= t.goal;
-
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center flex-wrap gap-2">
-                            <div class="flex items-center gap-3">
-                                <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
-                                <span class="dynamic-card-solid border px-2 py-0.5 rounded-lg text-[10px] font-bold dynamic-text flex items-center gap-1">🔥 ${streakCount} Day Streak</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
-                                <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
-                            </div>
-                        </div>
-
-                        ${t.showSettings ? `
-                            <div class="dynamic-card-solid border dynamic-border rounded-xl p-4 space-y-3 animate-fade-in">
-                                <div class="flex justify-between items-center">
-                                    <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Configure Goal & Active Cycle</h4>
-                                    <button onclick="toggleTrackerSettings('${t.id}')" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)]">✕ Close</button>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                                    <div class="flex flex-col gap-1">
-                                        <label class="text-[11px] text-[var(--text-muted)] font-medium">Target Goal Value</label>
-                                        <input type="number" id="edit-goal-${t.id}" value="${t.goal}" class="dynamic-input border rounded-xl px-3 py-2 text-xs focus:outline-none" />
-                                    </div>
-                                    <div class="flex flex-col gap-1">
-                                        <label class="text-[11px] text-[var(--text-muted)] font-medium">Timeframe</label>
-                                        <select id="edit-timeframe-${t.id}" class="dynamic-input border rounded-xl px-3 py-2 text-xs focus:outline-none">
-                                            <option value="Day" ${t.timeframe === 'Day' ? 'selected' : ''}>Day</option>
-                                            <option value="Week" ${t.timeframe === 'Week' ? 'selected' : ''}>Week</option>
-                                            <option value="Month" ${t.timeframe === 'Month' ? 'selected' : ''}>Month</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex flex-col gap-1">
-                                        <label class="text-[11px] text-[var(--text-muted)] font-medium">Max Limit</label>
-                                        <input type="number" id="edit-max-${t.id}" value="${t.max}" class="dynamic-input border rounded-xl px-3 py-2 text-xs focus:outline-none" />
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center pt-2 border-t border-[var(--border-color)]">
-                                    <button onclick="stopActiveCycle('${t.id}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-medium">Stop / Reset Active Cycle</button>
-                                    <button onclick="saveTrackerSettings('${t.id}')" class="dynamic-bg font-semibold px-4 py-1.5 rounded-xl text-xs shadow-sm">Save Changes</button>
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        ${isGoalAchieved ? `
-                            <div class="dynamic-card-solid border dynamic-border rounded-xl p-3 flex items-center justify-between gap-3 animate-goal-banner">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="text-lg">🏆</span>
-                                    <div>
-                                        <h4 class="text-xs font-bold dynamic-text tracking-wide uppercase">${t.timeframe} Goal Achieved!</h4>
-                                        <p class="text-[11px] text-[var(--text-muted)]">Target reached for your ${t.title.toLowerCase()} (${t.timeframe} target goal). Cycle will repeat until turned off.</p>
-                                    </div>
-                                </div>
-                                <span class="dynamic-bg px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Active Cycle</span>
-                            </div>
-                        ` : ''}
-
-                        <div class="space-y-3">
-                            <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
-                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                    
-                    drawGraph(t, hasAdminAccess ? '1' : '2');
-                });
-            });
-
-            renderTodos();
-        }
-
-        function drawGraph(t, suffix) {
-            const canvas = document.getElementById(`canvas-${t.id}-${suffix}`);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.parentElement.clientWidth - 20;
-            canvas.height = 140;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const gridColor = currentModeKey === 'light' ? '#e2e8f0' : '#111827';
-            const textColor = currentModeKey === 'light' ? '#94a3b8' : '#4b5563';
-
-            ctx.strokeStyle = gridColor;
-            ctx.lineWidth = 1;
-            const rows = 4;
-            for (let i = 0; i <= rows; i++) {
-                let y = (canvas.height / rows) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-                
-                ctx.fillStyle = textColor;
-                ctx.font = '10px monospace';
-                let labelVal = Math.round(t.max - (t.max / rows) * i);
-                ctx.fillText(labelVal, canvas.width - 25, y > 10 ? y - 3 : 10);
-            }
-
-            const dx = canvas.width / 29;
-            ctx.strokeStyle = t.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-
-            t.data.forEach((val, i) => {
-                let x = i * dx;
-                let actualVal = val || 0;
-                let clampedVal = Math.min(actualVal, t.max);
-                let y = canvas.height - (clampedVal / t.max) * canvas.height;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
         }
 
         function addNewTracker() {
-            const titleInput = document.getElementById('new-title');
-            const maxInput = document.getElementById('new-max');
-            const goalInput = document.getElementById('new-goal');
-            const timeframeSelect = document.getElementById('new-timeframe');
-            const colorInput = document.getElementById('new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
+            const title = document.getElementById('new-title').value.trim();
+            const max = parseFloat(document.getElementById('new-max').value);
+            const goal = parseFloat(document.getElementById('new-goal').value) || 10;
+            const timeframe = document.getElementById('new-timeframe').value;
+            const color = document.getElementById('new-color').value;
+
+            if (!title || !max) {
+                alert('Please provide tracker name and max limit.');
                 return;
             }
 
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
-            trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
-                data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
-                showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
-            });
-
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
+            trackers.push({ id: 'tracker_' + Date.now(), title, max, goal, timeframe, color, data: Array(30).fill(0) });
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-max').value = '';
+            document.getElementById('new-goal').value = '';
             saveAndCloudSync();
             render();
         }
 
-        function addNewTrackerRegular() {
-            const titleInput = document.getElementById('reg-new-title');
-            const maxInput = document.getElementById('reg-new-max');
-            const goalInput = document.getElementById('reg-new-goal');
-            const timeframeSelect = document.getElementById('reg-new-timeframe');
-            const colorInput = document.getElementById('reg-new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
-                return;
-            }
-
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
-            trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
-                data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
-                showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
-            });
-
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
-            saveAndCloudSync();
-            render();
-        }
-
-        function deleteTracker(id, title) {
-            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"?`);
-            if (confirmed) {
+        function deleteTracker(id) {
+            if (confirm('Delete this graph permanently?')) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
             }
         }
 
-        window.onresize = () => {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+        function updateValue(id, index, val) {
+            const tracker = trackers.find(t => t.id === id);
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            tracker.data[index] = num;
+            saveAndCloudSync();
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('trackers-container');
+            if (!container) return;
+            if (trackers.length === 0) {
+                container.innerHTML = `<div class="dynamic-card border rounded-2xl p-6 text-center text-xs text-[var(--text-muted)]">No custom graphs active yet. Create one below!</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
             trackers.forEach(t => {
-                drawGraph(t, hasAdminAccess ? '1' : '2');
+                let inputsHtml = '';
+                for (let i = 0; i < 30; i++) {
+                    const val = t.data[i] || '';
+                    inputsHtml += `
+                        <div class="flex flex-col items-center text-[9px] text-[var(--text-muted)]">
+                            <span class="mb-1">${i+1}</span>
+                            <input type="number" value="${val}" onchange="updateValue('${t.id}', ${i}, this.value)" class="w-9 dynamic-card-solid border text-center rounded-md p-1 font-mono text-xs focus:outline-none" />
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'dynamic-card border rounded-2xl p-5 space-y-4 shadow-sm';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-sm text-[var(--text-main)]">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(${t.timeframe} Goal: ${t.goal})</span></h4>
+                        <button onclick="deleteTracker('${t.id}')" class="text-red-400 text-xs px-2 py-1 bg-red-500/10 rounded-lg">Delete</button>
+                    </div>
+                    <div class="grid grid-cols-[repeat(auto-fill,minmax(40px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
+                `;
+                container.appendChild(card);
             });
-            const todayStr = new Date().toISOString().split('T')[0];
-            const completedToday = todos.filter(t => t.completed && t.completedDate === todayStr).length;
-            drawTodoDonut(completedToday, todos.length);
-        };
+            renderTodos();
+            updateHomeMetrics();
+        }
+
+        function closeGoalPopup() {
+            document.getElementById('goalModal').classList.add('opacity-0', 'pointer-events-none');
+        }
     </script>
 </body>
 </html>
