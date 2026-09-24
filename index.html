@@ -261,7 +261,10 @@
                 </div>
                 <div class="flex md:flex-col items-center md:items-stretch gap-1.5 w-full justify-around md:justify-start">
                     <button onclick="switchAppTab('home')" id="nav-tab-home" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold dynamic-bg transition whitespace-nowrap w-full">
-                        🏠 Tracker<span class="hidden md:inline">:</span>
+                        🏠 Home<span class="hidden md:inline">:</span>
+                    </button>
+                    <button onclick="switchAppTab('tracker')" id="nav-tab-tracker" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
+                        📈 Tracker<span class="hidden md:inline">:</span>
                     </button>
                     <button onclick="switchAppTab('todo')" id="nav-tab-todo" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition whitespace-nowrap w-full">
                         📋 To-Do<span class="hidden md:inline">:</span>
@@ -292,6 +295,73 @@
                     </div>
                 </div>
 
+                <!-- TAB CONTAINER: HOME / ABOUT SITE & METRICS -->
+                <div id="app-tab-home" class="space-y-6 animate-fade-in">
+                    <!-- Hero Welcome Banner -->
+                    <div class="dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-4">
+                        <div class="absolute -top-24 -right-24 w-48 h-48 dynamic-bg rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full dynamic-card-solid border text-xs font-semibold dynamic-text">
+                            ✨ Welcome to your private sanctuary
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
+                            Master Your Discipline. <span class="dynamic-text">Leave No Trace.</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl">
+                            Ghost Tracker is a cutting-edge, ultra-secure personal telemetry and habit command center. Designed for individuals who demand ruthless accountability, uncompromised focus, and absolute privacy—empowering you to crush your goals, build unbreakable clean streaks, and monitor daily progress without unnecessary noise or tracking.
+                        </p>
+                    </div>
+
+                    <!-- Grid: Sharing URL, Login Streak, & Live Users -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Sharing URL Card -->
+                        <div class="dynamic-card border rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    🔗 Site Sharing URL
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Copy and share this gateway link with trusted peers.</p>
+                            </div>
+                            <div class="flex items-center gap-2 pt-2">
+                                <input type="text" id="site-share-url" readonly class="w-full dynamic-input border rounded-xl px-3 py-2 text-xs font-mono select-all" />
+                                <button onclick="copyShareUrl()" class="dynamic-bg font-semibold px-3 py-2 rounded-xl text-xs shrink-0">Copy</button>
+                            </div>
+                        </div>
+
+                        <!-- Login Streak Card -->
+                        <div class="dynamic-card border rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    🔥 Login Streak
+                                </h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Consecutive days you've signed into your matrix.</p>
+                            </div>
+                            <div class="flex items-baseline gap-2 pt-2">
+                                <span id="home-login-streak" class="text-3xl font-black dynamic-text font-mono">1</span>
+                                <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Days Logged In</span>
+                            </div>
+                        </div>
+
+                        <!-- START OF HIGHLIGHTED SECTION: LIVE NO. OF USERS -->
+                        <!-- NOTE: You can remove this entire card/section later if you wish -->
+                        <div id="live-users-highlight-section" class="dynamic-card border border-emerald-500/50 rounded-2xl p-5 space-y-3 flex flex-col justify-between bg-emerald-500/5">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                        ⚡ Live Active Users
+                                    </h3>
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                </div>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Real-time platform user registry count.</p>
+                            </div>
+                            <div class="flex items-baseline gap-2 pt-2">
+                                <span id="home-live-users-count" class="text-3xl font-black text-emerald-400 font-mono">...</span>
+                                <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Registered Operators</span>
+                            </div>
+                        </div>
+                        <!-- END OF HIGHLIGHTED SECTION -->
+                    </div>
+                </div>
+
                 <!-- TAB CONTAINER 1: PROFILE & ACCOUNT STATUS -->
                 <div id="app-tab-profile" class="hidden space-y-4 animate-fade-in">
                     <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
@@ -307,8 +377,163 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER 2: DAILY TO-DO MATRIX & DONUT SECTION -->
-                <div id="app-tab-todo" class="space-y-6 animate-fade-in">
+                <!-- TAB CONTAINER 2: DAILY TRACKER & GRAPH MATRIX -->
+                <div id="app-tab-tracker" class="hidden space-y-6 animate-fade-in">
+                    <!-- Global Admin Override Panel[cite: 2] -->
+                    <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
+                        <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                            <div>
+                                <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
+                                <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
+                            </div>
+                            <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
+                                <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
+                                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
+                            </div>
+                        </div>
+
+                        <div id="admin-content-tracker" class="space-y-6">
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
+                                <div class="flex justify-between items-center flex-wrap gap-4">
+                                    <div>
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🎨 Global 10-Theme Matrix Engine</h3>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 items-center">
+                                        <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
+                                            <option value="emerald">Emerald Accent</option>
+                                            <option value="cyan">Cyber Neon (Cyan)</option>
+                                            <option value="amber">Matrix Amber</option>
+                                            <option value="indigo">Deep Indigo</option>
+                                            <option value="crimson">Crimson Protocol</option>
+                                        </select>
+                                        <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
+                                            <option value="dark">Dark Night Mode</option>
+                                            <option value="light">Pure White Mode</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="trackers-container" class="space-y-6"></div>
+
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                        <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                                    </h3>
+                                    <div class="flex gap-1.5">
+                                        <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                        <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
+                                        <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
+                                        <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
+                                        <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
+                                        <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                            <option value="Day">Day</option>
+                                            <option value="Week" selected>Week</option>
+                                            <option value="Month">Month</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
+                                        <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                            <option value="#2ecc71">🟢 Emerald Green</option>
+                                            <option value="#3498db">🔵 Electric Blue</option>
+                                            <option value="#e74c3c">🔴 Crimson Red</option>
+                                            <option value="#f1c40f">🟡 Neon Yellow</option>
+                                            <option value="#9b59b6">🟣 Vivid Purple</option>
+                                            <option value="#e67e22">🟠 Sunset Orange</option>
+                                            <option value="#1abc9c">🩵 Turquoise</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end pt-2">
+                                    <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="admin-content-users" class="hidden space-y-4">
+                            <div class="flex justify-between items-center gap-3">
+                                <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
+                                <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
+                            </div>
+                            <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
+                                <div id="users-list-container" class="text-xs">Loading users...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Regular Trackers Container[cite: 2] -->
+                    <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
+                        <div id="regular-trackers-container" class="space-y-6"></div>
+                        <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
+                                    <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
+                                </h3>
+                                <div class="flex gap-1.5">
+                                    <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
+                                    <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
+                                    <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
+                                    <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
+                                    <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
+                                    <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                        <option value="Day">Day</option>
+                                        <option value="Week" selected>Week</option>
+                                        <option value="Month">Month</option>
+                                    </select>
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
+                                    <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
+                                        <option value="#2ecc71">🟢 Emerald Green</option>
+                                        <option value="#3498db">🔵 Electric Blue</option>
+                                        <option value="#e74c3c">🔴 Crimson Red</option>
+                                        <option value="#f1c40f">🟡 Neon Yellow</option>
+                                        <option value="#9b59b6">🟣 Vivid Purple</option>
+                                        <option value="#e67e22">🟠 Sunset Orange</option>
+                                        <option value="#1abc9c">🩵 Turquoise</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTAINER 3: DAILY TO-DO MATRIX & DONUT SECTION -->
+                <div id="app-tab-todo" class="hidden space-y-6 animate-fade-in">
                     <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                         <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                             <div>
@@ -376,7 +601,7 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER 3: WEEKLY HISTORY -->
+                <!-- TAB CONTAINER 4: WEEKLY HISTORY -->
                 <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
                     <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                         <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
@@ -390,158 +615,6 @@
                         
                         <div id="weekly-history-container" class="space-y-4">
                             <!-- Populated dynamically via JS -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Global Admin Override Panel[cite: 2] -->
-                <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
-                    <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
-                        <div>
-                            <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                            <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
-                        </div>
-                        <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
-                            <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                            <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
-                        </div>
-                    </div>
-
-                    <div id="admin-content-tracker" class="space-y-6">
-                        <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                            <div class="flex justify-between items-center flex-wrap gap-4">
-                                <div>
-                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🎨 Global 10-Theme Matrix Engine</h3>
-                                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
-                                </div>
-                                <div class="flex flex-wrap gap-2 items-center">
-                                    <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
-                                        <option value="emerald">Emerald Accent</option>
-                                        <option value="cyan">Cyber Neon (Cyan)</option>
-                                        <option value="amber">Matrix Amber</option>
-                                        <option value="indigo">Deep Indigo</option>
-                                        <option value="crimson">Crimson Protocol</option>
-                                    </select>
-                                    <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
-                                        <option value="dark">Dark Night Mode</option>
-                                        <option value="light">Pure White Mode</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="trackers-container" class="space-y-6"></div>
-
-                        <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                    <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                                </h3>
-                                <div class="flex gap-1.5">
-                                    <button type="button" onclick="loadPreset('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                    <button type="button" onclick="loadPreset('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                    <input type="text" id="new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                </div>
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                    <input type="number" id="new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                </div>
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                    <input type="number" id="new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                                </div>
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                    <select id="new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                        <option value="Day">Day</option>
-                                        <option value="Week" selected>Week</option>
-                                        <option value="Month">Month</option>
-                                    </select>
-                                </div>
-                                <div class="flex flex-col gap-1.5">
-                                    <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                    <select id="new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                        <option value="#2ecc71">🟢 Emerald Green</option>
-                                        <option value="#3498db">🔵 Electric Blue</option>
-                                        <option value="#e74c3c">🔴 Crimson Red</option>
-                                        <option value="#f1c40f">🟡 Neon Yellow</option>
-                                        <option value="#9b59b6">🟣 Vivid Purple</option>
-                                        <option value="#e67e22">🟠 Sunset Orange</option>
-                                        <option value="#1abc9c">🩵 Turquoise</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex justify-end pt-2">
-                                <button onclick="addNewTracker()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="admin-content-users" class="hidden space-y-4">
-                        <div class="flex justify-between items-center gap-3">
-                            <p class="text-xs text-[var(--text-muted)]">Manage registered users, grant/revoke admin status (Master Admin `mr_yadav` is permanent).</p>
-                            <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
-                        </div>
-                        <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
-                            <div id="users-list-container" class="text-xs">Loading users...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Regular Trackers Container[cite: 2] -->
-                <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
-                    <div id="regular-trackers-container" class="space-y-6"></div>
-                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                <span class="text-red-400 font-bold text-base">+</span> ADD NEW CUSTOM GRAPH
-                            </h3>
-                            <div class="flex gap-1.5">
-                                <button type="button" onclick="loadPresetReg('pushups')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">💪 Pushups Preset</button>
-                                <button type="button" onclick="loadPresetReg('study')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]">📚 Study Hour Preset</button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">1. Tracker name</label>
-                                <input type="text" id="reg-new-title" placeholder="e.g. Pushups" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">2. Max target</label>
-                                <input type="number" id="reg-new-max" placeholder="Limit (e.g. 50)" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">3. Goal</label>
-                                <input type="number" id="reg-new-goal" placeholder="Target value" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">4. Time frame</label>
-                                <select id="reg-new-timeframe" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="Day">Day</option>
-                                    <option value="Week" selected>Week</option>
-                                    <option value="Month">Month</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label class="text-[11px] font-semibold text-[var(--text-muted)]">5. Graph lines</label>
-                                <select id="reg-new-color" class="dynamic-input border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none">
-                                    <option value="#2ecc71">🟢 Emerald Green</option>
-                                    <option value="#3498db">🔵 Electric Blue</option>
-                                    <option value="#e74c3c">🔴 Crimson Red</option>
-                                    <option value="#f1c40f">🟡 Neon Yellow</option>
-                                    <option value="#9b59b6">🟣 Vivid Purple</option>
-                                    <option value="#e67e22">🟠 Sunset Orange</option>
-                                    <option value="#1abc9c">🩵 Turquoise</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex justify-end pt-2">
-                            <button onclick="addNewTrackerRegular()" class="dynamic-bg font-semibold px-6 py-2.5 rounded-xl text-xs shadow-sm">Create</button>
                         </div>
                     </div>
                 </div>
@@ -567,6 +640,7 @@
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
         let habitToResetId = null;
+        let userLoginStreakCount = 1;
         const MASTER_ADMIN = 'mr_yadav'; 
 
         const ACCENTS = {
@@ -626,16 +700,46 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             startLiveClock();
+            
+            // Populate site sharing URL field on Home tab
+            const shareInput = document.getElementById('site-share-url');
+            if (shareInput) shareInput.value = window.location.href;
+
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser) {
                 await restoreSession(savedUser);
             }
             setInterval(updateHabitsStreaksTimer, 1000);
+            
+            // Fetch live user count for Home tab highlight section
+            fetchLiveUsersCount();
         });
+
+        async function fetchLiveUsersCount() {
+            try {
+                const { count, error } = await client.from('profiles').select('*', { count: 'exact', head: true });
+                const liveCountEl = document.getElementById('home-live-users-count');
+                if (!error && liveCountEl) {
+                    liveCountEl.innerText = count !== null ? count : 1;
+                }
+            } catch (e) {
+                const liveCountEl = document.getElementById('home-live-users-count');
+                if (liveCountEl) liveCountEl.innerText = '1';
+            }
+        }
+
+        function copyShareUrl() {
+            const shareInput = document.getElementById('site-share-url');
+            if (!shareInput) return;
+            shareInput.select();
+            shareInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(shareInput.value);
+            alert('Site sharing URL copied to clipboard!');
+        }
 
         function switchAppTab(tabName) {
             currentAppTab = tabName;
-            const tabs = ['home', 'todo', 'habits', 'history', 'profile'];
+            const tabs = ['home', 'tracker', 'todo', 'habits', 'history', 'profile'];
             
             tabs.forEach(t => {
                 const btn = document.getElementById(`nav-tab-${t}`);
@@ -657,7 +761,7 @@
             });
 
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            if (tabName === 'home') {
+            if (tabName === 'tracker') {
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -757,6 +861,9 @@
                 currentUser = username;
                 isAdmin = (username === MASTER_ADMIN) || (existingUser.is_admin === true);
                 
+                // Calculate login streak based on last action or created date
+                calculateLoginStreak(existingUser);
+
                 try {
                     const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
                     if (Array.isArray(parsed)) {
@@ -780,13 +887,13 @@
                 const roleBadge = document.getElementById('profile-role-badge');
                 if (currentUser === MASTER_ADMIN) {
                     roleBadge.innerText = 'Master Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
                 } else if (isAdmin) {
                     roleBadge.innerText = 'Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
                 } else {
                     roleBadge.innerText = 'User';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400 border border-gray-500/30';
                 }
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
@@ -804,6 +911,18 @@
             } else {
                 localStorage.removeItem('ghost_current_user');
             }
+        }
+
+        function calculateLoginStreak(userData) {
+            // Compute days since creation or last action as a robust login streak estimate
+            const baseDate = userData.last_action ? new Date(userData.last_action) : new Date();
+            const now = new Date();
+            const diffTime = Math.abs(now - baseDate);
+            const diffDays = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+            userLoginStreakCount = diffDays;
+            
+            const streakEl = document.getElementById('home-login-streak');
+            if (streakEl) streakEl.innerText = userLoginStreakCount;
         }
 
         async function handleLogin() {
@@ -850,16 +969,18 @@
                     habits = [];
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
-                await client.from('profiles').update({ force_logout: false }).eq('username', user);
+                calculateLoginStreak(existingUser);
+                await client.from('profiles').update({ force_logout: false, last_action: new Date().toISOString() }).eq('username', user);
             } else {
                 trackers = [];
                 todos = [];
                 habits = [];
                 isAdmin = (user === MASTER_ADMIN);
+                userLoginStreakCount = 1;
                 const initialPayload = JSON.stringify({ trackers, todos, habits });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_action: new Date().toISOString() }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -876,13 +997,13 @@
             const roleBadge = document.getElementById('profile-role-badge');
             if (currentUser === MASTER_ADMIN) {
                 roleBadge.innerText = 'Master Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
             } else if (isAdmin) {
                 roleBadge.innerText = 'Admin';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
             } else {
                 roleBadge.innerText = 'User';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400 border border-gray-500/30';
             }
             
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
@@ -907,6 +1028,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
+            fetchLiveUsersCount();
         }
 
         function checkAndResetPeriodicGoals() {
@@ -1064,7 +1186,7 @@
 
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
-                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
+                    <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
@@ -1374,7 +1496,7 @@
                         <!-- Centered, larger "I Lost" button -->
                         <div class="flex justify-center pt-1">
                             <button onclick="promptResetHabitStreak('${h.id}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/40 px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
-                                ⚠️ I Lost
+                                ⚠️ RETRY
                             </button>
                         </div>
                     </div>
@@ -1711,7 +1833,7 @@
                             const roleBadge = document.getElementById('profile-role-badge');
                             if (roleBadge) {
                                 roleBadge.innerText = isAdmin ? 'Admin' : 'User';
-                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-500/20 text-gray-400'}`;
+                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400'}`;
                             }
                         }
                     }
