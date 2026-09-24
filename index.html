@@ -124,7 +124,7 @@
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
 
-    <!-- Ambient Background Glow[cite: 2] -->
+    <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
         <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
@@ -144,7 +144,7 @@
     </div>
 
     <!-- TUTORIAL OVERLAY (Walks user through tabs after login) -->
-    <div id="site-tutorial-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden transition-all duration-500">
+    <div id="site-tutorial-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/35 hidden transition-all duration-500">
         <div class="w-full max-w-lg dynamic-card border rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in relative overflow-hidden space-y-6 animate-border-blink">
             <div class="absolute -top-16 -right-16 w-32 h-32 dynamic-bg rounded-full blur-2xl opacity-20 pointer-events-none"></div>
             
@@ -170,7 +170,7 @@
         </div>
     </div>
 
-    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP[cite: 2] -->
+    <!-- GOAL ACHIEVEMENT CONGRATULATION MODAL POPUP -->
     <div id="goalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="modalContent" class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
             <div id="modalGlow" class="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
@@ -351,7 +351,7 @@
 
                 <!-- TAB CONTAINER 2: DAILY TRACKER & GRAPH MATRIX -->
                 <div id="app-tab-tracker" class="hidden space-y-6 animate-fade-in">
-                    <!-- Global Admin Override Panel[cite: 2] -->
+                    <!-- Global Admin Override Panel -->
                     <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
                         <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                             <div>
@@ -450,7 +450,7 @@
                         </div>
                     </div>
 
-                    <!-- Regular Trackers Container[cite: 2] -->
+                    <!-- Regular Trackers Container -->
                     <div id="regular-trackers-wrapper" class="space-y-6 hidden animate-fade-in">
                         <div id="regular-trackers-container" class="space-y-6"></div>
                         <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-4">
@@ -652,7 +652,16 @@
             applyThemeUI(currentAccentKey, currentModeKey);
         })();
 
+        // Check pre-login popup seen state
+        (async function initPreLoginPopup() {
+            if (localStorage.getItem('ghost_pre_login_popup_seen')) {
+                const popup = document.getElementById('pre-login-popup');
+                if (popup) popup.classList.add('hidden');
+            }
+        })();
+
         function closePreLoginPopup() {
+            localStorage.setItem('ghost_pre_login_popup_seen', 'true');
             document.getElementById('pre-login-popup').classList.add('hidden');
         }
 
@@ -908,7 +917,7 @@
                     roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
                 } else {
                     roleBadge.innerText = 'User';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400 border border-gray-500/30';
+                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
                 }
 
                 const regDeleteBtn = document.getElementById('regular-delete-btn');
@@ -1020,7 +1029,7 @@
                 roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
             } else {
                 roleBadge.innerText = 'User';
-                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400 border border-gray-500/30';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
             }
             
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
@@ -1298,7 +1307,7 @@
             document.getElementById('auth-screen-wrapper').classList.remove('hidden');
         }
 
-        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE[cite: 2]
+        // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE
         function saveAndCloudSync() {
             if (!currentUser) return;
             if (saveTimeout) clearTimeout(saveTimeout);
@@ -2022,95 +2031,82 @@
         }
 
         function addNewTracker() {
-            const titleInput = document.getElementById('new-title');
-            const maxInput = document.getElementById('new-max');
-            const goalInput = document.getElementById('new-goal');
-            const timeframeSelect = document.getElementById('new-timeframe');
-            const colorInput = document.getElementById('new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
+            const title = document.getElementById('new-title').value.trim();
+            const max = parseFloat(document.getElementById('new-max').value);
+            const goal = parseFloat(document.getElementById('new-goal').value);
+            const timeframe = document.getElementById('new-timeframe').value;
+            const color = document.getElementById('new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
             trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
+                id: 'track_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
                 data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
                 showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-max').value = '';
+            document.getElementById('new-goal').value = '';
+
             saveAndCloudSync();
             render();
         }
 
         function addNewTrackerRegular() {
-            const titleInput = document.getElementById('reg-new-title');
-            const maxInput = document.getElementById('reg-new-max');
-            const goalInput = document.getElementById('reg-new-goal');
-            const timeframeSelect = document.getElementById('reg-new-timeframe');
-            const colorInput = document.getElementById('reg-new-color');
-            
-            if(!titleInput.value || !maxInput.value) {
-                alert('Please fill in both the tracker name and max target limit.');
+            const title = document.getElementById('reg-new-title').value.trim();
+            const max = parseFloat(document.getElementById('reg-new-max').value);
+            const goal = parseFloat(document.getElementById('reg-new-goal').value);
+            const timeframe = document.getElementById('reg-new-timeframe').value;
+            const color = document.getElementById('reg-new-color').value;
+
+            if (!title || isNaN(max) || max <= 0) {
+                alert('Please enter a valid title and maximum limit.');
                 return;
             }
 
-            const now = new Date();
-            const newId = 'tracker_' + Date.now();
             trackers.push({
-                id: newId,
-                title: titleInput.value,
-                color: colorInput.value,
+                id: 'track_' + Date.now(),
+                title: title,
+                max: max,
+                goal: isNaN(goal) ? Math.round(max / 2) : goal,
+                timeframe: timeframe,
+                color: color,
                 data: Array(30).fill(0),
-                max: parseFloat(maxInput.value) || 50,
-                goal: parseFloat(goalInput.value) || 10,
-                timeframe: timeframeSelect.value,
                 showSettings: false,
-                lastResetPeriod: now.toISOString().split('T')[0],
-                lastResetWeek: getWeekNumber(now),
-                lastResetMonth: now.getMonth(),
-                congratulatedCycle: false
+                congratulatedCycle: false,
+                lastResetPeriod: new Date().toISOString().split('T')[0],
+                lastResetWeek: getWeekNumber(new Date()),
+                lastResetMonth: new Date().getMonth()
             });
 
-            titleInput.value = '';
-            maxInput.value = '';
-            goalInput.value = '';
+            document.getElementById('reg-new-title').value = '';
+            document.getElementById('reg-new-max').value = '';
+            document.getElementById('reg-new-goal').value = '';
+
             saveAndCloudSync();
             render();
         }
 
         function deleteTracker(id, title) {
-            const confirmed = confirm(`Are you sure you want to delete the graph "${title}"?`);
-            if (confirmed) {
+            if (confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
                 saveAndCloudSync();
                 render();
             }
         }
-
-        window.onresize = () => {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
-            trackers.forEach(t => {
-                drawGraph(t, hasAdminAccess ? '1' : '2');
-            });
-            const todayStr = new Date().toISOString().split('T')[0];
-            const completedToday = todos.filter(t => t.completed && t.completedDate === todayStr).length;
-            drawTodoDonut(completedToday, todos.length);
-        };
     </script>
 </body>
 </html>
