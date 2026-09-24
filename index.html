@@ -818,10 +818,10 @@
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
                 }
-                // FIX: Re-render graphs with a slight delay when tab becomes visible so clientWidth is non-zero on mobile
+                // FIX: Re-render graphs with a slight delay when tab becomes visible so width dimensions are accurate on mobile
                 setTimeout(() => {
                     render();
-                }, 50);
+                }, 60);
             } else {
                 document.getElementById('admin-section').classList.add('hidden');
                 document.getElementById('regular-trackers-wrapper').classList.add('hidden');
@@ -2000,7 +2000,8 @@
 
                         <div class="space-y-3">
                             <canvas id="canvas-${t.id}-${hasAdminAccess ? '1' : '2'}" class="w-full h-[140px] dynamic-card-solid border rounded-xl block"></canvas>
-                            <div class="grid grid-cols-[repeat(auto-fill,minmax(45px,1fr))] gap-1.5 max-h-32 overflow-y-auto p-2.5 dynamic-card-solid border rounded-xl">${inputsHtml}</div>
+                            <!-- FIX: Enabled horizontal scrolling and touch cell padding for mobile date column responsiveness -->
+                            <div class="flex overflow-x-auto gap-2 p-2.5 dynamic-card-solid border rounded-xl scrollbar-thin">${inputsHtml}</div>
                         </div>
                     `;
                     container.appendChild(card);
@@ -2014,9 +2015,9 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // FIX: Ensure mobile widths fallback properly even if parent is temporarily hidden / zero-width
-            const parentWidth = canvas.parentElement.clientWidth || canvas.parentElement.offsetWidth || window.innerWidth - 64;
-            canvas.width = parentWidth > 0 ? parentWidth : 300;
+            // FIX: Robust dynamic width fallback for laptop and mobile screens
+            const parentWidth = canvas.parentElement.clientWidth || canvas.parentElement.offsetWidth || canvas.offsetWidth || window.innerWidth - 64;
+            canvas.width = parentWidth > 0 ? parentWidth : 320;
             canvas.height = 140;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
