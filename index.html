@@ -143,6 +143,52 @@
             *,*::before,*::after { animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important; }
         }
 
+        .ghost-telegram-help {
+            position:fixed;
+            right:18px;
+            bottom:20px;
+            z-index:45;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            max-width:calc(100vw - 36px);
+        }
+        .ghost-telegram-help .ghost-telegram-label {
+            background:var(--bg-card);
+            border:1px solid var(--border-color);
+            color:var(--text-main);
+            border-radius:14px;
+            padding:8px 11px;
+            box-shadow:0 10px 30px rgba(0,0,0,.25);
+            font-size:10px;
+            line-height:1.25;
+            font-weight:700;
+        }
+        .ghost-telegram-help .ghost-telegram-label span {
+            display:block;
+            color:var(--text-muted);
+            font-weight:500;
+            margin-top:2px;
+        }
+        .ghost-telegram-help .ghost-telegram-btn {
+            width:46px;
+            height:46px;
+            border-radius:999px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#229ED9;
+            color:#fff;
+            border:1px solid rgba(255,255,255,.22);
+            box-shadow:0 10px 28px rgba(34,158,217,.35);
+            transition:transform .2s ease, box-shadow .2s ease;
+        }
+        .ghost-telegram-help .ghost-telegram-btn:hover { transform:translateY(-2px); box-shadow:0 13px 32px rgba(34,158,217,.45); }
+        @media (max-width:640px) {
+            .ghost-telegram-help { right:14px; bottom:76px; }
+            .ghost-telegram-help .ghost-telegram-label { max-width:150px; }
+        }
+
     </style>
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
@@ -217,6 +263,32 @@
             <div class="flex gap-3">
                 <button onclick="closeRelapseModal(false)" class="flex-1 py-3 dynamic-card border font-semibold rounded-xl text-xs text-[var(--text-main)] hover:bg-[var(--bg-card-solid)] transition">Cancel</button>
                 <button onclick="closeRelapseModal(true)" class="flex-1 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold rounded-xl text-xs transition shadow-md">Confirm Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARE PROGRESS MODAL -->
+    <div id="shareProgressModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="w-full max-w-md dynamic-card border rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-fade-in">
+            <div class="absolute -top-20 -right-20 w-40 h-40 dynamic-bg rounded-full blur-3xl opacity-15 pointer-events-none"></div>
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-wider dynamic-text">Share Your Progress</h3>
+                    <p class="text-[11px] text-[var(--text-muted)] mt-1">Create a shareable progress card. Add a photo if you want.</p>
+                </div>
+                <button onclick="closeShareProgressModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-lg px-2">✕</button>
+            </div>
+            <div class="dynamic-card-solid border rounded-2xl p-4 space-y-3">
+                <label class="flex items-center justify-between gap-3 cursor-pointer">
+                    <span class="text-xs font-semibold text-[var(--text-main)]">📷 Add a photo (optional)</span>
+                    <span class="dynamic-bg px-3 py-1.5 rounded-xl text-[10px] font-bold">Choose Photo</span>
+                    <input id="share-photo-input" type="file" accept="image/*" class="hidden" onchange="handleSharePhotoChange(event)">
+                </label>
+                <div id="share-photo-name" class="text-[10px] text-[var(--text-muted)] truncate">No photo selected</div>
+            </div>
+            <div class="flex gap-2 pt-4">
+                <button onclick="closeShareProgressModal()" class="flex-1 dynamic-card border px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-main)]">Cancel</button>
+                <button onclick="executeShareProgress()" class="flex-1 dynamic-bg px-4 py-2.5 rounded-xl text-xs font-bold shadow-md">Share Progress 🚀</button>
             </div>
         </div>
     </div>
@@ -308,6 +380,19 @@
                         </p>
                     </div>
 
+                    <!-- Telegram Help / Review / Suggestions -->
+                    <div class="ghost-telegram-help">
+                        <a href="https://t.me/+K1si1G5HcsA2YzFl" target="_blank" rel="noopener noreferrer" class="ghost-telegram-btn" aria-label="Open GHOST Tracker Telegram group" title="Help, review or suggestions">
+                            <svg viewBox="0 0 24 24" width="23" height="23" fill="currentColor" aria-hidden="true">
+                                <path d="M21.4 3.4 18.3 20c-.2 1.2-.9 1.5-1.9.9l-5.1-3.8-2.5 2.4c-.3.3-.5.5-1 .5l.4-5.2 9.4-8.5c.4-.4-.1-.6-.6-.2L5.4 13.6.3 12c-1.1-.3-1.1-1.1.2-1.6L20.2 2.7c.9-.3 1.7.2 1.2.7Z"/>
+                            </svg>
+                        </a>
+                        <div class="ghost-telegram-label">
+                            Need Help? 💬
+                            <span>Review • Suggestions • Better ideas</span>
+                        </div>
+                    </div>
+
                     <!-- Grid: Sharing URL, Login Streak, & Live Users -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Sharing URL Card -->
@@ -336,6 +421,7 @@
                                 <span id="home-login-streak" class="text-3xl font-black dynamic-text font-mono">1</span>
                                 <span class="text-xs text-[var(--text-muted)] font-semibold uppercase">Days Logged In</span>
                             </div>
+                            <button onclick="openShareProgressModal('login')" class="dynamic-card border px-3 py-1.5 rounded-xl text-[10px] font-bold text-[var(--text-main)] hover:bg-[var(--bg-card-solid)] transition self-start">Share Streak 🔥</button>
                         </div>
 
                         <!-- LIVE NO. OF USERS -->
@@ -1557,7 +1643,10 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-center pt-1">
+                        <div class="flex justify-center gap-2 pt-1">
+                            <button onclick="openShareProgressModal('habit','${h.id}')" class="dynamic-card border px-5 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
+                                📤 SHARE TIMER
+                            </button>
                             <button onclick="promptResetHabitStreak('${h.id}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/40 px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
                                 ⚠️ RETRY
                             </button>
@@ -1590,6 +1679,203 @@
                 if (minsEl) minsEl.innerText = minutes;
                 if (secsEl) secsEl.innerText = seconds;
             });
+        }
+
+        let shareProgressType = null;
+        let shareProgressId = null;
+        let shareProgressPhoto = null;
+
+        function openShareProgressModal(type, id = null) {
+            shareProgressType = type;
+            shareProgressId = id;
+            shareProgressPhoto = null;
+            const input = document.getElementById('share-photo-input');
+            const name = document.getElementById('share-photo-name');
+            const modal = document.getElementById('shareProgressModal');
+            if (input) input.value = '';
+            if (name) name.innerText = 'No photo selected';
+            if (modal) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function closeShareProgressModal() {
+            const modal = document.getElementById('shareProgressModal');
+            if (modal) modal.classList.add('opacity-0', 'pointer-events-none');
+            shareProgressType = null;
+            shareProgressId = null;
+            shareProgressPhoto = null;
+        }
+
+        function handleSharePhotoChange(event) {
+            const file = event.target.files && event.target.files[0];
+            shareProgressPhoto = file || null;
+            const name = document.getElementById('share-photo-name');
+            if (name) name.innerText = file ? file.name : 'No photo selected';
+        }
+
+        function shareCanvasText(ctx, text, x, y, size, color, weight = '700', align = 'left') {
+            ctx.fillStyle = color;
+            ctx.font = `${weight} ${size}px ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif`;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(text), x, y);
+        }
+
+        function roundRectPath(ctx, x, y, w, h, r) {
+            const rr = Math.min(r, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + rr, y);
+            ctx.arcTo(x + w, y, x + w, y + h, rr);
+            ctx.arcTo(x + w, y + h, x, y + h, rr);
+            ctx.arcTo(x, y + h, x, y, rr);
+            ctx.arcTo(x, y, x + w, y, rr);
+            ctx.closePath();
+        }
+
+        function loadSharePhoto() {
+            return new Promise((resolve) => {
+                if (!shareProgressPhoto) return resolve(null);
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    img.src = reader.result;
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(shareProgressPhoto);
+            });
+        }
+
+        function createShareCardCanvas(type, id, photoImg) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = photoImg ? 900 : 760;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+
+            const bg = currentModeKey === 'light' ? '#f8fafc' : '#030712';
+            const card = currentModeKey === 'light' ? '#ffffff' : '#111827';
+            const muted = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
+            const main = currentModeKey === 'light' ? '#0f172a' : '#f3f4f6';
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
+
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            roundRectPath(ctx, 55, 45, 1090, canvas.height - 90, 34);
+            ctx.fillStyle = card;
+            ctx.fill();
+
+            shareCanvasText(ctx, 'GHOST TRACKER', 90, 95, 24, accent, '900');
+            shareCanvasText(ctx, currentUser ? `@${currentUser}` : 'My Progress', 1110, 95, 18, muted, '600', 'right');
+
+            let contentBottom = canvas.height - 90;
+            if (type === 'login') {
+                shareCanvasText(ctx, '🔥 LOGIN STREAK', 90, 165, 34, main, '900');
+                shareCanvasText(ctx, `${userLoginStreakCount} DAYS`, 90, 285, 82, accent, '900');
+                shareCanvasText(ctx, 'logged in / matrix days', 95, 345, 24, muted, '600');
+                shareCanvasText(ctx, 'Keep building the streak.', 95, 405, 22, main, '600');
+            } else if (type === 'tracker') {
+                const t = trackers.find(x => String(x.id) === String(id));
+                if (!t) return null;
+                shareCanvasText(ctx, `📈 ${t.title}`, 90, 165, 34, main, '900');
+                shareCanvasText(ctx, `Goal ${t.goal} • Max ${t.max} • ${t.timeframe}`, 90, 210, 20, muted, '600');
+                const source = document.getElementById(`canvas-${t.id}-1`) || document.getElementById(`canvas-${t.id}-2`);
+                if (source) {
+                    const graphX = 90, graphY = 245, graphW = 1020, graphH = 350;
+                    roundRectPath(ctx, graphX, graphY, graphW, graphH, 22);
+                    ctx.fillStyle = currentModeKey === 'light' ? '#f8fafc' : '#030712';
+                    ctx.fill();
+                    ctx.drawImage(source, graphX + 15, graphY + 15, graphW - 30, graphH - 30);
+                }
+                const values = (Array.isArray(t.data) ? t.data : []).map(v => Number(v) || 0);
+                const nonZero = values.filter(v => v !== 0);
+                const total = values.reduce((a,b) => a + b, 0);
+                shareCanvasText(ctx, `Total logged: ${total} • Active entries: ${nonZero.length}`, 90, 635, 21, main, '700');
+                shareCanvasText(ctx, 'Shared from my GHOST Tracker progress.', 90, 680, 18, muted, '500');
+            } else if (type === 'habit') {
+                const h = habits.find(x => String(x.id) === String(id));
+                if (!h) return null;
+                const totalSeconds = Math.max(0, Math.floor((new Date() - new Date(h.startDate)) / 1000));
+                const days = Math.floor(totalSeconds / 86400);
+                const hours = Math.floor((totalSeconds % 86400) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                shareCanvasText(ctx, `🛡️ CLEAN TIMER • ${h.name}`, 90, 165, 31, main, '900');
+                shareCanvasText(ctx, `${String(days).padStart(2,'0')}d  ${String(hours).padStart(2,'0')}h  ${String(minutes).padStart(2,'0')}m  ${String(seconds).padStart(2,'0')}s`, 90, 295, 68, accent, '900');
+                shareCanvasText(ctx, 'time since I last repeated this habit', 95, 355, 23, muted, '600');
+                shareCanvasText(ctx, `Relapses / resets: ${h.relapses || 0}`, 95, 420, 22, main, '700');
+            }
+
+            if (photoImg) {
+                const photoX = 720, photoY = type === 'tracker' ? 625 : 485, photoW = 390, photoH = 210;
+                roundRectPath(ctx, photoX, photoY, photoW, photoH, 20);
+                ctx.save();
+                ctx.clip();
+                const scale = Math.max(photoW / photoImg.width, photoH / photoImg.height);
+                const dw = photoImg.width * scale, dh = photoImg.height * scale;
+                ctx.drawImage(photoImg, photoX + (photoW - dw) / 2, photoY + (photoH - dh) / 2, dw, dh);
+                ctx.restore();
+                shareCanvasText(ctx, 'My photo', photoX, photoY - 15, 15, muted, '600');
+                contentBottom = photoY + photoH;
+            }
+
+            shareCanvasText(ctx, 'ghost tracker • personal progress', 90, canvas.height - 72, 16, muted, '600');
+            return canvas;
+        }
+
+        async function executeShareProgress() {
+            if (!shareProgressType) return;
+            const type = shareProgressType;
+            const id = shareProgressId;
+            const photoImg = await loadSharePhoto();
+            const canvas = createShareCardCanvas(type, id, photoImg);
+            if (!canvas) {
+                alert('Could not prepare the share card. Please try again.');
+                return;
+            }
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert('Could not create the share image. Please try again.');
+                    return;
+                }
+
+                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : 'ghost-clean-timer.png';
+                const file = new File([blob], safeName, { type: 'image/png' });
+                const text = type === 'login'
+                    ? `🔥 ${userLoginStreakCount} day login streak on GHOST Tracker.`
+                    : type === 'tracker'
+                        ? `📈 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} progress from GHOST Tracker.`
+                        : `🛡️ Sharing my clean timer from GHOST Tracker.`;
+
+                try {
+                    if (navigator.share) {
+                        const payload = { title: 'GHOST Tracker Progress', text };
+                        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+                            payload.files = [file];
+                        }
+                        await navigator.share(payload);
+                    } else {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = safeName;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                        try { await navigator.clipboard.writeText(text); } catch (e) {}
+                        alert('Share is not supported here, so the progress image was saved instead.');
+                    }
+                    closeShareProgressModal();
+                } catch (e) {
+                    if (e && e.name !== 'AbortError') {
+                        alert('Sharing was not completed. You can try again.');
+                    }
+                }
+            }, 'image/png', 0.95);
         }
 
         function drawTodoDonut(completed, total) {
@@ -1960,6 +2246,7 @@
                         <div class="flex justify-between items-center flex-wrap gap-2">
                             <h3 class="font-semibold text-[var(--text-main)] text-sm">${t.title} <span class="text-xs text-[var(--text-muted)] font-normal">(Goal: ${t.goal} / ${t.timeframe})</span></h3>
                             <div class="flex items-center gap-2">
+                                <button onclick="openShareProgressModal('tracker','${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">📤 Share</button>
                                 <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
                                 <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
                             </div>
@@ -2017,6 +2304,11 @@
                     container.appendChild(card);
                 });
             });
+
+            // Keep the To-Do list in sync whenever the main UI is rendered.
+            // Previously render() rebuilt the app but never rendered the already-loaded
+            // todos array, so saved tasks stayed invisible until addTodo() called renderTodos().
+            renderTodos();
 
             if (currentAppTab === 'tracker') scheduleGraphRedraw();
         }
