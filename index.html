@@ -397,6 +397,28 @@
         </div>
     </div>
 
+    <!-- PUBLIC PROGRESS SHARE VIEW -->
+    <div id="public-progress-view" class="hidden fixed inset-0 z-[100] overflow-y-auto p-4 md:p-8" style="background:var(--bg-main);">
+        <div class="max-w-3xl mx-auto min-h-full flex items-center justify-center py-8">
+            <div class="w-full dynamic-card border rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-64 h-64 dynamic-bg rounded-full blur-3xl opacity-10 pointer-events-none"></div>
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="text-sm font-black tracking-widest dynamic-text">GHOST TRACKER</div>
+                        <div id="public-progress-user" class="text-xs text-[var(--text-muted)] mt-1"></div>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border border-[var(--border-color)] rounded-full px-3 py-1.5">Shared Progress</span>
+                </div>
+                <div id="public-progress-content"></div>
+                <div class="mt-6 pt-5 border-t border-[var(--border-color)] flex flex-col sm:flex-row gap-3">
+                    <button onclick="copyPublicProgressLink()" class="flex-1 dynamic-card border rounded-xl px-4 py-3 text-xs font-bold text-[var(--text-main)]">🔗 Copy Progress Link</button>
+                    <button onclick="window.location.href=window.location.origin+window.location.pathname" class="flex-1 dynamic-bg rounded-xl px-4 py-3 text-xs font-bold">Open GHOST Tracker 🚀</button>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] text-center mt-4">This link contains the shared progress data. It does not expose your account password or private account data.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Auth Screen Wrapper -->
     <div id="auth-screen-wrapper" class="w-full max-w-md mx-auto relative z-10 my-auto">
         <div id="auth-screen" class="w-full dynamic-card border rounded-2xl p-8 shadow-xl mt-12">
@@ -956,6 +978,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            if (renderPublicProgressView()) return;
             startLiveClock();
             
             const shareInput = document.getElementById('site-share-url');
@@ -1936,8 +1959,109 @@
         let lastShareText = '';
         let lastShareUrl = '';
 
-        function getShareUrl() {
-            return window.location.href.split('#')[0];
+        function encodeProgressPayload(payload) {
+            try {
+                return btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+            } catch (e) { return ''; }
+        }
+
+        function buildProgressShareUrl(type, id) {
+            const payload = { v: 1, type, user: currentUser || 'GHOST Tracker', createdAt: new Date().toISOString() };
+            if (type === 'login') {
+                payload.streak = Number(userLoginStreakCount) || 0;
+            } else if (type === 'tracker') {
+                const t = trackers.find(x => String(x.id) === String(id));
+                if (!t) return window.location.href.split('#')[0];
+                payload.tracker = {
+                    title: t.title || 'Tracker', goal: Number(t.goal) || 0, max: Number(t.max) || 1,
+                    timeframe: t.timeframe || 'Day', data: Array.isArray(t.data) ? t.data.map(v => Number(v) || 0) : []
+                };
+            } else if (type === 'habit') {
+                const h = habits.find(x => String(x.id) === String(id));
+                if (!h) return window.location.href.split('#')[0];
+                payload.habit = {
+                    name: h.name || 'Clean Timer',
+                    elapsedSeconds: Math.max(0, Math.floor((new Date() - new Date(h.startDate)) / 1000)),
+                    relapses: Number(h.relapses) || 0
+                };
+            }
+            const encoded = encodeProgressPayload(payload);
+            return encoded ? `${window.location.origin}${window.location.pathname}#progress=${encoded}` : window.location.href.split('#')[0];
+        }
+
+        function getShareUrl(type = shareProgressType, id = shareProgressId) {
+            return (type && (trackers.length || habits.length || type === 'login')) ? buildProgressShareUrl(type, id) : window.location.href.split('#')[0];
+        }
+
+        function decodeProgressPayload(encoded) {
+            try {
+                const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
+                const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+                return JSON.parse(decodeURIComponent(escape(atob(padded))));
+            } catch (e) { return null; }
+        }
+
+        function renderPublicProgressView() {
+            const match = window.location.hash.match(/^#progress=([^&]+)$/);
+            if (!match) return false;
+            const payload = decodeProgressPayload(match[1]);
+            const view = document.getElementById('public-progress-view');
+            const content = document.getElementById('public-progress-content');
+            const userEl = document.getElementById('public-progress-user');
+            if (!payload || !view || !content) return false;
+
+            document.getElementById('auth-screen-wrapper')?.classList.add('hidden');
+            document.getElementById('app-screen')?.classList.add('hidden');
+            document.getElementById('pre-login-popup')?.classList.add('hidden');
+            userEl.textContent = payload.user ? `Shared by @${payload.user}` : 'Shared GHOST Tracker progress';
+
+            if (payload.type === 'login') {
+                content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-7 sm:p-10 text-center">
+                    <div class="text-5xl mb-4">🔥</div><div class="text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Login Streak</div>
+                    <div class="text-6xl sm:text-8xl font-black mt-3" style="color:var(--theme-primary)">${Number(payload.streak)||0}</div>
+                    <div class="text-sm font-semibold text-[var(--text-muted)] mt-2">consecutive logged-in days</div>
+                </div>`;
+            } else if (payload.type === 'habit' && payload.habit) {
+                const e = Math.max(0, Number(payload.habit.elapsedSeconds)||0);
+                const d=Math.floor(e/86400), h=Math.floor((e%86400)/3600), m=Math.floor((e%3600)/60), sec=e%60;
+                content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-7 sm:p-10 text-center">
+                    <div class="text-4xl mb-4">🛡️</div><h2 class="text-2xl sm:text-3xl font-black dynamic-text">${escapeHtml(payload.habit.name)}</h2>
+                    <div class="text-3xl sm:text-5xl font-black mt-6" style="color:var(--theme-primary)">${String(d).padStart(2,'0')}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s</div>
+                    <div class="text-sm text-[var(--text-muted)] mt-3">time since the last repeated habit</div>
+                    <div class="text-xs font-semibold dynamic-text mt-5">Relapses / resets: ${Number(payload.habit.relapses)||0}</div>
+                </div>`;
+            } else if (payload.type === 'tracker' && payload.tracker) {
+                const t=payload.tracker, values=Array.isArray(t.data)?t.data.map(Number):[], total=values.reduce((a,b)=>a+(Number.isFinite(b)?b:0),0), active=values.filter(v=>Number(v)!==0).length;
+                content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4"><div><h2 class="text-xl sm:text-2xl font-black dynamic-text">📈 ${escapeHtml(t.title)}</h2><p class="text-xs text-[var(--text-muted)] mt-1">Goal ${Number(t.goal)||0} • Max ${Number(t.max)||0} • ${escapeHtml(t.timeframe)}</p></div></div>
+                    <canvas id="public-progress-graph" width="1000" height="420" class="w-full rounded-xl"></canvas>
+                    <div class="grid grid-cols-2 gap-3 mt-4"><div class="rounded-xl border border-[var(--border-color)] p-3"><div class="text-[10px] text-[var(--text-muted)]">Total logged</div><div class="text-lg font-black dynamic-text">${total}</div></div><div class="rounded-xl border border-[var(--border-color)] p-3"><div class="text-[10px] text-[var(--text-muted)]">Active entries</div><div class="text-lg font-black dynamic-text">${active}</div></div></div>
+                </div>`;
+                drawPublicProgressGraph(values, Number(t.max)||1);
+            } else {
+                content.innerHTML = '<div class="dynamic-card-solid border rounded-2xl p-8 text-center text-sm text-[var(--text-muted)]">This progress link is invalid or incomplete.</div>';
+            }
+            view.classList.remove('hidden');
+            return true;
+        }
+
+        function escapeHtml(value) {
+            const div=document.createElement('div'); div.textContent=String(value ?? ''); return div.innerHTML;
+        }
+
+        function drawPublicProgressGraph(values, maxValue) {
+            const canvas=document.getElementById('public-progress-graph'); if(!canvas)return; const ctx=canvas.getContext('2d');
+            const w=canvas.width,h=canvas.height,p={l:60,r:25,t:25,b:55}; ctx.clearRect(0,0,w,h);
+            const styles=getComputedStyle(document.documentElement); const muted=styles.getPropertyValue('--text-muted').trim()||'#64748b'; const accent=styles.getPropertyValue('--theme-primary').trim()||'#34d399'; const grid=currentModeKey==='light'?'#cbd5e1':'#1f2937';
+            ctx.strokeStyle=grid; ctx.lineWidth=2; for(let i=0;i<=4;i++){const y=p.t+(h-p.t-p.b)*(i/4);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(w-p.r,y);ctx.stroke();}
+            if(!values.length)return; const hi=Math.max(maxValue, ...values, 1), xStep=(w-p.l-p.r)/Math.max(values.length-1,1); ctx.strokeStyle=accent;ctx.lineWidth=5;ctx.lineJoin='miter';ctx.lineCap='butt';ctx.beginPath();
+            values.forEach((v,i)=>{const x=p.l+i*xStep,y=h-p.b-(Math.max(0,Math.min(hi,v))/hi)*(h-p.t-p.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();
+            ctx.fillStyle=muted;ctx.font='600 18px ui-sans-serif,Arial';ctx.textAlign='center';ctx.fillText('Progress over time',w/2,h-18);
+        }
+
+        function copyPublicProgressLink() {
+            const url=window.location.href; navigator.clipboard?.writeText(url).then(()=>alert('Progress link copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Progress link copied!');});
         }
 
         function getShareText(type, id) {
@@ -2044,7 +2168,7 @@
                 lastShareBlob = blob;
                 lastShareFile = file;
                 lastShareText = getShareText(type, id);
-                lastShareUrl = getShareUrl();
+                lastShareUrl = buildProgressShareUrl(type, id);
 
                 closeShareProgressModal();
 
