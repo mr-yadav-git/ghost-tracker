@@ -185,7 +185,17 @@
         }
         .ghost-telegram-help .ghost-telegram-btn:hover { transform:translateY(-2px); box-shadow:0 13px 32px rgba(34,158,217,.45); }
         @media (max-width:640px) {
-            .ghost-telegram-help { right:14px; bottom:76px; }
+            /* Keep the help control in the Home flow on phones so it never floats over cards.
+               It stays bottom-right of the Home content, immediately after the contribution card. */
+            .ghost-telegram-help {
+                position:static;
+                width:100%;
+                max-width:none;
+                justify-content:flex-end;
+                flex-direction:row-reverse;
+                margin-top:-8px;
+                padding:0 2px 4px;
+            }
             .ghost-telegram-help .ghost-telegram-label { max-width:150px; }
         }
 
@@ -380,19 +390,6 @@
                         </p>
                     </div>
 
-                    <!-- Telegram Help / Review / Suggestions -->
-                    <div class="ghost-telegram-help">
-                        <a href="https://t.me/+K1si1G5HcsA2YzFl" target="_blank" rel="noopener noreferrer" class="ghost-telegram-btn" aria-label="Open GHOST Tracker Telegram group" title="Help, review or suggestions">
-                            <svg viewBox="0 0 24 24" width="23" height="23" fill="currentColor" aria-hidden="true">
-                                <path d="M21.4 3.4 18.3 20c-.2 1.2-.9 1.5-1.9.9l-5.1-3.8-2.5 2.4c-.3.3-.5.5-1 .5l.4-5.2 9.4-8.5c.4-.4-.1-.6-.6-.2L5.4 13.6.3 12c-1.1-.3-1.1-1.1.2-1.6L20.2 2.7c.9-.3 1.7.2 1.2.7Z"/>
-                            </svg>
-                        </a>
-                        <div class="ghost-telegram-label">
-                            Need Help? 💬
-                            <span>Review • Suggestions • Better ideas</span>
-                        </div>
-                    </div>
-
                     <!-- Grid: Sharing URL, Login Streak, & Live Users -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Sharing URL Card -->
@@ -456,6 +453,19 @@
                             <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
                                 Ghost Tracker is built with passion to give you ruthless focus and privacy. If this tool helps you master your discipline, consider supporting ongoing maintenance and new features by scanning the UPI QR code. Thank you!
                             </p>
+                        </div>
+                    </div>
+
+                    <!-- Telegram Help / Review / Suggestions -->
+                    <div class="ghost-telegram-help">
+                        <a href="https://t.me/+K1si1G5HcsA2YzFl" target="_blank" rel="noopener noreferrer" class="ghost-telegram-btn" aria-label="Open GHOST Tracker Telegram group" title="Help, review or suggestions">
+                            <svg viewBox="0 0 24 24" width="23" height="23" fill="currentColor" aria-hidden="true">
+                                <path d="M21.4 3.4 18.3 20c-.2 1.2-.9 1.5-1.9.9l-5.1-3.8-2.5 2.4c-.3.3-.5.5-1 .5l.4-5.2 9.4-8.5c.4-.4-.1-.6-.6-.2L5.4 13.6.3 12c-1.1-.3-1.1-1.1.2-1.6L20.2 2.7c.9-.3 1.7.2 1.2.7Z"/>
+                            </svg>
+                        </a>
+                        <div class="ghost-telegram-label">
+                            Need Help? 💬
+                            <span>Review • Suggestions • Better ideas</span>
                         </div>
                     </div>
                 </div>
