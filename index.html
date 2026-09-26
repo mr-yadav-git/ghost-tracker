@@ -636,6 +636,19 @@
                         </div>
 
                         <div id="admin-content-tracker" class="space-y-6">
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">👻 Live Guest Users</h3>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Visitors currently on GHOST Tracker without a logged-in account.</p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span id="admin-live-guest-count" class="text-2xl font-black dynamic-text font-mono">0</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                                 <div class="flex justify-between items-center flex-wrap gap-4">
                                     <div>
@@ -714,6 +727,16 @@
                             <div class="flex justify-between items-center gap-3">
                                 <p class="text-xs text-[var(--text-muted)]">Manage registered users.</p>
                                 <input type="text" id="admin-search" placeholder="Search user..." oninput="filterAdminUsers()" class="dynamic-card-solid border rounded-xl px-3 py-1.5 text-xs focus:outline-none w-56" />
+                            </div>
+                            <div class="dynamic-card-solid border rounded-2xl p-4 space-y-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">📡 Recent Activity</h4>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Latest user activity based on the platform activity timestamp.</p>
+                                    </div>
+                                    <span class="text-[10px] text-[var(--text-muted)]">Auto-refresh</span>
+                                </div>
+                                <div id="admin-activity-feed" class="space-y-2 text-xs">Loading activity...</div>
                             </div>
                             <div class="max-h-96 overflow-y-auto border rounded-xl p-2 dynamic-card-solid">
                                 <div id="users-list-container" class="text-xs">Loading users...</div>
@@ -1009,9 +1032,111 @@
             } else if (savedUser) {
                 await restoreSession(savedUser);
             }
+            // Track unauthenticated/guest visitors in real time for the admin dashboard.
+            await initGuestPresence();
             setInterval(updateHabitsStreaksTimer, 1000);
+            setInterval(() => { if (resetTodoCompletionForNewDay()) renderTodos(); }, 60000);
             
             fetchLiveUsersCount();
+        });
+
+        async function initGuestPresence() {
+            if (guestPresenceChannel) {
+                if (!currentUser || isGuestUser) await trackGuestPresence();
+                return;
+            }
+
+            guestPresenceChannel = client.channel(GUEST_PRESENCE_CHANNEL, {
+                config: { presence: { key: GUEST_PRESENCE_ID } }
+            });
+
+            guestPresenceChannel
+                .on('presence', { event: 'sync' }, updateLiveGuestCountFromPresence)
+                .on('presence', { event: 'join' }, updateLiveGuestCountFromPresence)
+                .on('presence', { event: 'leave' }, updateLiveGuestCountFromPresence);
+
+            await new Promise(resolve => {
+                let settled = false;
+                const finish = value => { if (!settled) { settled = true; resolve(value); } };
+                guestPresenceChannel.subscribe(async status => {
+                    if (status === 'SUBSCRIBED') finish(true);
+                    else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') finish(false);
+                });
+                setTimeout(() => finish(false), 8000);
+            }).then(async connected => {
+                if (connected) await trackCurrentPresence();
+            });
+        }
+
+        async function trackGuestPresence() {
+            if (!guestPresenceChannel || guestPresenceTracking || (currentUser && !isGuestUser)) return;
+            try {
+                const { error } = await guestPresenceChannel.track({
+                    type: 'guest',
+                    started_at: new Date().toISOString()
+                });
+                guestPresenceTracking = !error;
+            } catch (e) {
+                guestPresenceTracking = false;
+            }
+            updateLiveGuestCountFromPresence();
+        }
+
+        async function untrackGuestPresence() {
+            if (!guestPresenceChannel || !guestPresenceTracking) return;
+            try { await guestPresenceChannel.untrack(); } catch (e) {}
+            guestPresenceTracking = false;
+            updateLiveGuestCountFromPresence();
+        }
+
+        function updateLiveGuestCountFromPresence() {
+            if (!guestPresenceChannel) return;
+            const state = guestPresenceChannel.presenceState();
+            let guestCount = 0;
+            onlineUsernames = new Set();
+            Object.values(state || {}).forEach(metas => {
+                (metas || []).forEach(meta => {
+                    if (meta && meta.type === 'guest') guestCount++;
+                    if (meta && meta.type === 'user' && meta.username) onlineUsernames.add(String(meta.username));
+                });
+            });
+            const adminCountEl = document.getElementById('admin-live-guest-count');
+            if (adminCountEl) adminCountEl.innerText = String(guestCount);
+            renderAdminPresenceIndicators();
+        }
+
+        function renderAdminPresenceIndicators() {
+            document.querySelectorAll('[data-presence-user]').forEach(el => {
+                const username = el.getAttribute('data-presence-user');
+                const online = onlineUsernames.has(username);
+                el.innerHTML = online
+                    ? '<span class="inline-flex items-center gap-1 text-emerald-400 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>Online</span>'
+                    : '<span class="inline-flex items-center gap-1 text-[var(--text-muted)]"><span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>Offline</span>';
+            });
+        }
+
+        async function trackCurrentPresence() {
+            if (!guestPresenceChannel) return;
+            if (!currentUser || currentUser === GUEST_USER || isGuestUser) {
+                await trackGuestPresence();
+                return;
+            }
+            try {
+                if (guestPresenceTracking) await guestPresenceChannel.untrack();
+                const { error } = await guestPresenceChannel.track({
+                    type: 'user',
+                    username: currentUser,
+                    started_at: new Date().toISOString()
+                });
+                guestPresenceTracking = !error;
+            } catch (e) {
+                guestPresenceTracking = false;
+            }
+            updateLiveGuestCountFromPresence();
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (guestPresenceChannel && guestPresenceTracking) guestPresenceChannel.untrack();
         });
 
         async function fetchLiveUsersCount() {
@@ -1208,6 +1333,7 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 switchAppTab('home');
                 render();
+                await trackCurrentPresence();
             } else {
                 localStorage.removeItem('ghost_current_user');
             }
@@ -1342,6 +1468,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
+            await trackCurrentPresence();
             fetchLiveUsersCount();
 
             // Trigger tutorial for new user login
@@ -1465,12 +1592,32 @@
             });
             
             displayAdminTable(adminUsersCache);
+            renderAdminActivityFeed(adminUsersCache);
+            renderAdminPresenceIndicators();
+        }
+
+        function renderAdminActivityFeed(users) {
+            const feed = document.getElementById('admin-activity-feed');
+            if (!feed) return;
+            const recent = (users || []).filter(u => u.last_action).slice(0, 8);
+            if (!recent.length) {
+                feed.innerHTML = '<p class="text-[var(--text-muted)] py-2">No activity recorded yet.</p>';
+                return;
+            }
+            feed.innerHTML = recent.map(u => {
+                const online = onlineUsernames.has(u.username);
+                return `<div class="flex items-center justify-between gap-3 border-b border-[var(--border-color)] last:border-b-0 pb-2 last:pb-0">
+                    <div class="min-w-0"><div class="dynamic-text font-semibold truncate">${escapeHtml(u.username)}</div><div class="text-[10px] text-[var(--text-muted)]">${formatTimeAgo(u.last_action)} · ${online ? 'Currently online' : 'Last activity'}</div></div>
+                    <span class="shrink-0 text-[10px] ${online ? 'text-emerald-400' : 'text-[var(--text-muted)]'}">${online ? '● ONLINE' : '○ OFFLINE'}</span>
+                </div>`;
+            }).join('');
         }
 
         function filterAdminUsers() {
             const query = document.getElementById('admin-search').value.toLowerCase();
             const filtered = adminUsersCache.filter(u => u.username.toLowerCase().includes(query));
             displayAdminTable(filtered);
+            renderAdminPresenceIndicators();
         }
 
         function formatTimeAgo(timestamp) {
@@ -1495,7 +1642,7 @@
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Last Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Status</th><th class="py-3 px-3.5">Last Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
                 const timeAgoStr = formatTimeAgo(u.last_action);
@@ -1507,6 +1654,7 @@
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
                     <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
+                    <td class="py-3 px-3.5 text-[11px]"><span data-presence-user="${u.username}"></span></td>
                     <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
                         ${!isUserMaster ? (
@@ -1595,6 +1743,7 @@
             document.getElementById('auth-error').innerText = '';
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('auth-screen-wrapper').classList.remove('hidden');
+            if (guestPresenceChannel) trackGuestPresence();
         }
 
         // DEBOUNCED CLOUD SYNCHRONIZATION FOR OPTIMIZED PERFORMANCE
@@ -1665,37 +1814,26 @@
         }
 
         function getTodoLocalDate() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return localDateKey();
         }
 
         function resetTodoCompletionForNewDay() {
             const todayStr = getTodoLocalDate();
             let changed = false;
-
             todos.forEach(t => {
-                // Tasks persist, but their daily completion status resets automatically.
-                // This also migrates older tasks that may have no completedDate.
                 if (t.completed && t.completedDate && t.completedDate !== todayStr) {
                     t.completed = false;
                     t.completedDate = null;
                     changed = true;
                 }
             });
-
-            if (changed && currentUser) {
-                saveAndCloudSync();
-            }
+            if (changed) saveAndCloudSync();
             return changed;
         }
 
         function renderTodos() {
             const container = document.getElementById('todos-list-container');
             if (!container) return;
-
             resetTodoCompletionForNewDay();
 
             if (todos.length === 0) {
@@ -1881,6 +2019,17 @@
         let isGuestUser = false;
         let guestSessionCount = Number(localStorage.getItem('ghost_guest_session_count') || 0);
         let guestDataSaveEnabled = true;
+
+        // LIVE GUEST PRESENCE (Supabase Realtime)
+        let guestPresenceChannel = null;
+        let guestPresenceTracking = false;
+        let onlineUsernames = new Set();
+        const GUEST_PRESENCE_CHANNEL = 'ghost-tracker-live-guests-v1';
+        const GUEST_PRESENCE_ID = localStorage.getItem('ghost_guest_presence_id') || (() => {
+            const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('guest_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+            localStorage.setItem('ghost_guest_presence_id', id);
+            return id;
+        })();
         let loginStreakMeta = { count: 1, lastLoginDate: null };
 
         function localDateKey(date = new Date()) {
