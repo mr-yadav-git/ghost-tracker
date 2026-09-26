@@ -1633,7 +1633,7 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getTodoLocalDate();
 
             todos.push({
                 id: 'todo_' + Date.now(),
@@ -1651,7 +1651,7 @@
             const todo = todos.find(t => t.id === id);
             if (todo) {
                 todo.completed = !todo.completed;
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = getTodoLocalDate();
                 todo.completedDate = todo.completed ? todayStr : null;
                 saveAndCloudSync();
                 renderTodos();
@@ -1664,9 +1664,39 @@
             renderTodos();
         }
 
+        function getTodoLocalDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function resetTodoCompletionForNewDay() {
+            const todayStr = getTodoLocalDate();
+            let changed = false;
+
+            todos.forEach(t => {
+                // Tasks persist, but their daily completion status resets automatically.
+                // This also migrates older tasks that may have no completedDate.
+                if (t.completed && t.completedDate && t.completedDate !== todayStr) {
+                    t.completed = false;
+                    t.completedDate = null;
+                    changed = true;
+                }
+            });
+
+            if (changed && currentUser) {
+                saveAndCloudSync();
+            }
+            return changed;
+        }
+
         function renderTodos() {
             const container = document.getElementById('todos-list-container');
             if (!container) return;
+
+            resetTodoCompletionForNewDay();
 
             if (todos.length === 0) {
                 container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-4">No tasks added yet. Persistent tasks remain until removed.</p>`;
@@ -1675,7 +1705,7 @@
             }
 
             let html = '';
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getTodoLocalDate();
             let completedTodayCount = 0;
             let totalActiveTasks = todos.length;
 
