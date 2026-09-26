@@ -1399,7 +1399,7 @@
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 calculateLoginStreak(existingUser, true);
                 const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta });
-                await client.from('profiles').update({ force_logout: false, last_action: new Date().toISOString(), data: updatedLoginPayload }).eq('username', user);
+                await client.from('profiles').update({ force_logout: false, last_login: new Date().toISOString(), last_action: new Date().toISOString(), data: updatedLoginPayload }).eq('username', user);
             } else {
                 isNewUserSignUp = true;
                 let guestSnapshot = null;
@@ -1415,7 +1415,7 @@
                 const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_action: new Date().toISOString() }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: new Date().toISOString(), last_action: new Date().toISOString() }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -1578,7 +1578,7 @@
             if(!container) return;
             container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
-            const { data: users, error } = await client.from('profiles').select('username, password, last_action, is_admin');
+            const { data: users, error } = await client.from('profiles').select('username, password, last_login, last_action, is_admin');
             
             if (error) {
                 container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
@@ -1642,10 +1642,11 @@
             }
 
             let html = '<table class="w-full border-collapse text-left">';
-            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Status</th><th class="py-3 px-3.5">Last Update</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
+            html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Status</th><th class="py-3 px-3.5">Last Logged In</th><th class="py-3 px-3.5">Last Activity</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
             
             users.forEach(u => {
-                const timeAgoStr = formatTimeAgo(u.last_action);
+                const lastLoginStr = formatTimeAgo(u.last_login);
+                const lastActivityStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
                 const isUserAdmin = u.is_admin === true || isUserMaster;
                 const displayPassword = isUserMaster ? '••••••••' : u.password;
@@ -1655,7 +1656,8 @@
                     <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
                     <td class="py-3 px-3.5 text-[11px]"><span data-presence-user="${u.username}"></span></td>
-                    <td class="py-3 px-3.5 text-[var(--text-main)] font-mono text-[11px]">${timeAgoStr}</td>
+                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastLoginStr}</td>
+                    <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastActivityStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
                         ${!isUserMaster ? (
                             isUserAdmin 
@@ -1762,7 +1764,7 @@
                     habits: habits,
                     loginStreak: loginStreakMeta
                 });
-                await client.from('profiles').update({ data: payload }).eq('username', currentUser);
+                await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
             }, 600);
         }
 
