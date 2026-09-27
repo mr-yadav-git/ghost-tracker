@@ -2735,12 +2735,19 @@ let shareProgressType = null;
 
         function createShareCardCanvas(type, id, photoImg) {
             const isStatsTracker = type === 'stats-tracker';
+            const SHARE_RENDER_SCALE = 2;
+            const logicalWidth = 2400;
+            const logicalHeight = photoImg ? (isStatsTracker ? 1850 : 1650) : (isStatsTracker ? 1550 : 1350);
             const canvas = document.createElement('canvas');
-            canvas.width = 2400;
-            canvas.height = photoImg ? (isStatsTracker ? 1850 : 1650) : (isStatsTracker ? 1550 : 1350);
-            const ctx = canvas.getContext('2d');
+            canvas.width = logicalWidth * SHARE_RENDER_SCALE;
+            canvas.height = logicalHeight * SHARE_RENDER_SCALE;
+            const ctx = canvas.getContext('2d', { alpha: false });
             if (!ctx) return null;
 
+            // Render the same share card at 2x physical resolution for a genuinely
+            // high-resolution PNG instead of enlarging a small source canvas.
+            ctx.scale(SHARE_RENDER_SCALE, SHARE_RENDER_SCALE);
+            ctx.imageSmoothingEnabled = true;
             const bg = currentModeKey === 'light' ? '#f1f5f9' : '#020617';
             const card = currentModeKey === 'light' ? '#ffffff' : '#0f172a';
             const graphBg = currentModeKey === 'light' ? '#f8fafc' : '#030712';
@@ -2749,8 +2756,8 @@ let shareProgressType = null;
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
 
             ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            roundRectPath(ctx, 70, 55, 2260, canvas.height - 110, 46);
+            ctx.fillRect(0, 0, logicalWidth, logicalHeight);
+            roundRectPath(ctx, 70, 55, 2260, logicalHeight - 110, 46);
             ctx.fillStyle = card;
             ctx.fill();
 
@@ -2822,7 +2829,7 @@ let shareProgressType = null;
             }
 
             if (photoImg) {
-                const photoX = 140, photoY = canvas.height - 380, photoW = 720, photoH = 300;
+                const photoX = 140, photoY = logicalHeight - 380, photoW = 720, photoH = 300;
                 roundRectPath(ctx, photoX, photoY, photoW, photoH, 24);
                 ctx.save();
                 ctx.clip();
@@ -2833,7 +2840,7 @@ let shareProgressType = null;
                 shareCanvasText(ctx, 'My photo', photoX, photoY - 22, 20, muted, '600');
             }
 
-            shareCanvasText(ctx, 'ghost tracker • personal progress', 140, canvas.height - 85, 22, muted, '600');
+            shareCanvasText(ctx, 'ghost tracker • personal progress', 140, logicalHeight - 85, 22, muted, '600');
             return canvas;
         }
 
@@ -3048,7 +3055,7 @@ let shareProgressType = null;
                     return;
                 }
 
-                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : type === 'stats-tracker' ? 'ghost-30day-stats.png' : 'ghost-clean-timer.png';
+                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : type === 'stats-tracker' ? 'ghost-30day-stats-HQ.png' : 'ghost-clean-timer.png';
                 const file = new File([blob], safeName, { type: 'image/png' });
                 lastShareBlob = blob;
                 lastShareFile = file;
