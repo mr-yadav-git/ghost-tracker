@@ -131,7 +131,7 @@
             inset: 0;
             overflow: hidden;
             pointer-events: none;
-            z-index: 9997;
+            z-index: 20;
             display: none;
             --winter-tilt-x: 0deg;
             --winter-tilt-y: 0deg;
@@ -168,9 +168,9 @@
             left: -12vw;
             right: -12vw;
             bottom: -1px;
-            height: 94px;
+            height: 64px;
             pointer-events: none;
-            z-index: 9996;
+            z-index: 25;
             display: none;
             overflow: visible;
             --snow-near-x: 0px;
@@ -192,38 +192,43 @@
             will-change: transform;
         }
         #winter-snow-ground::before {
-            bottom: 19px;
-            height: 58px;
-            opacity: .66;
+            bottom: 18px;
+            height: 50px;
+            opacity: .50;
             transform: translate3d(var(--snow-far-x), var(--snow-far-y), 0) rotate(var(--snow-far-rotate));
             background:
-                radial-gradient(17vw 46px at 7% 100%, rgba(255,255,255,.72) 0 57%, transparent 59%),
-                radial-gradient(22vw 54px at 29% 100%, rgba(240,249,255,.68) 0 57%, transparent 59%),
-                radial-gradient(18vw 45px at 53% 100%, rgba(255,255,255,.72) 0 57%, transparent 59%),
-                radial-gradient(24vw 55px at 78% 100%, rgba(239,248,255,.66) 0 57%, transparent 59%),
-                radial-gradient(17vw 44px at 98% 100%, rgba(255,255,255,.70) 0 57%, transparent 59%),
-                linear-gradient(to top, rgba(224,242,254,.62), rgba(255,255,255,.22) 72%, transparent);
+                radial-gradient(17vw 46px at 7% 100%, rgba(255,255,255,.62) 0 57%, transparent 59%),
+                radial-gradient(22vw 54px at 29% 100%, rgba(240,249,255,.58) 0 57%, transparent 59%),
+                radial-gradient(18vw 45px at 53% 100%, rgba(255,255,255,.62) 0 57%, transparent 59%),
+                radial-gradient(24vw 55px at 78% 100%, rgba(239,248,255,.56) 0 57%, transparent 59%),
+                radial-gradient(17vw 44px at 98% 100%, rgba(255,255,255,.60) 0 57%, transparent 59%),
+                linear-gradient(to top, rgba(224,242,254,.48), rgba(255,255,255,.18) 72%, transparent);
             filter: blur(.25px);
         }
         #winter-snow-ground::after {
             bottom: 0;
-            height: 70px;
+            height: 64px;
             transform: translate3d(var(--snow-near-x), var(--snow-near-y), 0) rotate(var(--snow-near-rotate));
             background:
-                radial-gradient(13vw 39px at 2% 100%, #ffffff 0 58%, transparent 60%),
-                radial-gradient(19vw 47px at 18% 100%, #f8fdff 0 59%, transparent 61%),
-                radial-gradient(15vw 42px at 34% 100%, #ffffff 0 58%, transparent 60%),
-                radial-gradient(22vw 52px at 54% 100%, #f8fdff 0 59%, transparent 61%),
-                radial-gradient(17vw 46px at 74% 100%, #ffffff 0 58%, transparent 60%),
+                radial-gradient(13vw 39px at 2% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
+                radial-gradient(19vw 47px at 18% 100%, rgba(248,253,255,.70) 0 59%, transparent 61%),
+                radial-gradient(15vw 42px at 34% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
+                radial-gradient(22vw 52px at 54% 100%, rgba(248,253,255,.70) 0 59%, transparent 61%),
+                radial-gradient(17vw 46px at 74% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
                 radial-gradient(19vw 48px at 94% 100%, #f7fcff 0 59%, transparent 61%),
-                linear-gradient(to top, rgba(255,255,255,.98), rgba(246,252,255,.94) 48%, rgba(255,255,255,.48) 84%, transparent);
-            box-shadow: 0 -1px 0 rgba(255,255,255,.92) inset, 0 -4px 15px rgba(186,230,253,.14);
+                linear-gradient(to top, rgba(255,255,255,.78), rgba(246,252,255,.70) 48%, rgba(255,255,255,.30) 84%, transparent);
+            box-shadow: 0 -1px 0 rgba(255,255,255,.50) inset, 0 -2px 8px rgba(186,230,253,.08);
         }
         @media (max-width: 640px) {
-            #winter-snow-ground { height: 76px; }
-            #winter-snow-ground::before { bottom: 15px; height: 48px; }
-            #winter-snow-ground::after { height: 59px; }
+            #winter-snow-ground { height: 52px; }
+            #winter-snow-ground::before { bottom: 14px; height: 40px; }
+            #winter-snow-ground::after { height: 52px; }
         }
+        /* Keep tracker/app content above the decorative snow; keep navigation above everything. */
+        #app-screen { z-index: 40 !important; }
+        #app-nav-container { z-index: 60 !important; }
+        #pre-login-popup, #tutorial-overlay, #share-modal, #toast-container { z-index: 70 !important; }
+
         body.winter-arc .dynamic-card {
             box-shadow: 0 8px 26px rgba(2, 12, 27, .20), 0 0 0 1px rgba(186,230,253,.025);
         }
@@ -1352,8 +1357,8 @@
         }
 
         let winterTiltBound = false;
-        let winterLastTiltX = 0;
-        let winterLastTiltY = 0;
+        let winterPermissionRequested = false;
+        let winterGestureBound = false;
         let winterTargetX = 0;
         let winterTargetY = 0;
         let winterSmoothX = 0;
@@ -1361,57 +1366,101 @@
         let winterParallaxFrame = 0;
 
         function requestWinterTiltPermission() {
+            if (!document.body.classList.contains('winter-arc')) return;
             try {
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    DeviceOrientationEvent.requestPermission().then(permission => {
-                        if (permission === 'granted') bindWinterTilt();
-                    }).catch(() => {});
+                if (typeof DeviceOrientationEvent === 'undefined') return;
+
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    if (winterPermissionRequested) return;
+                    winterPermissionRequested = true;
+                    const permissionResult = DeviceOrientationEvent.requestPermission();
+                    if (permissionResult && typeof permissionResult.then === 'function') {
+                        permissionResult.then(permission => {
+                            if (permission === 'granted') {
+                                bindWinterTilt();
+                            } else {
+                                winterPermissionRequested = false;
+                            }
+                        }).catch(() => {
+                            winterPermissionRequested = false;
+                        });
+                    }
                 } else {
                     bindWinterTilt();
                 }
-            } catch (e) {}
+            } catch (e) {
+                winterPermissionRequested = false;
+            }
         }
 
         function bindWinterTilt() {
             if (winterTiltBound) return;
             winterTiltBound = true;
             window.addEventListener('deviceorientation', handleWinterOrientation, { passive: true });
+            window.addEventListener('deviceorientationabsolute', handleWinterOrientation, { passive: true });
             window.addEventListener('mousemove', handleWinterMouse, { passive: true });
         }
 
+        function handleWinterFirstGesture() {
+            if (document.body.classList.contains('winter-arc')) requestWinterTiltPermission();
+        }
+
         function handleWinterOrientation(event) {
-            const gamma = Number.isFinite(event.gamma) ? Math.max(-45, Math.min(45, event.gamma)) : 0;
-            const beta = Number.isFinite(event.beta) ? Math.max(-45, Math.min(45, event.beta)) : 0;
-            winterLastTiltX = gamma;
-            winterLastTiltY = beta;
-            winterTargetX = gamma * 1.15;
-            winterTargetY = Math.max(-6, Math.min(6, (beta - 45) * 0.10));
+            const rawGamma = Number(event.gamma);
+            const rawBeta = Number(event.beta);
+            if (!Number.isFinite(rawGamma) && !Number.isFinite(rawBeta)) return;
+
+            const gamma = Number.isFinite(rawGamma) ? Math.max(-45, Math.min(45, rawGamma)) : 0;
+            const beta = Number.isFinite(rawBeta) ? Math.max(-45, Math.min(45, rawBeta)) : 0;
+            const screenAngle = Number(window.screen?.orientation?.angle ?? window.orientation ?? 0);
+
+            // Map device tilt to the screen's actual left/right direction, including landscape mode.
+            let sideTilt = gamma;
+            let depthTilt = beta;
+            if (screenAngle === 90) {
+                sideTilt = beta;
+                depthTilt = -gamma;
+            } else if (screenAngle === 180) {
+                sideTilt = -gamma;
+                depthTilt = -beta;
+            } else if (screenAngle === 270) {
+                sideTilt = -beta;
+                depthTilt = gamma;
+            }
+
+            // Deliberately stronger than the old version so the snowbank visibly follows a phone tilt.
+            winterTargetX = Math.max(-90, Math.min(90, sideTilt * 2.25));
+            winterTargetY = Math.max(-8, Math.min(8, (depthTilt - 8) * 0.16));
         }
 
         function handleWinterMouse(event) {
             if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
             const x = (event.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
             const y = (event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
-            winterTargetX = x * 12;
-            winterTargetY = y * 4;
+            winterTargetX = x * 22;
+            winterTargetY = y * 5;
         }
 
         function animateWinterParallax() {
             const ground = document.getElementById('winter-snow-ground');
             const layer = document.getElementById('winter-snow-layer');
             if (ground && layer && document.body.classList.contains('winter-arc')) {
-                winterSmoothX += (winterTargetX - winterSmoothX) * 0.075;
-                winterSmoothY += (winterTargetY - winterSmoothY) * 0.075;
-                ground.style.setProperty('--snow-near-x', (winterSmoothX * 1.9).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-near-y', (winterSmoothY * 0.35).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-near-rotate', (winterSmoothX * 0.018).toFixed(3) + 'deg');
-                ground.style.setProperty('--snow-far-x', (winterSmoothX * 0.72).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-far-y', (winterSmoothY * 0.16).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-far-rotate', (winterSmoothX * 0.008).toFixed(3) + 'deg');
-                layer.style.setProperty('--winter-drift-x', (winterSmoothX * 0.55).toFixed(2) + 'px');
-                layer.style.setProperty('--winter-drift-y', (winterSmoothY * 0.3).toFixed(2) + 'px');
+                winterSmoothX += (winterTargetX - winterSmoothX) * 0.12;
+                winterSmoothY += (winterTargetY - winterSmoothY) * 0.12;
+
+                ground.style.setProperty('--snow-near-x', (winterSmoothX * 1.55).toFixed(2) + 'px');
+                ground.style.setProperty('--snow-near-y', (winterSmoothY * 0.28).toFixed(2) + 'px');
+                ground.style.setProperty('--snow-near-rotate', (winterSmoothX * 0.010).toFixed(3) + 'deg');
+                ground.style.setProperty('--snow-far-x', (winterSmoothX * 0.62).toFixed(2) + 'px');
+                ground.style.setProperty('--snow-far-y', (winterSmoothY * 0.12).toFixed(2) + 'px');
+                ground.style.setProperty('--snow-far-rotate', (winterSmoothX * 0.004).toFixed(3) + 'deg');
+                layer.style.setProperty('--winter-drift-x', (winterSmoothX * 0.42).toFixed(2) + 'px');
+                layer.style.setProperty('--winter-drift-y', (winterSmoothY * 0.18).toFixed(2) + 'px');
             } else if (ground && layer && !document.body.classList.contains('winter-arc')) {
-                winterTargetX = 0; winterTargetY = 0; winterSmoothX *= 0.9; winterSmoothY *= 0.9;
+                winterTargetX = 0;
+                winterTargetY = 0;
+                winterSmoothX *= 0.9;
+                winterSmoothY *= 0.9;
             }
             winterParallaxFrame = requestAnimationFrame(animateWinterParallax);
         }
@@ -1420,10 +1469,19 @@
             const snowLayer = document.getElementById('winter-snow-layer');
             if (!snowLayer) return;
             document.body.classList.toggle('winter-arc', isWinter);
+
+            if (!winterGestureBound) {
+                document.addEventListener('pointerdown', handleWinterFirstGesture, { passive: true });
+                document.addEventListener('touchstart', handleWinterFirstGesture, { passive: true });
+                winterGestureBound = true;
+            }
+
             if (isWinter) {
+                // Android/Chromium generally needs no prompt; iOS/Safari may require a user gesture.
                 requestWinterTiltPermission();
                 if (!winterParallaxFrame) winterParallaxFrame = requestAnimationFrame(animateWinterParallax);
             }
+
             if (!isWinter || snowLayer.dataset.ready === 'true') return;
 
             snowLayer.innerHTML = '';
