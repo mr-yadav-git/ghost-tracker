@@ -2377,6 +2377,11 @@
             loadGuestData();
             setLoginStreakDisplay({ count: 1 });
             document.getElementById('display-user').innerText = 'Guest';
+            const guestRoleBadge = document.getElementById('profile-role-badge');
+            if (guestRoleBadge) {
+                guestRoleBadge.innerText = 'Guest';
+                guestRoleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-500/25 text-sky-400 border border-sky-500/30';
+            }
             document.getElementById('pre-login-popup')?.classList.add('hidden');
             document.getElementById('auth-screen-wrapper')?.classList.add('hidden');
             document.getElementById('app-screen')?.classList.remove('hidden');
@@ -3037,7 +3042,7 @@ let shareProgressType = null;
         function render() {
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
 
-            if (currentUser && currentUser !== MASTER_ADMIN) {
+            if (currentUser && currentUser !== MASTER_ADMIN && !isGuestUser) {
                 client.from('profiles').select('theme, force_logout, is_admin').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
                     if (adminData && adminData.theme) {
                         const parts = adminData.theme.split('_');
