@@ -341,6 +341,11 @@
         <div id="ambient-glow" class="w-[400px] h-[400px] dynamic-glow rounded-full blur-[80px]"></div>
     </div>
 
+    <!-- TUTORIAL QUICK ACCESS (Available to every logged-in user) -->
+    <button id="tutorial-quick-btn" onclick="openTutorialManually()" class="fixed right-3 bottom-20 md:right-5 md:bottom-5 z-[45] dynamic-card border shadow-xl rounded-full px-3.5 py-2 text-[11px] font-bold text-[var(--text-main)] flex items-center gap-1.5 hover:scale-105 transition-transform hidden" aria-label="Open GHOST Tracker tutorial" title="Open Tutorial">
+        🎓 Tutorial
+    </button>
+
     <!-- SINGLE POPUP BEFORE LOGIN -->
     <div id="pre-login-popup" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div class="w-full max-w-md dynamic-card border rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden animate-fade-in">
@@ -1031,11 +1036,20 @@
 
         function startTutorialIfNeeded() {
             const dismissed = localStorage.getItem('ghost_new_user_tutorial_done');
-            if (!dismissed) {
-                currentTutorialStep = 0;
-                document.getElementById('site-tutorial-overlay').classList.remove('hidden');
-                renderTutorialStep();
-            }
+            if (!dismissed) openTutorialManually();
+        }
+
+        function openTutorialManually() {
+            const overlay = document.getElementById('site-tutorial-overlay');
+            if (!overlay) return;
+            currentTutorialStep = 0;
+            overlay.classList.remove('hidden');
+            renderTutorialStep();
+        }
+
+        function updateTutorialQuickAccess() {
+            const btn = document.getElementById('tutorial-quick-btn');
+            if (btn) btn.classList.toggle('hidden', !currentUser);
         }
 
         function renderTutorialStep() {
@@ -1086,6 +1100,7 @@
         function finishTutorial() {
             localStorage.setItem('ghost_new_user_tutorial_done', 'true');
             document.getElementById('site-tutorial-overlay').classList.add('hidden');
+            updateTutorialQuickAccess();
             switchAppTab('home');
         }
 
@@ -1545,6 +1560,7 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 switchAppTab('home');
                 render();
+                updateTutorialQuickAccess();
                 await trackCurrentPresence();
             } else {
                 localStorage.removeItem('ghost_current_user');
@@ -1685,6 +1701,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             switchAppTab('home');
             render();
+            updateTutorialQuickAccess();
             await trackCurrentPresence();
             fetchLiveUsersCount();
 
@@ -1964,6 +1981,7 @@
             isGuestUser = false;
             guestDataSaveEnabled = true;
             isAdmin = false;
+            updateTutorialQuickAccess();
             trackers = [];
             todos = [];
             habits = [];
@@ -2387,7 +2405,9 @@
             document.getElementById('app-screen')?.classList.remove('hidden');
             switchAppTab('home');
             render();
-            if (guestSessionCount === 2) setTimeout(() => showAccountReminder(false), 700);
+            updateTutorialQuickAccess();
+            setTimeout(() => openTutorialManually(), 250);
+            if (guestSessionCount === 2) setTimeout(() => showAccountReminder(false), 1200);
         }
 
 let shareProgressType = null;
