@@ -3839,38 +3839,51 @@ let shareProgressType = null;
                 });
             }
 
-            // Straight point-to-point graph: no dots and no curve smoothing.
-            // A fixed 2px stroke keeps the line clean on both mobile and desktop.
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(points[0].x,points[0].y);
-            for(let i=1;i<points.length;i++){
-                ctx.lineTo(points[i].x,points[i].y);
+            // Build the graph only through the latest recorded day.
+            // Empty/future days remain visually empty so the line grows naturally as the user updates it.
+            let lastRecorded=-1;
+            for(let i=0;i<count;i++){
+                if(Number.isFinite(Number(data[i])) && Number(data[i])>0) lastRecorded=i;
             }
-            ctx.lineTo(points[points.length-1].x,top+plotH);
-            ctx.lineTo(points[0].x,top+plotH);
-            ctx.closePath();
 
-            const grad=ctx.createLinearGradient(0,top,0,top+plotH);
-            grad.addColorStop(0,hexToRgba(lineColor,.18));
-            grad.addColorStop(1,hexToRgba(lineColor,0));
-            ctx.fillStyle=grad;
-            ctx.fill();
-            ctx.restore();
+            if(lastRecorded>=0){
+                // Subtle area fill only beneath the portion that actually exists.
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(points[0].x,top+plotH);
+                ctx.lineTo(points[0].x,points[0].y);
+                for(let i=1;i<=lastRecorded;i++) ctx.lineTo(points[i].x,points[i].y);
+                ctx.lineTo(points[lastRecorded].x,top+plotH);
+                ctx.closePath();
 
-            // Draw the actual data line separately so the edge stays sharp.
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(points[0].x,points[0].y);
-            for(let i=1;i<points.length;i++){
-                ctx.lineTo(points[i].x,points[i].y);
+                const grad=ctx.createLinearGradient(0,top,0,top+plotH);
+                grad.addColorStop(0,hexToRgba(lineColor,.12));
+                grad.addColorStop(1,hexToRgba(lineColor,0));
+                ctx.fillStyle=grad;
+                ctx.fill();
+                ctx.restore();
+
+                // Draw only the recorded portion. With one day recorded, show a single point so
+                // the user can immediately see that the graph is working; from day 2 onward the
+                // sharp line grows point-to-point as new daily values are entered.
+                ctx.save();
+                if(lastRecorded===0){
+                    ctx.beginPath();
+                    ctx.arc(points[0].x,points[0].y,3.25,0,Math.PI*2);
+                    ctx.fillStyle=lineColor;
+                    ctx.fill();
+                }else{
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x,points[0].y);
+                    for(let i=1;i<=lastRecorded;i++) ctx.lineTo(points[i].x,points[i].y);
+                    ctx.strokeStyle=lineColor;
+                    ctx.lineWidth=2;
+                    ctx.lineJoin='miter';
+                    ctx.lineCap='butt';
+                    ctx.stroke();
+                }
+                ctx.restore();
             }
-            ctx.strokeStyle=lineColor;
-            ctx.lineWidth=2;
-            ctx.lineJoin='miter';
-            ctx.lineCap='butt';
-            ctx.stroke();
-            ctx.restore();
 
             return true;
         }
