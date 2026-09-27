@@ -955,19 +955,18 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER 4: WEEKLY HISTORY -->
+                <!-- TAB CONTAINER 4: MONTHLY + WEEKLY HISTORY -->
                 <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
                     <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
                         <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
                             <div>
                                 <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                    📊 Weekly History & Consistency Matrix
+                                    📊 Monthly History & Weekly Breakdown
                                 </h3>
-                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Review your previous days, consistency scores, and weekly completion rings side-by-side.</p>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Monthly progress is recorded automatically. Each month contains a colour-coded weekly breakdown.</p>
                             </div>
                         </div>
-                        
-                        <div id="weekly-history-container" class="space-y-4">
+                        <div id="monthly-history-container" class="space-y-5">
                             <!-- Populated dynamically via JS -->
                         </div>
                     </div>
@@ -990,6 +989,7 @@
         let isAdmin = false;
         let trackers = [];
         let todos = [];
+        let todoHistory = [];
         let habits = [];
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
@@ -1019,7 +1019,7 @@
             { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
             { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
             { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
-            { tab: 'history', title: 'Weekly History & Stats Tab', desc: 'Review comprehensive weekly consistency scores and historical completion graphs across all your routines.' },
+            { tab: 'history', title: 'Monthly History & Stats Tab', desc: 'Review monthly progress bars with colour-coded weekly breakdowns across your trackers and To-Do activity.' },
             { tab: 'profile', title: 'User Profile & Account', desc: 'Manage your active session details, check your operator role, or securely sign out whenever you choose.' }
         ];
 
@@ -1329,7 +1329,7 @@
             }
 
             if (tabName === 'history') {
-                renderWeeklyHistoryView();
+                renderMonthlyHistoryView();
             }
         }
 
@@ -1551,22 +1551,25 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
+                        todoHistory = [];
                         habits = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
+                        todoHistory = parsed.todoHistory || [];
                         habits = parsed.habits || [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
+                    todoHistory = [];
                     habits = [];
                 }
 
                 calculateLoginStreak(existingUser, true);
-                const streakPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const streakPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ data: streakPayload }).eq('username', username);
                 
                 checkAndResetPeriodicGoals();
@@ -1649,24 +1652,27 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
+                        todoHistory = [];
                         habits = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
+                        todoHistory = parsed.todoHistory || [];
                         habits = parsed.habits || [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
+                    todoHistory = [];
                     habits = [];
                     lastLoginAt = existingUser.last_login || null;
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 calculateLoginStreak(existingUser, true);
                 lastLoginAt = new Date().toISOString();
-                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const updatedLoginPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ force_logout: false, data: updatedLoginPayload, last_login: lastLoginAt }).eq('username', user);
             } else {
                 // New accounts: usernames/passwords may not contain spaces, and passwords must be at least 5 characters.
@@ -1689,16 +1695,17 @@
                 isNewUserSignUp = true;
                 let guestSnapshot = null;
                 if (isGuestUser) {
-                    guestSnapshot = { trackers: [...trackers], todos: [...todos], habits: [...habits] };
+                    guestSnapshot = { trackers: [...trackers], todos: [...todos], todoHistory: [...todoHistory], habits: [...habits] };
                 }
                 trackers = guestSnapshot ? guestSnapshot.trackers : [];
                 todos = guestSnapshot ? guestSnapshot.todos : [];
+                todoHistory = guestSnapshot && Array.isArray(guestSnapshot.todoHistory) ? guestSnapshot.todoHistory : [];
                 habits = guestSnapshot ? guestSnapshot.habits : [];
                 isAdmin = (user === MASTER_ADMIN);
                 userLoginStreakCount = 1;
                 loginStreakMeta = { count: 1, lastLoginDate: localDateKey() };
                 lastLoginAt = new Date().toISOString();
-                const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const initialPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 const { error: insertError } = await client
                     .from('profiles')
                     .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: lastLoginAt, last_action: new Date().toISOString() }]);
@@ -2037,6 +2044,7 @@
             updateTutorialQuickAccess();
             trackers = [];
             todos = [];
+            todoHistory = [];
             habits = [];
             adminUsersCache = [];
             currentAdminTab = 'tracker';
@@ -2061,12 +2069,113 @@
                 const payload = JSON.stringify({
                     trackers: trackers,
                     todos: todos,
+                    todoHistory: todoHistory,
                     habits: habits,
                     loginStreak: loginStreakMeta,
                     lastLoginAt: lastLoginAt
                 });
                 await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
             }, 600);
+        }
+
+        function recordTrackerHistory(tracker, value) {
+            if (!tracker) return;
+            if (!Array.isArray(tracker.history)) tracker.history = [];
+            const date = localDateKey();
+            const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+            const existing = tracker.history.find(h => h.date === date);
+            if (existing) existing.value = numericValue;
+            else tracker.history.push({ date, value: numericValue });
+            if (tracker.history.length > 370) tracker.history = tracker.history.slice(-370);
+        }
+
+        function recordTodoHistory() {
+            const date = localDateKey();
+            const total = todos.length;
+            const completed = todos.filter(t => t.completed && t.completedDate === date).length;
+            if (!Array.isArray(todoHistory)) todoHistory = [];
+            const existing = todoHistory.find(h => h.date === date);
+            const entry = { date, completed, total, percentage: total ? Math.round((completed / total) * 100) : 0 };
+            if (existing) Object.assign(existing, entry);
+            else todoHistory.push(entry);
+            if (todoHistory.length > 370) todoHistory = todoHistory.slice(-370);
+        }
+
+        function monthKey(dateObj) {
+            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function monthLabel(key) {
+            const [y, m] = key.split('-').map(Number);
+            return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+
+        function buildMonthlyWeeklyData(history, valueToPercent) {
+            const map = {};
+            (Array.isArray(history) ? history : []).forEach(item => {
+                if (!item || !item.date) return;
+                const d = new Date(item.date + 'T12:00:00');
+                if (Number.isNaN(d.getTime())) return;
+                const mk = monthKey(d);
+                if (!map[mk]) map[mk] = { key: mk, label: monthLabel(mk), weeks: [[], [], [], [], []] };
+                const weekIndex = Math.min(4, Math.floor((d.getDate() - 1) / 7));
+                const pct = Math.max(0, Math.min(100, Number(valueToPercent(item, d)) || 0));
+                map[mk].weeks[weekIndex].push(pct);
+            });
+            return Object.values(map).sort((a,b) => a.key.localeCompare(b.key)).slice(-6).map(m => ({
+                ...m,
+                weekAverages: m.weeks.map(w => w.length ? Math.round(w.reduce((a,b) => a+b, 0) / w.length) : null)
+            }));
+        }
+
+        function weekColour(index) {
+            return ['#60a5fa', '#a78bfa', '#34d399', '#fbbf24', '#fb7185'][index];
+        }
+
+        function renderBarMonthCard(month, unitLabel) {
+            const available = month.weekAverages.filter(v => v !== null);
+            const monthAverage = available.length ? Math.round(available.reduce((a,b) => a+b, 0) / available.length) : 0;
+            const barMax = Math.max(20, ...month.weekAverages.filter(v => v !== null));
+            const segments = month.weekAverages.map((pct, i) => {
+                const height = pct === null ? 4 : Math.max(8, Math.round((pct / 100) * 100));
+                return `<div class="flex-1 min-w-0 flex flex-col items-center justify-end h-36 gap-1" title="Week ${i+1}: ${pct === null ? 'No data' : pct + '%'}">
+                    <span class="text-[9px] font-mono text-[var(--text-muted)]">${pct === null ? '—' : pct + '%'}</span>
+                    <div class="w-full max-w-12 rounded-t-lg transition-all" style="height:${height}%;background:${weekColour(i)};opacity:${pct === null ? '.16' : '.92'};"></div>
+                    <span class="text-[9px] text-[var(--text-muted)]">W${i+1}</span>
+                </div>`;
+            }).join('');
+            return `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-5 space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div><h4 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">${month.label}</h4>
+                    <p class="text-[10px] text-[var(--text-muted)] mt-1">Monthly average: <strong class="dynamic-text">${monthAverage}%</strong>${unitLabel ? ' • ' + unitLabel : ''}</p></div>
+                    <div class="flex items-center gap-1.5 text-[9px] text-[var(--text-muted)]"><span class="w-2 h-2 rounded-full" style="background:#60a5fa"></span><span>W1</span><span class="w-2 h-2 rounded-full" style="background:#a78bfa"></span><span>W2</span><span class="w-2 h-2 rounded-full" style="background:#34d399"></span><span>W3</span><span class="w-2 h-2 rounded-full" style="background:#fbbf24"></span><span>W4</span><span class="w-2 h-2 rounded-full" style="background:#fb7185"></span><span>W5</span></div>
+                </div>
+                <div class="flex items-end gap-2 sm:gap-3 h-44 border-b border-[var(--border-color)] pb-1">${segments}</div>
+            </div>`;
+        }
+
+        function renderMonthlyHistoryView() {
+            const container = document.getElementById('monthly-history-container');
+            if (!container) return;
+            let html = '';
+
+            trackers.forEach(t => {
+                const history = Array.isArray(t.history) ? t.history : [];
+                const months = buildMonthlyWeeklyData(history, item => (Number(t.max) > 0 ? (Number(item.value) / Number(t.max)) * 100 : 0));
+                html += `<div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3"><div><h4 class="text-sm font-bold text-[var(--text-main)]">📈 ${escapeHtml(t.title)}</h4><p class="text-[10px] text-[var(--text-muted)] mt-0.5">${months.length ? 'Last 6 recorded months • weekly colors show the monthly breakdown' : 'History starts recording when you update this tracker.'}</p></div><span class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase" style="background:${t.color || '#34d399'}22;color:${t.color || '#34d399'};border:1px solid ${t.color || '#34d399'}55">${escapeHtml(t.timeframe || 'Day')}</span></div>`;
+                html += months.length ? months.map(m => renderBarMonthCard(m, 'tracker')).join('') : `<div class="dynamic-card-solid border rounded-xl p-5 text-xs text-center text-[var(--text-muted)]">No tracker history recorded yet. Update a graph value and it will appear here.</div>`;
+                html += `</div>`;
+            });
+
+            const todoMonths = buildMonthlyWeeklyData(todoHistory, item => Number(item.percentage) || 0);
+            html += `<div class="space-y-3 pt-2">
+                <div><h4 class="text-sm font-bold text-[var(--text-main)]">✅ To-Do Monthly History</h4><p class="text-[10px] text-[var(--text-muted)] mt-0.5">Daily completion snapshots grouped into colour-coded weeks.</p></div>
+                ${todoMonths.length ? todoMonths.map(m => renderBarMonthCard(m, 'To-Do completion')).join('') : `<div class="dynamic-card-solid border rounded-xl p-5 text-xs text-center text-[var(--text-muted)]">To-Do history will appear here as you complete or change tasks.</div>`}
+            </div>`;
+
+            if (!html) html = `<p class="text-xs text-[var(--text-muted)] text-center py-8">Create a tracker or To-Do task to start building your monthly history.</p>`;
+            container.innerHTML = html;
         }
 
         function updateValue(id, dayIndex, val) {
@@ -2077,6 +2186,7 @@
             else if(num>Number(tracker.max||1)){alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);scheduleGraphRedraw();return;}
             if(!Array.isArray(tracker.data))tracker.data=Array(30).fill(0);
             tracker.data[dayIndex]=num;
+            recordTrackerHistory(tracker, num);
             evaluateGoalCompletion(tracker); saveAndCloudSync(); scheduleGraphRedraw();
         }
 
@@ -2095,6 +2205,7 @@
                 createdAt: todayStr
             });
             input.value = '';
+            recordTodoHistory();
             saveAndCloudSync();
             renderTodos();
         }
@@ -2105,6 +2216,7 @@
                 todo.completed = !todo.completed;
                 const todayStr = getTodoLocalDate();
                 todo.completedDate = todo.completed ? todayStr : null;
+                recordTodoHistory();
                 saveAndCloudSync();
                 renderTodos();
             }
@@ -2112,6 +2224,7 @@
 
         function deleteTodo(id) {
             todos = todos.filter(t => t.id !== id);
+            recordTodoHistory();
             saveAndCloudSync();
             renderTodos();
         }
@@ -2378,7 +2491,7 @@
         }
 
         function guestDataPayload() {
-            return JSON.stringify({ trackers, todos, habits });
+            return JSON.stringify({ trackers, todos, todoHistory, habits });
         }
 
         function loadGuestData() {
@@ -2387,6 +2500,7 @@
                 const parsed = raw ? JSON.parse(raw) : {};
                 trackers = Array.isArray(parsed.trackers) ? parsed.trackers : [];
                 todos = Array.isArray(parsed.todos) ? parsed.todos : [];
+                todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
                 habits = Array.isArray(parsed.habits) ? parsed.habits : [];
             } catch (e) {
                 trackers = []; todos = []; habits = [];
@@ -3267,6 +3381,7 @@ let shareProgressType = null;
             renderTodos();
 
             if (currentAppTab === 'tracker') scheduleGraphRedraw();
+            if (currentAppTab === 'history') renderMonthlyHistoryView();
         }
 
         function drawGraph(t, suffix) {
@@ -3421,6 +3536,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                history: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -3453,6 +3569,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                history: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
