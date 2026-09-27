@@ -347,7 +347,91 @@
             .ghost-telegram-help .ghost-telegram-label { max-width:150px; }
         }
 
-    </style>
+    
+        /* Minimal adult-style 30-day statistics */
+        .stats-option {
+            appearance: none;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card-solid);
+            color: var(--text-muted);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+        }
+        .stats-option:hover { color: var(--text-main); transform: translateY(-1px); }
+        .stats-option.active {
+            background: var(--theme-primary-bg);
+            border-color: var(--theme-primary-bg);
+            color: #071018;
+        }
+        .stats-week-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .stats-bar-track {
+            height: 138px;
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            padding: 12px 8px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--bg-card-solid);
+            overflow-x: auto;
+        }
+        .stats-bar {
+            flex: 1 0 7px;
+            min-width: 7px;
+            max-width: 18px;
+            border-radius: 3px 3px 1px 1px;
+            opacity: .88;
+            transition: height .2s ease, opacity .15s ease, transform .15s ease;
+        }
+        .stats-bar:hover { opacity: 1; transform: translateY(-2px); }
+        .stats-day-labels {
+            display: grid;
+            grid-template-columns: repeat(30, minmax(8px, 1fr));
+            gap: 3px;
+            padding: 0 8px;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        .stats-day-labels span { text-align: center; }
+        .stats-week-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .stats-week-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 11px;
+            background: var(--bg-card-solid);
+            min-width: 0;
+        }
+        .stats-share-btn {
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .stats-share-btn:hover { background: var(--bg-card-solid); }
+        @media (max-width: 700px) {
+            .stats-week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-week-card:last-child { grid-column: 1 / -1; }
+        }
+
+</style>
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
     <div id="winter-snow-layer" aria-hidden="true"></div>
@@ -955,19 +1039,23 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER 4: MONTHLY + WEEKLY HISTORY -->
-                <div id="app-tab-history" class="hidden space-y-6 animate-fade-in">
-                    <div class="dynamic-card border rounded-2xl p-6 shadow-xl space-y-5">
-                        <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-4">
+                <!-- TAB CONTAINER 4: 30-DAY STATS -->
+                <div id="app-tab-history" class="hidden space-y-5 animate-fade-in">
+                    <div class="dynamic-card border rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+                        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-[var(--border-color)] pb-4">
                             <div>
-                                <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">
-                                    📊 Monthly History & Weekly Breakdown
-                                </h3>
-                                <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Monthly progress is recorded automatically. Each month contains a colour-coded weekly breakdown.</p>
+                                <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-main)]">30-Day Stats</h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Select a metric to review its 30-day performance and weekly breakdown.</p>
                             </div>
+                            <span class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">30-day cycle · no calendar grouping</span>
                         </div>
-                        <div id="monthly-history-container" class="space-y-5">
-                            <!-- Populated dynamically via JS -->
+
+                        <div id="stats-tracker-options" class="flex flex-wrap gap-2">
+                            <!-- Tracker choices injected dynamically -->
+                        </div>
+
+                        <div id="stats-tracker-detail" class="space-y-5">
+                            <!-- Selected tracker details injected dynamically -->
                         </div>
                     </div>
                 </div>
@@ -989,7 +1077,6 @@
         let isAdmin = false;
         let trackers = [];
         let todos = [];
-        let todoHistory = [];
         let habits = [];
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
@@ -1019,7 +1106,7 @@
             { tab: 'tracker', title: 'Telemetry & Graphs Tab', desc: 'Create custom progress graphs, set targets, configure your goals, and watch your discipline compound day by day.' },
             { tab: 'todo', title: 'Daily To-Do Matrix Tab', desc: 'Manage your persistent daily tasks and monitor your real-time completion telemetry ring side-by-side.' },
             { tab: 'habits', title: 'Bad Habits Streak Tab', desc: 'Break unwanted habits by setting up clean-time counters, tracking resets, and protecting your focus.' },
-            { tab: 'history', title: 'Monthly History & Stats Tab', desc: 'Review monthly progress bars with colour-coded weekly breakdowns across your trackers and To-Do activity.' },
+            { tab: 'history', title: '30-Day Stats Tab', desc: 'Review each metric across a 30-day cycle, with a weekly breakdown and shareable performance view.' },
             { tab: 'profile', title: 'User Profile & Account', desc: 'Manage your active session details, check your operator role, or securely sign out whenever you choose.' }
         ];
 
@@ -1329,7 +1416,7 @@
             }
 
             if (tabName === 'history') {
-                renderMonthlyHistoryView();
+                renderWeeklyHistoryView();
             }
         }
 
@@ -1551,25 +1638,22 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        todoHistory = [];
                         habits = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        todoHistory = parsed.todoHistory || [];
                         habits = parsed.habits || [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
-                    todoHistory = [];
                     habits = [];
                 }
 
                 calculateLoginStreak(existingUser, true);
-                const streakPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const streakPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ data: streakPayload }).eq('username', username);
                 
                 checkAndResetPeriodicGoals();
@@ -1652,27 +1736,24 @@
                     if (Array.isArray(parsed)) {
                         trackers = parsed;
                         todos = [];
-                        todoHistory = [];
                         habits = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
-                        todoHistory = parsed.todoHistory || [];
                         habits = parsed.habits || [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
-                    todoHistory = [];
                     habits = [];
                     lastLoginAt = existingUser.last_login || null;
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 calculateLoginStreak(existingUser, true);
                 lastLoginAt = new Date().toISOString();
-                const updatedLoginPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ force_logout: false, data: updatedLoginPayload, last_login: lastLoginAt }).eq('username', user);
             } else {
                 // New accounts: usernames/passwords may not contain spaces, and passwords must be at least 5 characters.
@@ -1695,17 +1776,16 @@
                 isNewUserSignUp = true;
                 let guestSnapshot = null;
                 if (isGuestUser) {
-                    guestSnapshot = { trackers: [...trackers], todos: [...todos], todoHistory: [...todoHistory], habits: [...habits] };
+                    guestSnapshot = { trackers: [...trackers], todos: [...todos], habits: [...habits] };
                 }
                 trackers = guestSnapshot ? guestSnapshot.trackers : [];
                 todos = guestSnapshot ? guestSnapshot.todos : [];
-                todoHistory = guestSnapshot && Array.isArray(guestSnapshot.todoHistory) ? guestSnapshot.todoHistory : [];
                 habits = guestSnapshot ? guestSnapshot.habits : [];
                 isAdmin = (user === MASTER_ADMIN);
                 userLoginStreakCount = 1;
                 loginStreakMeta = { count: 1, lastLoginDate: localDateKey() };
                 lastLoginAt = new Date().toISOString();
-                const initialPayload = JSON.stringify({ trackers, todos, todoHistory, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 const { error: insertError } = await client
                     .from('profiles')
                     .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: lastLoginAt, last_action: new Date().toISOString() }]);
@@ -2044,7 +2124,6 @@
             updateTutorialQuickAccess();
             trackers = [];
             todos = [];
-            todoHistory = [];
             habits = [];
             adminUsersCache = [];
             currentAdminTab = 'tracker';
@@ -2069,113 +2148,12 @@
                 const payload = JSON.stringify({
                     trackers: trackers,
                     todos: todos,
-                    todoHistory: todoHistory,
                     habits: habits,
                     loginStreak: loginStreakMeta,
                     lastLoginAt: lastLoginAt
                 });
                 await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
             }, 600);
-        }
-
-        function recordTrackerHistory(tracker, value) {
-            if (!tracker) return;
-            if (!Array.isArray(tracker.history)) tracker.history = [];
-            const date = localDateKey();
-            const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
-            const existing = tracker.history.find(h => h.date === date);
-            if (existing) existing.value = numericValue;
-            else tracker.history.push({ date, value: numericValue });
-            if (tracker.history.length > 370) tracker.history = tracker.history.slice(-370);
-        }
-
-        function recordTodoHistory() {
-            const date = localDateKey();
-            const total = todos.length;
-            const completed = todos.filter(t => t.completed && t.completedDate === date).length;
-            if (!Array.isArray(todoHistory)) todoHistory = [];
-            const existing = todoHistory.find(h => h.date === date);
-            const entry = { date, completed, total, percentage: total ? Math.round((completed / total) * 100) : 0 };
-            if (existing) Object.assign(existing, entry);
-            else todoHistory.push(entry);
-            if (todoHistory.length > 370) todoHistory = todoHistory.slice(-370);
-        }
-
-        function monthKey(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-        }
-
-        function monthLabel(key) {
-            const [y, m] = key.split('-').map(Number);
-            return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        }
-
-        function buildMonthlyWeeklyData(history, valueToPercent) {
-            const map = {};
-            (Array.isArray(history) ? history : []).forEach(item => {
-                if (!item || !item.date) return;
-                const d = new Date(item.date + 'T12:00:00');
-                if (Number.isNaN(d.getTime())) return;
-                const mk = monthKey(d);
-                if (!map[mk]) map[mk] = { key: mk, label: monthLabel(mk), weeks: [[], [], [], [], []] };
-                const weekIndex = Math.min(4, Math.floor((d.getDate() - 1) / 7));
-                const pct = Math.max(0, Math.min(100, Number(valueToPercent(item, d)) || 0));
-                map[mk].weeks[weekIndex].push(pct);
-            });
-            return Object.values(map).sort((a,b) => a.key.localeCompare(b.key)).slice(-6).map(m => ({
-                ...m,
-                weekAverages: m.weeks.map(w => w.length ? Math.round(w.reduce((a,b) => a+b, 0) / w.length) : null)
-            }));
-        }
-
-        function weekColour(index) {
-            return ['#60a5fa', '#a78bfa', '#34d399', '#fbbf24', '#fb7185'][index];
-        }
-
-        function renderBarMonthCard(month, unitLabel) {
-            const available = month.weekAverages.filter(v => v !== null);
-            const monthAverage = available.length ? Math.round(available.reduce((a,b) => a+b, 0) / available.length) : 0;
-            const barMax = Math.max(20, ...month.weekAverages.filter(v => v !== null));
-            const segments = month.weekAverages.map((pct, i) => {
-                const height = pct === null ? 4 : Math.max(8, Math.round((pct / 100) * 100));
-                return `<div class="flex-1 min-w-0 flex flex-col items-center justify-end h-36 gap-1" title="Week ${i+1}: ${pct === null ? 'No data' : pct + '%'}">
-                    <span class="text-[9px] font-mono text-[var(--text-muted)]">${pct === null ? '—' : pct + '%'}</span>
-                    <div class="w-full max-w-12 rounded-t-lg transition-all" style="height:${height}%;background:${weekColour(i)};opacity:${pct === null ? '.16' : '.92'};"></div>
-                    <span class="text-[9px] text-[var(--text-muted)]">W${i+1}</span>
-                </div>`;
-            }).join('');
-            return `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-5 space-y-4">
-                <div class="flex items-center justify-between gap-3">
-                    <div><h4 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">${month.label}</h4>
-                    <p class="text-[10px] text-[var(--text-muted)] mt-1">Monthly average: <strong class="dynamic-text">${monthAverage}%</strong>${unitLabel ? ' • ' + unitLabel : ''}</p></div>
-                    <div class="flex items-center gap-1.5 text-[9px] text-[var(--text-muted)]"><span class="w-2 h-2 rounded-full" style="background:#60a5fa"></span><span>W1</span><span class="w-2 h-2 rounded-full" style="background:#a78bfa"></span><span>W2</span><span class="w-2 h-2 rounded-full" style="background:#34d399"></span><span>W3</span><span class="w-2 h-2 rounded-full" style="background:#fbbf24"></span><span>W4</span><span class="w-2 h-2 rounded-full" style="background:#fb7185"></span><span>W5</span></div>
-                </div>
-                <div class="flex items-end gap-2 sm:gap-3 h-44 border-b border-[var(--border-color)] pb-1">${segments}</div>
-            </div>`;
-        }
-
-        function renderMonthlyHistoryView() {
-            const container = document.getElementById('monthly-history-container');
-            if (!container) return;
-            let html = '';
-
-            trackers.forEach(t => {
-                const history = Array.isArray(t.history) ? t.history : [];
-                const months = buildMonthlyWeeklyData(history, item => (Number(t.max) > 0 ? (Number(item.value) / Number(t.max)) * 100 : 0));
-                html += `<div class="space-y-3">
-                    <div class="flex items-center justify-between gap-3"><div><h4 class="text-sm font-bold text-[var(--text-main)]">📈 ${escapeHtml(t.title)}</h4><p class="text-[10px] text-[var(--text-muted)] mt-0.5">${months.length ? 'Last 6 recorded months • weekly colors show the monthly breakdown' : 'History starts recording when you update this tracker.'}</p></div><span class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase" style="background:${t.color || '#34d399'}22;color:${t.color || '#34d399'};border:1px solid ${t.color || '#34d399'}55">${escapeHtml(t.timeframe || 'Day')}</span></div>`;
-                html += months.length ? months.map(m => renderBarMonthCard(m, 'tracker')).join('') : `<div class="dynamic-card-solid border rounded-xl p-5 text-xs text-center text-[var(--text-muted)]">No tracker history recorded yet. Update a graph value and it will appear here.</div>`;
-                html += `</div>`;
-            });
-
-            const todoMonths = buildMonthlyWeeklyData(todoHistory, item => Number(item.percentage) || 0);
-            html += `<div class="space-y-3 pt-2">
-                <div><h4 class="text-sm font-bold text-[var(--text-main)]">✅ To-Do Monthly History</h4><p class="text-[10px] text-[var(--text-muted)] mt-0.5">Daily completion snapshots grouped into colour-coded weeks.</p></div>
-                ${todoMonths.length ? todoMonths.map(m => renderBarMonthCard(m, 'To-Do completion')).join('') : `<div class="dynamic-card-solid border rounded-xl p-5 text-xs text-center text-[var(--text-muted)]">To-Do history will appear here as you complete or change tasks.</div>`}
-            </div>`;
-
-            if (!html) html = `<p class="text-xs text-[var(--text-muted)] text-center py-8">Create a tracker or To-Do task to start building your monthly history.</p>`;
-            container.innerHTML = html;
         }
 
         function updateValue(id, dayIndex, val) {
@@ -2186,7 +2164,6 @@
             else if(num>Number(tracker.max||1)){alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);scheduleGraphRedraw();return;}
             if(!Array.isArray(tracker.data))tracker.data=Array(30).fill(0);
             tracker.data[dayIndex]=num;
-            recordTrackerHistory(tracker, num);
             evaluateGoalCompletion(tracker); saveAndCloudSync(); scheduleGraphRedraw();
         }
 
@@ -2205,7 +2182,6 @@
                 createdAt: todayStr
             });
             input.value = '';
-            recordTodoHistory();
             saveAndCloudSync();
             renderTodos();
         }
@@ -2216,7 +2192,6 @@
                 todo.completed = !todo.completed;
                 const todayStr = getTodoLocalDate();
                 todo.completedDate = todo.completed ? todayStr : null;
-                recordTodoHistory();
                 saveAndCloudSync();
                 renderTodos();
             }
@@ -2224,7 +2199,6 @@
 
         function deleteTodo(id) {
             todos = todos.filter(t => t.id !== id);
-            recordTodoHistory();
             saveAndCloudSync();
             renderTodos();
         }
@@ -2491,7 +2465,7 @@
         }
 
         function guestDataPayload() {
-            return JSON.stringify({ trackers, todos, todoHistory, habits });
+            return JSON.stringify({ trackers, todos, habits });
         }
 
         function loadGuestData() {
@@ -2500,7 +2474,6 @@
                 const parsed = raw ? JSON.parse(raw) : {};
                 trackers = Array.isArray(parsed.trackers) ? parsed.trackers : [];
                 todos = Array.isArray(parsed.todos) ? parsed.todos : [];
-                todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
                 habits = Array.isArray(parsed.habits) ? parsed.habits : [];
             } catch (e) {
                 trackers = []; todos = []; habits = [];
@@ -2985,80 +2958,129 @@ let shareProgressType = null;
             ctx.fill();
         }
 
-        function renderWeeklyHistoryView() {
-            const container = document.getElementById('weekly-history-container');
-            if (!container) return;
+        let selectedStatsTrackerId = null;
 
-            if (trackers.length === 0 && todos.length === 0) {
-                container.innerHTML = `<p class="text-xs text-[var(--text-muted)] text-center py-6">No historical metrics or trackers recorded yet.</p>`;
+        function getStatsWeeklyGroups(values) {
+            const arr = Array.from({ length: 30 }, (_, i) => Number(values?.[i]) || 0);
+            return [
+                { label: 'Week 1', start: 0, end: 6, color: '#38bdf8' },
+                { label: 'Week 2', start: 7, end: 13, color: '#818cf8' },
+                { label: 'Week 3', start: 14, end: 20, color: '#a78bfa' },
+                { label: 'Week 4', start: 21, end: 27, color: '#34d399' },
+                { label: 'Week 5', start: 28, end: 29, color: '#fbbf24' }
+            ].map(group => {
+                const slice = arr.slice(group.start, group.end + 1);
+                const total = slice.reduce((sum, v) => sum + v, 0);
+                const active = slice.filter(v => v > 0).length;
+                const avg = slice.length ? total / slice.length : 0;
+                return { ...group, values: slice, total, active, avg };
+            });
+        }
+
+        function selectStatsTracker(id) {
+            selectedStatsTrackerId = id;
+            renderWeeklyHistoryView();
+        }
+
+        function renderWeeklyHistoryView() {
+            const options = document.getElementById('stats-tracker-options');
+            const detail = document.getElementById('stats-tracker-detail');
+            if (!options || !detail) return;
+
+            if (!Array.isArray(trackers) || trackers.length === 0) {
+                options.innerHTML = `<div class="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] p-4 text-xs text-[var(--text-muted)]">No stats available yet. Add a tracker such as Pushups or Study Hours in the Tracker tab.</div>`;
+                detail.innerHTML = '';
+                selectedStatsTrackerId = null;
                 return;
             }
 
-            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+            const validSelected = trackers.some(t => String(t.id) === String(selectedStatsTrackerId));
+            if (!validSelected) selectedStatsTrackerId = trackers[0].id;
 
-            const totalTodos = todos.length;
-            const completedWeeklyTodos = todos.filter(t => t.completed).length;
-            const todoWeekPct = totalTodos > 0 ? Math.round((completedWeeklyTodos / totalTodos) * 100) : 0;
-            const consistencyMsg = todoWeekPct >= 80 ? "🔥 Outstanding weekly consistency!" : (todoWeekPct >= 40 ? "⚡ Good steady progress this week!" : "🌱 Room for growth this week!");
+            options.innerHTML = trackers.map(t => {
+                const active = String(t.id) === String(selectedStatsTrackerId);
+                const safeId = String(t.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return `<button type="button" class="stats-option ${active ? 'active' : ''}" onclick="selectStatsTracker('${safeId}')">${escapeHtml(t.title || 'Untitled')}</button>`;
+            }).join('');
 
-            html += `
-                <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
-                    <div class="space-y-2 flex-1">
-                        <h4 class="text-xs font-bold dynamic-text uppercase tracking-wider">Weekly To-Do Consistency Ring</h4>
-                        <p class="text-xs text-[var(--text-muted)]">${consistencyMsg}</p>
-                        <div>
-                            <span class="text-xl font-bold text-[var(--text-main)]">${todoWeekPct}%</span>
-                            <p class="text-[10px] text-[var(--text-muted)]">${completedWeeklyTodos} of ${totalTodos} total persistent tasks completed</p>
+            const tracker = trackers.find(t => String(t.id) === String(selectedStatsTrackerId));
+            if (!tracker) {
+                detail.innerHTML = '';
+                return;
+            }
+
+            const values = Array.from({ length: 30 }, (_, i) => Number(tracker.data?.[i]) || 0);
+            const maxValue = Math.max(Number(tracker.max) || 1, ...values, 1);
+            const total = values.reduce((sum, v) => sum + v, 0);
+            const activeDays = values.filter(v => v > 0).length;
+            const groups = getStatsWeeklyGroups(values);
+
+            const barHtml = values.map((v, i) => {
+                const group = groups.find(g => i >= g.start && i <= g.end);
+                const pct = Math.max(2, Math.round((Math.min(v, maxValue) / maxValue) * 100));
+                const title = `Day ${i + 1}: ${v}`;
+                return `<div class="stats-bar" title="${title}" style="height:${pct}%;background:${group.color};"></div>`;
+            }).join('');
+
+            const weekHtml = groups.map(g => {
+                const denominator = Math.max(1, g.values.length * maxValue);
+                const pct = Math.min(100, Math.round((g.total / denominator) * 100));
+                return `
+                    <div class="stats-week-card">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="stats-week-label">${g.label}</span>
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${g.color}"></span>
                         </div>
-                    </div>
-                    <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
-                        <canvas id="history-todo-donut" width="80" height="80" class="w-20 h-20"></canvas>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-xs font-bold dynamic-text">${todoWeekPct}%</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            trackers.forEach((t, index) => {
-                const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                const maxPossible = t.max * 30;
-                const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                const activeDays = t.data.filter(v => v > 0).length;
-                const consistency = Math.round((activeDays / 30) * 100);
-
-                html += `
-                    <div class="dynamic-card-solid border rounded-2xl p-5 flex items-center justify-between gap-4">
-                        <div class="space-y-2 flex-1">
-                            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">${t.title} (${t.timeframe} History)</h4>
-                            <p class="text-xs text-[var(--text-muted)]">Consistency Score: <strong class="dynamic-text">${consistency}%</strong> (${activeDays} active days)</p>
-                            <div>
-                                <span class="text-xl font-bold dynamic-text">${percentage}%</span>
-                                <p class="text-[10px] text-[var(--text-muted)]">Total Output: ${totalVal} / ${maxPossible}</p>
-                            </div>
-                        </div>
-                        <div class="relative w-20 h-20 flex items-center justify-center shrink-0">
-                            <canvas id="history-tracker-donut-${index}" width="80" height="80" class="w-20 h-20"></canvas>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span class="text-xs font-bold dynamic-text">${percentage}%</span>
-                            </div>
+                        <div class="mt-3 text-lg font-black text-[var(--text-main)]">${g.total}</div>
+                        <div class="mt-1 text-[10px] text-[var(--text-muted)]">${g.active}/${g.values.length} active days</div>
+                        <div class="mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5">
+                            <div class="h-full rounded-full" style="width:${pct}%;background:${g.color}"></div>
                         </div>
                     </div>
                 `;
-            });
+            }).join('');
 
-            html += `</div>`;
-            container.innerHTML = html;
+            const safeTrackerId = String(tracker.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            detail.innerHTML = `
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
+                        <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">${escapeHtml(tracker.title || 'Untitled')}</h4>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-1">${escapeHtml(tracker.timeframe || 'Day')} target · 30-day cycle · Max ${Number(tracker.max) || 0}</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                            <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Total</div>
+                            <div class="text-sm font-black dynamic-text mt-0.5">${total}</div>
+                        </div>
+                        <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                            <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div>
+                            <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays}/30</div>
+                        </div>
+                        <button type="button" class="stats-share-btn" onclick="shareStatsTracker('${safeTrackerId}')">Share</button>
+                    </div>
+                </div>
 
-            setTimeout(() => {
-                drawSmallDonut('history-todo-donut', todoWeekPct, getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399');
-                trackers.forEach((t, index) => {
-                    const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
-                    const maxPossible = t.max * 30;
-                    const percentage = maxPossible > 0 ? Math.min(100, Math.round((totalVal / maxPossible) * 100)) : 0;
-                    drawSmallDonut(`history-tracker-donut-${index}`, percentage, t.color);
-                });
-            }, 50);
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="stats-week-label">30-Day Performance</span>
+                        <span class="text-[10px] text-[var(--text-muted)]">Days 1–30 · colour indicates week</span>
+                    </div>
+                    <div class="stats-bar-track">${barHtml}</div>
+                    <div class="stats-day-labels">
+                        ${Array.from({ length: 30 }, (_, i) => `<span>${(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>`).join('')}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stats-week-label mb-2">Weekly Breakdown</div>
+                    <div class="stats-week-grid">${weekHtml}</div>
+                </div>
+            `;
+        }
+
+        function shareStatsTracker(id) {
+            openShareProgressModal('tracker', id);
         }
 
         function drawSmallDonut(canvasId, percentage, color) {
@@ -3381,7 +3403,6 @@ let shareProgressType = null;
             renderTodos();
 
             if (currentAppTab === 'tracker') scheduleGraphRedraw();
-            if (currentAppTab === 'history') renderMonthlyHistoryView();
         }
 
         function drawGraph(t, suffix) {
@@ -3536,7 +3557,6 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
-                history: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -3569,7 +3589,6 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
-                history: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
