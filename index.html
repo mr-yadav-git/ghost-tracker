@@ -162,69 +162,7 @@
             100% { transform: translate3d(calc(var(--flake-drift, 0px) + var(--winter-drift-x) * 2.4), 112vh, 0) rotate(360deg); }
         }
 
-        /* Layered snow bank: the depth planes react to tilt/mouse movement for a subtle parallax effect. */
-        #winter-snow-ground {
-            position: fixed;
-            left: -12vw;
-            right: -12vw;
-            bottom: -1px;
-            height: 64px;
-            pointer-events: none;
-            z-index: 25;
-            display: none;
-            overflow: visible;
-            --snow-near-x: 0px;
-            --snow-near-y: 0px;
-            --snow-near-rotate: 0deg;
-            --snow-far-x: 0px;
-            --snow-far-y: 0px;
-            --snow-far-rotate: 0deg;
-            filter: drop-shadow(0 -5px 12px rgba(186,230,253,.16));
-        }
-        body.winter-arc #winter-snow-ground { display: block; }
-        #winter-snow-ground::before,
-        #winter-snow-ground::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            width: 100%;
-            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-            will-change: transform;
-        }
-        #winter-snow-ground::before {
-            bottom: 18px;
-            height: 50px;
-            opacity: .50;
-            transform: translate3d(var(--snow-far-x), var(--snow-far-y), 0) rotate(var(--snow-far-rotate));
-            background:
-                radial-gradient(17vw 46px at 7% 100%, rgba(255,255,255,.62) 0 57%, transparent 59%),
-                radial-gradient(22vw 54px at 29% 100%, rgba(240,249,255,.58) 0 57%, transparent 59%),
-                radial-gradient(18vw 45px at 53% 100%, rgba(255,255,255,.62) 0 57%, transparent 59%),
-                radial-gradient(24vw 55px at 78% 100%, rgba(239,248,255,.56) 0 57%, transparent 59%),
-                radial-gradient(17vw 44px at 98% 100%, rgba(255,255,255,.60) 0 57%, transparent 59%),
-                linear-gradient(to top, rgba(224,242,254,.48), rgba(255,255,255,.18) 72%, transparent);
-            filter: blur(.25px);
-        }
-        #winter-snow-ground::after {
-            bottom: 0;
-            height: 64px;
-            transform: translate3d(var(--snow-near-x), var(--snow-near-y), 0) rotate(var(--snow-near-rotate));
-            background:
-                radial-gradient(13vw 39px at 2% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
-                radial-gradient(19vw 47px at 18% 100%, rgba(248,253,255,.70) 0 59%, transparent 61%),
-                radial-gradient(15vw 42px at 34% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
-                radial-gradient(22vw 52px at 54% 100%, rgba(248,253,255,.70) 0 59%, transparent 61%),
-                radial-gradient(17vw 46px at 74% 100%, rgba(255,255,255,.76) 0 58%, transparent 60%),
-                radial-gradient(19vw 48px at 94% 100%, #f7fcff 0 59%, transparent 61%),
-                linear-gradient(to top, rgba(255,255,255,.78), rgba(246,252,255,.70) 48%, rgba(255,255,255,.30) 84%, transparent);
-            box-shadow: 0 -1px 0 rgba(255,255,255,.50) inset, 0 -2px 8px rgba(186,230,253,.08);
-        }
-        @media (max-width: 640px) {
-            #winter-snow-ground { height: 52px; }
-            #winter-snow-ground::before { bottom: 14px; height: 40px; }
-            #winter-snow-ground::after { height: 52px; }
-        }
-        /* Keep tracker/app content above the decorative snow; keep navigation above everything. */
+        /* Keep tracker/app content above the decorative snow. */
         #app-screen { z-index: 40 !important; }
         #app-nav-container { z-index: 60 !important; }
         #pre-login-popup, #tutorial-overlay, #share-modal, #toast-container { z-index: 70 !important; }
@@ -394,7 +332,6 @@
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
     <div id="winter-snow-layer" aria-hidden="true"></div>
-    <div id="winter-snow-ground" aria-hidden="true"></div>
 
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
@@ -1442,21 +1379,14 @@
         }
 
         function animateWinterParallax() {
-            const ground = document.getElementById('winter-snow-ground');
             const layer = document.getElementById('winter-snow-layer');
-            if (ground && layer && document.body.classList.contains('winter-arc')) {
+            if (layer && document.body.classList.contains('winter-arc')) {
                 winterSmoothX += (winterTargetX - winterSmoothX) * 0.12;
                 winterSmoothY += (winterTargetY - winterSmoothY) * 0.12;
 
-                ground.style.setProperty('--snow-near-x', (winterSmoothX * 1.55).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-near-y', (winterSmoothY * 0.28).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-near-rotate', (winterSmoothX * 0.010).toFixed(3) + 'deg');
-                ground.style.setProperty('--snow-far-x', (winterSmoothX * 0.62).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-far-y', (winterSmoothY * 0.12).toFixed(2) + 'px');
-                ground.style.setProperty('--snow-far-rotate', (winterSmoothX * 0.004).toFixed(3) + 'deg');
                 layer.style.setProperty('--winter-drift-x', (winterSmoothX * 0.42).toFixed(2) + 'px');
                 layer.style.setProperty('--winter-drift-y', (winterSmoothY * 0.18).toFixed(2) + 'px');
-            } else if (ground && layer && !document.body.classList.contains('winter-arc')) {
+            } else {
                 winterTargetX = 0;
                 winterTargetY = 0;
                 winterSmoothX *= 0.9;
