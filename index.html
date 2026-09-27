@@ -7,6 +7,20 @@
     <meta name="theme-color" content="#030712">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        /* Standalone/PWA cache-bust: installed Brave apps can otherwise keep an older HTML shell. */
+        (function(){
+            try {
+                const standalone = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+                const iosStandalone = window.navigator.standalone === true;
+                if ((standalone || iosStandalone) && !new URL(window.location.href).searchParams.has('ghost_build')) {
+                    const u = new URL(window.location.href);
+                    u.searchParams.set('ghost_build', '20260927-2');
+                    window.location.replace(u.href);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <title>GHOST Tracker</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1047,7 +1061,7 @@
                                 <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-main)]">30-Day Stats</h3>
                                 <p class="text-[11px] text-[var(--text-muted)] mt-1">Select a metric to review its 30-day performance and weekly breakdown.</p>
                             </div>
-                            <span class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">30-day cycle · no calendar grouping</span>
+                            <span class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]"></span>
                         </div>
 
                         <div id="stats-tracker-options" class="flex flex-wrap gap-2">
@@ -1056,6 +1070,21 @@
 
                         <div id="stats-tracker-detail" class="space-y-5">
                             <!-- Selected tracker details injected dynamically -->
+                        </div>
+
+                        <div id="stats-todo-history" class="space-y-5">
+                            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-[var(--border-color)] pb-4">
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-main)]">To-Do Stats</h4>
+                                    <p class="text-[11px] text-[var(--text-muted)] mt-1">Review To-Do completion performance.</p>
+                                </div>
+                                <div id="stats-todo-history-tabs" class="flex flex-wrap gap-2">
+                                    <button type="button" class="stats-option active" onclick="selectTodoHistoryRange('daily')">Daily</button>
+                                    <button type="button" class="stats-option" onclick="selectTodoHistoryRange('weekly')">Weekly</button>
+                                    <button type="button" class="stats-option" onclick="selectTodoHistoryRange('monthly')">Monthly</button>
+                                </div>
+                            </div>
+                            <div id="stats-todo-history-detail" class="space-y-5"></div>
                         </div>
                     </div>
                 </div>
@@ -1078,6 +1107,8 @@
         let trackers = [];
         let todos = [];
         let habits = [];
+        let todoHistory = [];
+        let selectedTodoHistoryRange = 'daily';
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
@@ -1639,21 +1670,24 @@
                         trackers = parsed;
                         todos = [];
                         habits = [];
+                        todoHistory = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
                         habits = parsed.habits || [];
+                        todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
                     habits = [];
+                    todoHistory = [];
                 }
 
                 calculateLoginStreak(existingUser, true);
-                const streakPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const streakPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ data: streakPayload }).eq('username', username);
                 
                 checkAndResetPeriodicGoals();
@@ -1737,23 +1771,26 @@
                         trackers = parsed;
                         todos = [];
                         habits = [];
+                        todoHistory = [];
                         lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
                         habits = parsed.habits || [];
+                        todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
                         lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
                     habits = [];
+                    todoHistory = [];
                     lastLoginAt = existingUser.last_login || null;
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 calculateLoginStreak(existingUser, true);
                 lastLoginAt = new Date().toISOString();
-                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
                 await client.from('profiles').update({ force_logout: false, data: updatedLoginPayload, last_login: lastLoginAt }).eq('username', user);
             } else {
                 // New accounts: usernames/passwords may not contain spaces, and passwords must be at least 5 characters.
@@ -1785,7 +1822,7 @@
                 userLoginStreakCount = 1;
                 loginStreakMeta = { count: 1, lastLoginDate: localDateKey() };
                 lastLoginAt = new Date().toISOString();
-                const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                const initialPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
                 const { error: insertError } = await client
                     .from('profiles')
                     .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: lastLoginAt, last_action: new Date().toISOString() }]);
@@ -1921,7 +1958,7 @@
                     alert('Your account has been successfully deleted.');
                     handleLogout();
                 } else {
-                    alert('Failed to delete account.');
+                    alert(`Failed to delete account: ${error.message}`);
                 }
             }
         }
@@ -2047,12 +2084,12 @@
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
                         ${!isUserMaster ? (
                             isUserAdmin 
-                                ? `<button onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
-                                : `<button onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
+                                ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
+                                : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
                         ) : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
-                        <button onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
-                        <button onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
-                        ${!isUserMaster ? `<button onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
+                        <button type="button" onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
+                        <button type="button" onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
+                        ${!isUserMaster ? `<button type="button" onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
                     </td>
                 </tr>`;
             });
@@ -2072,7 +2109,7 @@
                     alert(`User role updated successfully.`);
                     renderAdminPanel();
                 } else {
-                    alert('Error updating user role.');
+                    alert(`Error updating user role: ${error.message}`);
                 }
             }
         }
@@ -2083,6 +2120,8 @@
                 if (!error) {
                     alert(`User "${targetUser}" logged out successfully.`);
                     renderAdminPanel();
+                } else {
+                    alert(`Force logout failed: ${error.message}`);
                 }
             }
         }
@@ -2094,6 +2133,8 @@
             if (!error) {
                 alert(`Password successfully updated.`);
                 renderAdminPanel();
+            } else {
+                alert(`Password update failed: ${error.message}`);
             }
         }
 
@@ -2111,7 +2152,13 @@
             }
             if (confirm(`Permanently erase user "${targetUser}"?`)) {
                 const { error } = await client.from('profiles').delete().eq('username', targetUser);
-                if (!error) renderAdminPanel();
+                if (!error) {
+                    adminUsersCache = adminUsersCache.filter(u => u.username !== targetUser);
+                    displayAdminTable(adminUsersCache);
+                    renderAdminActivityFeed(adminUsersCache);
+                } else {
+                    alert(`Account deletion failed: ${error.message}`);
+                }
             }
         }
 
@@ -2125,6 +2172,7 @@
             trackers = [];
             todos = [];
             habits = [];
+            todoHistory = [];
             adminUsersCache = [];
             currentAdminTab = 'tracker';
             document.getElementById('auth-user').value = '';
@@ -2149,11 +2197,36 @@
                     trackers: trackers,
                     todos: todos,
                     habits: habits,
+                    todoHistory: todoHistory,
                     loginStreak: loginStreakMeta,
                     lastLoginAt: lastLoginAt
                 });
                 await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
             }, 600);
+        }
+
+        async function saveCloudNow() {
+            if (!currentUser) return { error: null };
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+            }
+            if (isGuestUser) {
+                saveGuestData();
+                return { error: null };
+            }
+            const payload = JSON.stringify({
+                trackers: trackers,
+                todos: todos,
+                habits: habits,
+                todoHistory: todoHistory,
+                loginStreak: loginStreakMeta,
+                lastLoginAt: lastLoginAt
+            });
+            return await client.from('profiles').update({
+                data: payload,
+                last_action: new Date().toISOString()
+            }).eq('username', currentUser);
         }
 
         function updateValue(id, dayIndex, val) {
@@ -2181,26 +2254,32 @@
                 completedDate: null,
                 createdAt: todayStr
             });
+            recordTodoHistory(todayStr, todos.filter(t => t.completed && t.completedDate === todayStr).length, todos.length);
             input.value = '';
             saveAndCloudSync();
             renderTodos();
+            renderTodoHistory();
         }
 
-        function toggleTodo(id) {
-            const todo = todos.find(t => t.id === id);
-            if (todo) {
-                todo.completed = !todo.completed;
-                const todayStr = getTodoLocalDate();
-                todo.completedDate = todo.completed ? todayStr : null;
-                saveAndCloudSync();
-                renderTodos();
+        function recordTodoHistory(dateKey, completedCount, totalCount) {
+            if (!dateKey) return;
+            if (!Array.isArray(todoHistory)) todoHistory = [];
+            const completed = Math.max(0, Number(completedCount) || 0);
+            const total = Math.max(0, Number(totalCount) || 0);
+            const existing = todoHistory.find(h => h && h.date === dateKey);
+            if (existing) {
+                existing.completed = completed;
+                existing.total = total;
+            } else {
+                todoHistory.push({ date: dateKey, completed, total });
             }
+            todoHistory = todoHistory.filter(h => h && /^\d{4}-\d{2}-\d{2}$/.test(h.date));
+            todoHistory.sort((a, b) => a.date.localeCompare(b.date));
+            if (todoHistory.length > 370) todoHistory = todoHistory.slice(-370);
         }
 
-        function deleteTodo(id) {
-            todos = todos.filter(t => t.id !== id);
-            saveAndCloudSync();
-            renderTodos();
+        function getTodoHistoryRecord(dateKey) {
+            return Array.isArray(todoHistory) ? todoHistory.find(h => h.date === dateKey) : null;
         }
 
         function getTodoLocalDate() {
@@ -2210,6 +2289,14 @@
         function resetTodoCompletionForNewDay() {
             const todayStr = getTodoLocalDate();
             let changed = false;
+            const completedOldDates = new Set();
+            todos.forEach(t => {
+                if (t.completed && t.completedDate && t.completedDate !== todayStr) completedOldDates.add(t.completedDate);
+            });
+            completedOldDates.forEach(dateKey => {
+                const completedCount = todos.filter(t => t.completed && t.completedDate === dateKey).length;
+                recordTodoHistory(dateKey, completedCount, todos.length);
+            });
             todos.forEach(t => {
                 if (t.completed && t.completedDate && t.completedDate !== todayStr) {
                     t.completed = false;
@@ -2219,6 +2306,28 @@
             });
             if (changed) saveAndCloudSync();
             return changed;
+        }
+
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                const todayStr = getTodoLocalDate();
+                todo.completed = !todo.completed;
+                todo.completedDate = todo.completed ? todayStr : null;
+                recordTodoHistory(todayStr, todos.filter(t => t.completed && t.completedDate === todayStr).length, todos.length);
+                saveAndCloudSync();
+                renderTodos();
+                renderTodoHistory();
+            }
+        }
+
+        async function deleteTodo(id) {
+            todos = todos.filter(t => t.id !== id);
+            const todayStr = getTodoLocalDate();
+            recordTodoHistory(todayStr, todos.filter(t => t.completed && t.completedDate === todayStr).length, todos.length);
+            renderTodos();
+            const result = await saveCloudNow();
+            if (result?.error) alert(`Could not save the deleted To-Do: ${result.error.message}`);
         }
 
         function renderTodos() {
@@ -2234,6 +2343,7 @@
 
             let html = '';
             const todayStr = getTodoLocalDate();
+            recordTodoHistory(todayStr, todos.filter(t => t.completed && t.completedDate === todayStr).length, todos.length);
             let completedTodayCount = 0;
             let totalActiveTasks = todos.length;
 
@@ -2247,7 +2357,7 @@
                             <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo('${t.id}')" class="rounded dynamic-input border w-4 h-4 shrink-0 accent-[var(--theme-primary)]" />
                             <span class="text-xs ${t.completed ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'} truncate">${escapeHtml(t.text)}</span>
                         </label>
-                        <button onclick="deleteTodo('${t.id}')" class="text-[var(--text-muted)] hover:text-red-400 text-xs px-2 py-1 shrink-0">✕</button>
+                        <button type="button" onclick="deleteTodo('${t.id}')" class="text-[var(--text-muted)] hover:text-red-400 text-xs px-2 py-1 shrink-0">✕</button>
                     </div>
                 `;
             });
@@ -2307,12 +2417,13 @@
             habitToResetId = null;
         }
 
-        function deleteHabit(id) {
+        async function deleteHabit(id) {
             const habit = habits.find(h => h.id === id);
             if (confirm(`Remove "${habit ? habit.name : 'this habit'}" from your list?`)) {
                 habits = habits.filter(h => h.id !== id);
-                saveAndCloudSync();
                 renderHabits();
+                const result = await saveCloudNow();
+                if (result?.error) alert(`Could not save the deleted habit: ${result.error.message}`);
             }
         }
 
@@ -2344,7 +2455,7 @@
                                 <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Total Relapses / Resets: <span class="font-mono text-[var(--text-main)]">${h.relapses || 0}</span></p>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button onclick="deleteHabit('${h.id}')" class="dynamic-card border px-2.5 py-1.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-red-400">✕</button>
+                                <button type="button" onclick="deleteHabit('${h.id}')" class="dynamic-card border px-2.5 py-1.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-red-400">✕</button>
                             </div>
                         </div>
 
@@ -2465,7 +2576,7 @@
         }
 
         function guestDataPayload() {
-            return JSON.stringify({ trackers, todos, habits });
+            return JSON.stringify({ trackers, todos, habits, todoHistory });
         }
 
         function loadGuestData() {
@@ -2475,8 +2586,9 @@
                 trackers = Array.isArray(parsed.trackers) ? parsed.trackers : [];
                 todos = Array.isArray(parsed.todos) ? parsed.todos : [];
                 habits = Array.isArray(parsed.habits) ? parsed.habits : [];
+                todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
             } catch (e) {
-                trackers = []; todos = []; habits = [];
+                trackers = []; todos = []; habits = []; todoHistory = [];
             }
         }
 
@@ -2986,6 +3098,7 @@ let shareProgressType = null;
             const options = document.getElementById('stats-tracker-options');
             const detail = document.getElementById('stats-tracker-detail');
             if (!options || !detail) return;
+            renderTodoHistory();
 
             if (!Array.isArray(trackers) || trackers.length === 0) {
                 options.innerHTML = `<div class="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] p-4 text-xs text-[var(--text-muted)]">No stats available yet. Add a tracker such as Pushups or Study Hours in the Tracker tab.</div>`;
@@ -3075,6 +3188,244 @@ let shareProgressType = null;
                 <div>
                     <div class="stats-week-label mb-2">Weekly Breakdown</div>
                     <div class="stats-week-grid">${weekHtml}</div>
+                </div>
+            `;
+        }
+
+        function getTodoHistoryDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getTodoHistoryPct(record) {
+            if (!record || Number(record.total) <= 0) return 0;
+            return Math.min(100, Math.max(0, Math.round((Number(record.completed || 0) / Number(record.total)) * 100)));
+        }
+
+        function selectTodoHistoryRange(range) {
+            selectedTodoHistoryRange = range;
+            renderTodoHistory();
+        }
+
+        function renderTodoHistory() {
+            const detail = document.getElementById('stats-todo-history-detail');
+            const tabs = document.getElementById('stats-todo-history-tabs');
+            if (!detail) return;
+
+            if (tabs) tabs.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === selectedTodoHistoryRange);
+            });
+
+            if (!Array.isArray(todoHistory)) todoHistory = [];
+
+            const today = new Date();
+            const todayKey = getTodoHistoryDateKey(today);
+            const todayRec = getTodoHistoryRecord(todayKey);
+            const currentTotal = Number(todayRec?.total ?? todos.length ?? 0);
+
+            // To-Do Stats uses the same fixed 30-day cycle model as Graph Stats.
+            // A newly started history begins at Day 1 / Week 1 instead of placing
+            // the current day into Week 5 simply because we are viewing a rolling
+            // calendar window.
+            const sortedHistory = [...todoHistory]
+                .filter(h => h && /^\d{4}-\d{2}-\d{2}$/.test(h.date))
+                .sort((a, b) => a.date.localeCompare(b.date));
+
+            let cycleStart = new Date(today);
+            if (sortedHistory.length) {
+                const firstRecorded = new Date(`${sortedHistory[0].date}T00:00:00`);
+                const elapsedDays = Math.floor((today - firstRecorded) / 86400000);
+                cycleStart = elapsedDays < 30 ? firstRecorded : new Date(today);
+                if (elapsedDays >= 30) cycleStart.setDate(today.getDate() - 29);
+            } else {
+                cycleStart.setDate(today.getDate() - 29);
+            }
+
+            const recentDays = [];
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(cycleStart);
+                d.setDate(cycleStart.getDate() + i);
+                const rec = getTodoHistoryRecord(getTodoHistoryDateKey(d));
+                const completed = Number(rec?.completed || 0);
+                const total = Number(rec?.total || 0);
+                const pct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+                recentDays.push({ date: d, completed, total, pct });
+            }
+
+            const totalCompleted30 = recentDays.reduce((sum, r) => sum + r.completed, 0);
+            const activeDays30 = recentDays.filter(r => r.total > 0).length;
+            const avgPct30 = activeDays30 ? Math.round(recentDays.filter(r => r.total > 0).reduce((sum, r) => sum + r.pct, 0) / activeDays30) : 0;
+
+            if (selectedTodoHistoryRange === 'daily') {
+                const dayBars = recentDays.map((r, i) => {
+                    const group = getStatsWeeklyGroups(Array(30).fill(0))[Math.floor(i / 7)] || { color: 'var(--theme-primary)' };
+                    const label = i === 0 || (i + 1) % 5 === 0 ? i + 1 : '';
+                    return `<div class="stats-bar" title="Day ${i + 1}: ${r.completed}/${r.total} · ${r.pct}%" style="height:${Math.max(2, r.pct)}%;background:${group.color};"></div>`;
+                }).join('');
+
+                detail.innerHTML = `
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div>
+                            <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
+                            <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">To-Do Completion</h4>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-1">Daily completion · 30-day performance</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                                <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Today</div>
+                                <div class="text-sm font-black dynamic-text mt-0.5">${Number(todayRec?.completed || 0)}/${currentTotal}</div>
+                            </div>
+                            <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                                <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div>
+                                <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays30}/30</div>
+                            </div>
+                            <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                                <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Average</div>
+                                <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${avgPct30}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <span class="stats-week-label">30-Day Performance</span>
+                            <span class="text-[10px] text-[var(--text-muted)]">Days 1–30 · colour indicates week</span>
+                        </div>
+                        <div class="stats-bar-track">${dayBars}</div>
+                        <div class="stats-day-labels">
+                            ${Array.from({ length: 30 }, (_, i) => `<span>${(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="stats-week-label mb-2">Weekly Breakdown</div>
+                        <div class="stats-week-grid">
+                            ${getStatsWeeklyGroups(Array(30).fill(0)).map((g, idx) => {
+                                const slice = recentDays.slice(g.start, g.end + 1);
+                                const completed = slice.reduce((sum, r) => sum + r.completed, 0);
+                                const total = slice.reduce((sum, r) => sum + r.total, 0);
+                                const active = slice.filter(r => r.total > 0).length;
+                                const pct = total ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+                                return `
+                                    <div class="stats-week-card">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="stats-week-label">${g.label}</span>
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${g.color}"></span>
+                                        </div>
+                                        <div class="mt-3 text-lg font-black text-[var(--text-main)]">${completed}</div>
+                                        <div class="mt-1 text-[10px] text-[var(--text-muted)]">${active}/${slice.length} active days · ${pct}%</div>
+                                        <div class="mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5">
+                                            <div class="h-full rounded-full" style="width:${pct}%;background:${g.color}"></div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (selectedTodoHistoryRange === 'weekly') {
+                const groups = getStatsWeeklyGroups(Array(30).fill(0)).map((g, idx) => {
+                    const slice = recentDays.slice(g.start, g.end + 1);
+                    const completed = slice.reduce((sum, r) => sum + r.completed, 0);
+                    const total = slice.reduce((sum, r) => sum + r.total, 0);
+                    const active = slice.filter(r => r.total > 0).length;
+                    const pct = total ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+                    return { ...g, completed, total, active, pct };
+                });
+
+                detail.innerHTML = `
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div>
+                            <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
+                            <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">To-Do Completion</h4>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-1">Weekly completion breakdown · 5 periods</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                                <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Completed</div>
+                                <div class="text-sm font-black dynamic-text mt-0.5">${totalCompleted30}</div>
+                            </div>
+                            <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
+                                <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div>
+                                <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays30}/30</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="stats-week-label mb-2">Weekly Breakdown</div>
+                        <div class="stats-week-grid">
+                            ${groups.map(g => `
+                                <div class="stats-week-card">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="stats-week-label">${g.label}</span>
+                                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${g.color}"></span>
+                                    </div>
+                                    <div class="mt-3 text-lg font-black text-[var(--text-main)]">${g.completed}</div>
+                                    <div class="mt-1 text-[10px] text-[var(--text-muted)]">${g.active}/${g.end - g.start + 1} active days · ${g.pct}%</div>
+                                    <div class="mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5">
+                                        <div class="h-full rounded-full" style="width:${g.pct}%;background:${g.color}"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const months = [];
+            for (let m = 0; m < 6; m++) {
+                const start = new Date(today.getFullYear(), today.getMonth() - m, 1);
+                const end = new Date(today.getFullYear(), today.getMonth() - m + 1, 0);
+                let completed = 0, total = 0, days = 0;
+                for (let d = 1; d <= end.getDate(); d++) {
+                    const rec = getTodoHistoryRecord(getTodoHistoryDateKey(new Date(start.getFullYear(), start.getMonth(), d)));
+                    if (rec) {
+                        completed += Number(rec.completed || 0);
+                        total += Number(rec.total || 0);
+                        days++;
+                    }
+                }
+                months.push({
+                    label: start.toLocaleDateString(undefined, { month:'long', year:'numeric' }),
+                    pct: total ? Math.min(100, Math.round((completed / total) * 100)) : 0,
+                    completed, days
+                });
+            }
+
+            detail.innerHTML = `
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
+                        <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">To-Do Completion</h4>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-1">Monthly completion breakdown</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="stats-week-label mb-2">Monthly Breakdown</div>
+                    <div class="stats-week-grid">
+                        ${months.map((r, i) => {
+                            const group = getStatsWeeklyGroups(Array(30).fill(0))[i % 5] || { color:'var(--theme-primary)' };
+                            return `
+                                <div class="stats-week-card">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="stats-week-label">${r.label}</span>
+                                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${group.color}"></span>
+                                    </div>
+                                    <div class="mt-3 text-lg font-black text-[var(--text-main)]">${r.completed}</div>
+                                    <div class="mt-1 text-[10px] text-[var(--text-muted)]">${r.days} recorded days · ${r.pct}%</div>
+                                    <div class="mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5">
+                                        <div class="h-full rounded-full" style="width:${r.pct}%;background:${group.color}"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -3340,7 +3691,7 @@ let shareProgressType = null;
                             <div class="flex items-center gap-2">
                                 <button onclick="openShareProgressModal('tracker','${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">📤 Share</button>
                                 <button onclick="toggleTrackerSettings('${t.id}')" class="dynamic-card border px-3 py-1 rounded-xl text-xs text-[var(--text-main)] flex items-center gap-1">⚙️ Settings</button>
-                                <button class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
+                                <button type="button" class="bg-red-500/15 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl text-xs" onclick="deleteTracker('${t.id}', '${t.title}')">Delete Graph</button>
                             </div>
                         </div>
 
@@ -3601,11 +3952,12 @@ let shareProgressType = null;
             render();
         }
 
-        function deleteTracker(id, title) {
+        async function deleteTracker(id, title) {
             if(confirm(`Are you sure you want to delete the graph "${title}"?`)) {
                 trackers = trackers.filter(t => t.id !== id);
-                saveAndCloudSync();
                 render();
+                const result = await saveCloudNow();
+                if (result?.error) alert(`Could not save the deleted graph: ${result.error.message}`);
             }
         }
     </script>
