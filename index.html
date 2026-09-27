@@ -112,6 +112,75 @@
             border-color: rgba(100,116,139,.20) !important;
         }
 
+        /* WINTER ARC THEME — visual-only seasonal layer */
+        body.winter-arc {
+            background-image:
+                radial-gradient(circle at 18% 12%, rgba(125, 211, 252, 0.10), transparent 28%),
+                radial-gradient(circle at 82% 18%, rgba(186, 230, 253, 0.08), transparent 25%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.18), transparent 48%);
+            background-attachment: fixed;
+        }
+        body.winter-arc.light-mode {
+            background-image:
+                radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.12), transparent 28%),
+                radial-gradient(circle at 82% 18%, rgba(147, 197, 253, 0.12), transparent 25%),
+                linear-gradient(180deg, rgba(255,255,255,0.28), transparent 52%);
+        }
+        #winter-snow-layer {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 9997;
+            display: none;
+        }
+        body.winter-arc #winter-snow-layer { display: block; }
+        .winter-flake {
+            position: absolute;
+            top: -12px;
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.88);
+            box-shadow: 0 0 7px rgba(186,230,253,.45);
+            animation-name: winterSnowFall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            will-change: transform;
+        }
+        .winter-flake.soft { opacity: .48; filter: blur(.35px); }
+        .winter-flake.large { width: 7px; height: 7px; opacity: .72; }
+        @keyframes winterSnowFall {
+            0% { transform: translate3d(0, -20px, 0) rotate(0deg); }
+            50% { transform: translate3d(28px, 52vh, 0) rotate(180deg); }
+            100% { transform: translate3d(-18px, 112vh, 0) rotate(360deg); }
+        }
+        #winter-snow-ground {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 34px;
+            pointer-events: none;
+            z-index: 9996;
+            display: none;
+            background:
+                radial-gradient(90px 22px at 8% 100%, rgba(255,255,255,.98) 0 58%, transparent 60%),
+                radial-gradient(130px 25px at 28% 100%, rgba(255,255,255,.96) 0 58%, transparent 60%),
+                radial-gradient(105px 22px at 50% 100%, rgba(255,255,255,.98) 0 58%, transparent 60%),
+                radial-gradient(145px 26px at 73% 100%, rgba(255,255,255,.96) 0 58%, transparent 60%),
+                radial-gradient(110px 23px at 94% 100%, rgba(255,255,255,.98) 0 58%, transparent 60%),
+                linear-gradient(to top, rgba(255,255,255,.94), rgba(255,255,255,.72) 62%, transparent);
+            filter: drop-shadow(0 -3px 7px rgba(186,230,253,.18));
+        }
+        body.winter-arc #winter-snow-ground { display: block; }
+        body.winter-arc .dynamic-card {
+            box-shadow: 0 8px 26px rgba(2, 12, 27, .20), 0 0 0 1px rgba(186,230,253,.025);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .winter-flake { animation-play-state: paused; }
+        }
+
         body {
             background-color: var(--bg-main) !important;
             color: var(--text-main) !important;
@@ -269,6 +338,8 @@
     </style>
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
+    <div id="winter-snow-layer" aria-hidden="true"></div>
+    <div id="winter-snow-ground" aria-hidden="true"></div>
 
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
@@ -662,6 +733,7 @@
                                             <option value="amber">Matrix Amber</option>
                                             <option value="indigo">Deep Indigo</option>
                                             <option value="crimson">Crimson Protocol</option>
+                                            <option value="winter">❄️ Winter Arc</option>
                                         </select>
                                         <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
                                             <option value="dark">Dark Night Mode</option>
@@ -898,6 +970,7 @@
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
+        let lastLoginAt = null;
         let isAdmin = false;
         let trackers = [];
         let todos = [];
@@ -915,6 +988,8 @@
             amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.03)', glowLight: 'rgba(245, 158, 11, 0.05)' },
             indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.03)', glowLight: 'rgba(99, 102, 241, 0.05)' },
             crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.03)', glowLight: 'rgba(239, 68, 68, 0.05)' }
+,
+            winter: { primary: '#bae6fd', primaryBg: '#38bdf8', primaryHover: '#7dd3fc', borderDark: 'rgba(125, 211, 252, 0.34)', borderLight: 'rgba(14, 165, 233, 0.32)', glowDark: 'rgba(125, 211, 252, 0.07)', glowLight: 'rgba(56, 189, 248, 0.08)' }
         };
 
         let currentAccentKey = 'emerald';
@@ -1225,10 +1300,33 @@
             render();
         }
 
+        function updateWinterArcVisuals(isWinter) {
+            const snowLayer = document.getElementById('winter-snow-layer');
+            if (!snowLayer) return;
+            document.body.classList.toggle('winter-arc', isWinter);
+            if (!isWinter || snowLayer.dataset.ready === 'true') return;
+
+            snowLayer.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            const flakeCount = window.innerWidth < 640 ? 24 : 38;
+            for (let i = 0; i < flakeCount; i++) {
+                const flake = document.createElement('span');
+                flake.className = 'winter-flake' + (i % 5 === 0 ? ' soft' : '') + (i % 11 === 0 ? ' large' : '');
+                flake.style.left = (Math.random() * 100).toFixed(2) + '%';
+                flake.style.animationDuration = (13 + Math.random() * 14).toFixed(2) + 's';
+                flake.style.animationDelay = (-Math.random() * 24).toFixed(2) + 's';
+                flake.style.opacity = (0.42 + Math.random() * 0.48).toFixed(2);
+                fragment.appendChild(flake);
+            }
+            snowLayer.appendChild(fragment);
+            snowLayer.dataset.ready = 'true';
+        }
+
         function applyThemeUI(accentKey, modeKey) {
             const accent = ACCENTS[accentKey] || ACCENTS['emerald'];
             const root = document.documentElement;
             const body = document.getElementById('app-body');
+            updateWinterArcVisuals(accentKey === 'winter');
 
             if (modeKey === 'light') {
                 body.classList.add('light-mode');
@@ -1291,10 +1389,12 @@
                         trackers = parsed;
                         todos = [];
                         habits = [];
+                        lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
                         habits = parsed.habits || [];
+                        lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
@@ -1303,8 +1403,8 @@
                 }
 
                 calculateLoginStreak(existingUser, true);
-                const streakPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta });
-                await client.from('profiles').update({ last_action: new Date().toISOString(), data: streakPayload }).eq('username', username);
+                const streakPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                await client.from('profiles').update({ data: streakPayload }).eq('username', username);
                 
                 checkAndResetPeriodicGoals();
 
@@ -1386,20 +1486,24 @@
                         trackers = parsed;
                         todos = [];
                         habits = [];
+                        lastLoginAt = existingUser.last_login || null;
                     } else {
                         trackers = parsed.trackers || [];
                         todos = parsed.todos || [];
                         habits = parsed.habits || [];
+                        lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
                     }
                 } catch(e) {
                     trackers = [];
                     todos = [];
                     habits = [];
+                    lastLoginAt = existingUser.last_login || null;
                 }
                 isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
                 calculateLoginStreak(existingUser, true);
-                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta });
-                await client.from('profiles').update({ force_logout: false, last_login: new Date().toISOString(), last_action: new Date().toISOString(), data: updatedLoginPayload }).eq('username', user);
+                lastLoginAt = new Date().toISOString();
+                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
+                await client.from('profiles').update({ force_logout: false, data: updatedLoginPayload, last_login: lastLoginAt }).eq('username', user);
             } else {
                 isNewUserSignUp = true;
                 let guestSnapshot = null;
@@ -1412,10 +1516,11 @@
                 isAdmin = (user === MASTER_ADMIN);
                 userLoginStreakCount = 1;
                 loginStreakMeta = { count: 1, lastLoginDate: localDateKey() };
-                const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta });
+                lastLoginAt = new Date().toISOString();
+                const initialPayload = JSON.stringify({ trackers, todos, habits, loginStreak: loginStreakMeta, lastLoginAt });
                 const { error: insertError } = await client
                     .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: new Date().toISOString(), last_action: new Date().toISOString() }]);
+                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: lastLoginAt, last_action: new Date().toISOString() }]);
                 
                 if (insertError) {
                     errTag.innerText = 'Error creating user in cloud database.';
@@ -1578,13 +1683,25 @@
             if(!container) return;
             container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
-            const { data: users, error } = await client.from('profiles').select('username, password, last_login, last_action, is_admin');
+            const { data: users, error } = await client.from('profiles').select('username, password, data, last_login, last_action, is_admin');
             
             if (error) {
                 container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
                 return;
             }
             
+            (users || []).forEach(u => {
+                // last_login is the dedicated login timestamp. Keep a legacy fallback for older records.
+                if (!u.last_login) {
+                    try {
+                        const parsed = u.data ? JSON.parse(u.data) : null;
+                        u.last_login = parsed && !Array.isArray(parsed) ? (parsed.lastLoginAt || null) : null;
+                    } catch (e) {
+                        u.last_login = null;
+                    }
+                }
+            });
+
             adminUsersCache = (users || []).sort((a, b) => {
                 const timeA = a.last_action ? new Date(a.last_action).getTime() : 0;
                 const timeB = b.last_action ? new Date(b.last_action).getTime() : 0;
@@ -1762,7 +1879,8 @@
                     trackers: trackers,
                     todos: todos,
                     habits: habits,
-                    loginStreak: loginStreakMeta
+                    loginStreak: loginStreakMeta,
+                    lastLoginAt: lastLoginAt
                 });
                 await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
             }, 600);
