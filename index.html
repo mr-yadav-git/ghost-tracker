@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" sizes="512x512" href="download.png?v=20260927">
-    <link rel="apple-touch-icon" sizes="512x512" href="download.png?v=20260927">
-    <link rel="manifest" href="manifest.json?v=20260927">
+    <link rel="icon" type="image/png" sizes="512x512" href="download.png?v=20260927-deletefix1">
+    <link rel="apple-touch-icon" sizes="512x512" href="download.png?v=20260927-deletefix1">
+    <link rel="manifest" href="manifest.json?v=20260927-deletefix1">
     <meta name="theme-color" content="#030712">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
@@ -1255,6 +1258,17 @@
             await initGuestPresence();
             setInterval(updateHabitsStreaksTimer, 1000);
             setInterval(() => { if (resetTodoCompletionForNewDay()) renderTodos(); }, 60000);
+
+            // Keep 30-day tracker history moving even when the app stays open overnight.
+            let trackerHistoryDayKey = localDateKey();
+            setInterval(() => {
+                if (!currentUser) return;
+                const todayKey = localDateKey();
+                if (todayKey === trackerHistoryDayKey) return;
+                trackerHistoryDayKey = todayKey;
+                checkAndResetPeriodicGoals();
+                render();
+            }, 60000);
             
             fetchLiveUsersCount();
             bindWinterTilt();
@@ -1888,50 +1902,156 @@
             }
         }
 
+        function trackerDateForIndex(tracker, index) {
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            start.setDate(start.getDate() + index);
+            return start;
+        }
+
+        function trackerCurrentDayIndex(tracker, date = new Date()) {
+            if (!tracker.historyStartDate) return 0;
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diff = Math.floor((day - start) / 86400000);
+            return Math.max(0, Math.min(29, diff));
+        }
+
+        function ensureTrackerHistoryMeta(tracker, todayStr = localDateKey()) {
+            let changed = false;
+            if (!Array.isArray(tracker.data)) {
+                tracker.data = Array(30).fill(0);
+                changed = true;
+            }
+            if (tracker.data.length < 30) {
+                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+                changed = true;
+            }
+            if (tracker.data.length > 30) {
+                tracker.data = tracker.data.slice(0, 30);
+                changed = true;
+            }
+
+            if (!tracker.historyStartDate || !/^\d{4}-\d{2}-\d{2}$/.test(tracker.historyStartDate)) {
+                // Existing versions stored Day 1..30 without calendar dates. Preserve those values
+                // and anchor the most recently populated slot to today for a safe migration.
+                let lastRecorded = -1;
+                tracker.data.forEach((v, i) => {
+                    if (Number.isFinite(Number(v)) && Number(v) > 0) lastRecorded = i;
+                });
+                const anchor = new Date(`${todayStr}T00:00:00`);
+                anchor.setDate(anchor.getDate() - Math.max(0, lastRecorded));
+                tracker.historyStartDate = localDateKey(anchor);
+                changed = true;
+            }
+            return changed;
+        }
+
+        function advanceTrackerHistory(tracker, todayStr = localDateKey()) {
+            const today = new Date(`${todayStr}T00:00:00`);
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const elapsed = Math.floor((today - start) / 86400000);
+
+            if (elapsed < 0) {
+                // Device clock moved backwards. Keep the stored history instead of erasing it.
+                tracker.historyStartDate = todayStr;
+                return true;
+            }
+
+            if (elapsed < 30) return false;
+
+            const shift = elapsed - 29;
+            tracker.data = tracker.data.slice(shift);
+            while (tracker.data.length < 30) tracker.data.push(0);
+            if (tracker.data.length > 30) tracker.data = tracker.data.slice(0, 30);
+
+            const newStart = new Date(start);
+            newStart.setDate(newStart.getDate() + shift);
+            tracker.historyStartDate = localDateKey(newStart);
+            return true;
+        }
+
+        function isSameLocalCalendarWeek(a, b) {
+            return getWeekNumber(a) === getWeekNumber(b);
+        }
+
+        function isSameLocalMonth(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+        }
+
+        function getTrackerCurrentCycleSum(tracker, date = new Date()) {
+            if (!Array.isArray(tracker.data) || tracker.data.length === 0) return 0;
+            const todayIndex = trackerCurrentDayIndex(tracker, date);
+
+            if (tracker.timeframe === 'Day') {
+                return Number(tracker.data[todayIndex]) || 0;
+            }
+
+            let sum = 0;
+            for (let i = 0; i <= todayIndex; i++) {
+                const pointDate = trackerDateForIndex(tracker, i);
+                if (tracker.timeframe === 'Week' && isSameLocalCalendarWeek(pointDate, date)) {
+                    sum += Number(tracker.data[i]) || 0;
+                } else if (tracker.timeframe === 'Month' && isSameLocalMonth(pointDate, date)) {
+                    sum += Number(tracker.data[i]) || 0;
+                }
+            }
+            return sum;
+        }
+
+        function clearTrackerCurrentCycle(tracker, date = new Date()) {
+            const todayIndex = trackerCurrentDayIndex(tracker, date);
+            if (tracker.timeframe === 'Day') {
+                tracker.data[todayIndex] = 0;
+                return;
+            }
+
+            for (let i = 0; i <= todayIndex; i++) {
+                const pointDate = trackerDateForIndex(tracker, i);
+                const sameCycle = tracker.timeframe === 'Week'
+                    ? isSameLocalCalendarWeek(pointDate, date)
+                    : isSameLocalMonth(pointDate, date);
+                if (sameCycle) tracker.data[i] = 0;
+            }
+        }
+
         function checkAndResetPeriodicGoals() {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = localDateKey(now);
             const currentWeekNum = getWeekNumber(now);
-            const currentMonthNum = now.getMonth();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
             let updated = false;
 
             trackers.forEach(t => {
+                if (ensureTrackerHistoryMeta(t, todayStr)) updated = true;
+                if (advanceTrackerHistory(t, todayStr)) updated = true;
+
+                // Timeframe controls the GOAL cycle only. Never erase the 30-day graph history.
                 if (!t.lastResetPeriod) {
                     t.lastResetPeriod = todayStr;
                     t.lastResetWeek = currentWeekNum;
-                    t.lastResetMonth = currentMonthNum;
+                    t.lastResetMonth = currentMonthKey;
+                    t.congratulatedCycle = false;
                     updated = true;
                     return;
                 }
 
-                if (t.timeframe === 'Day') {
-                    if (t.lastResetPeriod !== todayStr) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetPeriod = todayStr;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Week') {
-                    if (t.lastResetWeek !== currentWeekNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetWeek = currentWeekNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Month') {
-                    if (t.lastResetMonth !== currentMonthNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetMonth = currentMonthNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
+                if (t.timeframe === 'Day' && t.lastResetPeriod !== todayStr) {
+                    t.lastResetPeriod = todayStr;
+                    t.congratulatedCycle = false;
+                    updated = true;
+                } else if (t.timeframe === 'Week' && t.lastResetWeek !== currentWeekNum) {
+                    t.lastResetWeek = currentWeekNum;
+                    t.congratulatedCycle = false;
+                    updated = true;
+                } else if (t.timeframe === 'Month' && t.lastResetMonth !== currentMonthKey) {
+                    t.lastResetMonth = currentMonthKey;
+                    t.congratulatedCycle = false;
+                    updated = true;
                 }
             });
 
-            if (updated && currentUser) {
-                saveAndCloudSync();
-            }
+            if (updated && currentUser) saveAndCloudSync();
         }
 
         function getWeekNumber(d) {
@@ -2157,7 +2277,7 @@
                     displayAdminTable(adminUsersCache);
                     renderAdminActivityFeed(adminUsersCache);
                 } else {
-                    alert(`Account deletion failed: ${error.message}`);
+                    alert(`Account deletion failed.\n\nSupabase returned: ${error.message}\n\nThe database may not allow DELETE for the client role.`);
                 }
             }
         }
@@ -2201,7 +2321,8 @@
                     loginStreak: loginStreakMeta,
                     lastLoginAt: lastLoginAt
                 });
-                await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
+                const result = await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
+                if (result?.error) console.error('GHOST cloud sync failed:', result.error.message);
             }, 600);
         }
 
@@ -2226,7 +2347,7 @@
             return await client.from('profiles').update({
                 data: payload,
                 last_action: new Date().toISOString()
-            }).eq('username', currentUser);
+            }).eq('username', currentUser).select('username').maybeSingle();
         }
 
         function updateValue(id, dayIndex, val) {
@@ -2645,6 +2766,7 @@
             isAdmin = false;
             localStorage.setItem('ghost_current_user', GUEST_USER);
             loadGuestData();
+            checkAndResetPeriodicGoals();
             setLoginStreakDisplay({ count: 1 });
             document.getElementById('display-user').innerText = 'Guest';
             const guestRoleBadge = document.getElementById('profile-role-badge');
@@ -2730,53 +2852,86 @@ let shareProgressType = null;
         }
 
         function createShareCardCanvas(type, id, photoImg) {
+            const isStatsTracker = type === 'stats-tracker';
+            const SHARE_RENDER_SCALE = 2;
+            const logicalWidth = 2400;
+            const logicalHeight = photoImg ? (isStatsTracker ? 1850 : 1650) : (isStatsTracker ? 1550 : 1350);
             const canvas = document.createElement('canvas');
-            canvas.width = 1200;
-            canvas.height = photoImg ? 980 : 820;
-            const ctx = canvas.getContext('2d');
+            canvas.width = logicalWidth * SHARE_RENDER_SCALE;
+            canvas.height = logicalHeight * SHARE_RENDER_SCALE;
+            const ctx = canvas.getContext('2d', { alpha: false });
             if (!ctx) return null;
 
-            const bg = currentModeKey === 'light' ? '#f8fafc' : '#030712';
-            const card = currentModeKey === 'light' ? '#ffffff' : '#111827';
+            // Render the same share card at 2x physical resolution for a genuinely
+            // high-resolution PNG instead of enlarging a small source canvas.
+            ctx.scale(SHARE_RENDER_SCALE, SHARE_RENDER_SCALE);
+            ctx.imageSmoothingEnabled = true;
+            const bg = currentModeKey === 'light' ? '#f1f5f9' : '#020617';
+            const card = currentModeKey === 'light' ? '#ffffff' : '#0f172a';
+            const graphBg = currentModeKey === 'light' ? '#f8fafc' : '#030712';
             const muted = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
             const main = currentModeKey === 'light' ? '#0f172a' : '#f3f4f6';
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#34d399';
 
             ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            roundRectPath(ctx, 55, 45, 1090, canvas.height - 90, 34);
+            ctx.fillRect(0, 0, logicalWidth, logicalHeight);
+            roundRectPath(ctx, 70, 55, 2260, logicalHeight - 110, 46);
             ctx.fillStyle = card;
             ctx.fill();
 
-            shareCanvasText(ctx, 'GHOST TRACKER', 90, 95, 24, accent, '900');
-            shareCanvasText(ctx, currentUser ? `@${currentUser}` : 'My Progress', 1110, 95, 18, muted, '600', 'right');
+            shareCanvasText(ctx, 'GHOST TRACKER', 140, 125, 36, accent, '900');
+            shareCanvasText(ctx, currentUser ? `@${currentUser}` : 'My Progress', 2260, 125, 25, muted, '600', 'right');
 
-            let contentBottom = canvas.height - 90;
             if (type === 'login') {
-                shareCanvasText(ctx, '🔥 LOGIN STREAK', 90, 165, 34, main, '900');
-                shareCanvasText(ctx, `${userLoginStreakCount} DAYS`, 90, 285, 82, accent, '900');
-                shareCanvasText(ctx, 'logged in / matrix days', 95, 345, 24, muted, '600');
-                shareCanvasText(ctx, 'Keep building the streak.', 95, 405, 22, main, '600');
-            } else if (type === 'tracker') {
+                shareCanvasText(ctx, '🔥 LOGIN STREAK', 140, 230, 48, main, '900');
+                shareCanvasText(ctx, `${userLoginStreakCount} DAYS`, 140, 390, 110, accent, '900');
+                shareCanvasText(ctx, 'logged in / matrix days', 150, 470, 31, muted, '600');
+                shareCanvasText(ctx, 'Keep building the streak.', 150, 550, 29, main, '600');
+            } else if (type === 'tracker' || type === 'stats-tracker') {
                 const t = trackers.find(x => String(x.id) === String(id));
                 if (!t) return null;
-                shareCanvasText(ctx, `📈 ${t.title}`, 90, 165, 34, main, '900');
-                shareCanvasText(ctx, `Goal ${t.goal} • Max ${t.max} • ${t.timeframe}`, 90, 210, 20, muted, '600');
-                const source = document.getElementById(`canvas-${t.id}-1`) || document.getElementById(`canvas-${t.id}-2`);
-                if (source) {
-                    const graphX = 90, graphY = 245, graphW = 1020, graphH = 350;
-                    roundRectPath(ctx, graphX, graphY, graphW, graphH, 22);
-                    ctx.fillStyle = currentModeKey === 'light' ? '#f8fafc' : '#030712';
-                    ctx.fill();
-                    ctx.drawImage(source, graphX + 15, graphY + 15, graphW - 30, graphH - 30);
+                const values = Array.from({ length: 30 }, (_, i) => {
+                    const n = Number(t.data?.[i]);
+                    return Number.isFinite(n) ? n : 0;
+                });
+                const maxValue = Math.max(Number(t.max) || 1, ...values, 1);
+                const total = values.reduce((a, b) => a + b, 0);
+                const active = values.filter(v => v > 0).length;
+
+                shareCanvasText(ctx, `${isStatsTracker ? '📊' : '📈'} ${t.title}`, 140, 230, 48, main, '900');
+                shareCanvasText(ctx, `Goal ${t.goal} • Max ${t.max} • ${t.timeframe}`, 140, 285, 28, muted, '600');
+
+                const graphX = 190, graphY = 345, graphW = 2010, graphH = isStatsTracker ? 560 : 500;
+                roundRectPath(ctx, graphX - 35, graphY - 35, graphW + 70, graphH + 110, 30);
+                ctx.fillStyle = graphBg;
+                ctx.fill();
+
+                if (isStatsTracker) {
+                    drawShareStatsBars(ctx, values, maxValue, graphX, graphY, graphW, graphH, 2);
+                } else {
+                    drawShareLineGraph(ctx, t, graphX, graphY, graphW, graphH, 2);
                 }
-                const values = (Array.isArray(t.data) ? t.data : []).map(v => Number(v) || 0);
-                const nonZero = values.filter(v => v !== 0);
-                const total = values.reduce((a,b) => a + b, 0);
-                // Keep the metrics and footer on separate rows so they never overlap.
-                shareCanvasText(ctx, `Total logged: ${total}`, 90, 635, 21, main, '700');
-                shareCanvasText(ctx, `Active entries: ${nonZero.length}`, 90, 678, 20, muted, '600');
-                shareCanvasText(ctx, 'Shared from my GHOST Tracker progress.', 90, 722, 18, muted, '500');
+
+                const statY = isStatsTracker ? 1060 : 980;
+                shareCanvasText(ctx, `Total logged: ${total}`, 140, statY, 30, main, '700');
+                shareCanvasText(ctx, `Active entries: ${active}`, 140, statY + 52, 28, muted, '600');
+
+                if (isStatsTracker) {
+                    shareCanvasText(ctx, 'Weekly Breakdown', 140, statY + 135, 27, muted, '800');
+                    const groups = getStatsWeeklyGroups(values);
+                    const cardW = 395, cardH = 150, gap = 20, startX = 140, startY = statY + 180;
+                    groups.forEach((g, i) => {
+                        const x = startX + i * (cardW + gap);
+                        roundRectPath(ctx, x, startY, cardW, cardH, 22);
+                        ctx.fillStyle = graphBg;
+                        ctx.fill();
+                        shareCanvasText(ctx, g.label, x + 24, startY + 34, 21, muted, '800');
+                        shareCanvasText(ctx, String(g.total), x + 24, startY + 78, 34, main, '900');
+                        shareCanvasText(ctx, `${g.active}/${g.values.length} active days`, x + 24, startY + 118, 18, muted, '600');
+                        ctx.fillStyle = g.color;
+                        ctx.fillRect(x + cardW - 44, startY + 28, 18, 18);
+                    });
+                }
             } else if (type === 'habit') {
                 const h = habits.find(x => String(x.id) === String(id));
                 if (!h) return null;
@@ -2785,26 +2940,25 @@ let shareProgressType = null;
                 const hours = Math.floor((totalSeconds % 86400) / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
                 const seconds = totalSeconds % 60;
-                shareCanvasText(ctx, `🛡️ CLEAN TIMER • ${h.name}`, 90, 165, 31, main, '900');
-                shareCanvasText(ctx, `${String(days).padStart(2,'0')}d  ${String(hours).padStart(2,'0')}h  ${String(minutes).padStart(2,'0')}m  ${String(seconds).padStart(2,'0')}s`, 90, 295, 68, accent, '900');
-                shareCanvasText(ctx, 'time since I last repeated this habit', 95, 355, 23, muted, '600');
-                shareCanvasText(ctx, `Relapses / resets: ${h.relapses || 0}`, 95, 420, 22, main, '700');
+                shareCanvasText(ctx, `🛡️ CLEAN TIMER • ${h.name}`, 140, 230, 45, main, '900');
+                shareCanvasText(ctx, `${String(days).padStart(2,'0')}d  ${String(hours).padStart(2,'0')}h  ${String(minutes).padStart(2,'0')}m  ${String(seconds).padStart(2,'0')}s`, 140, 400, 92, accent, '900');
+                shareCanvasText(ctx, 'time since I last repeated this habit', 150, 475, 30, muted, '600');
+                shareCanvasText(ctx, `Relapses / resets: ${h.relapses || 0}`, 150, 555, 28, main, '700');
             }
 
             if (photoImg) {
-                const photoX = 700, photoY = type === 'tracker' ? 620 : 500, photoW = 410, photoH = 235;
-                roundRectPath(ctx, photoX, photoY, photoW, photoH, 20);
+                const photoX = 140, photoY = logicalHeight - 380, photoW = 720, photoH = 300;
+                roundRectPath(ctx, photoX, photoY, photoW, photoH, 24);
                 ctx.save();
                 ctx.clip();
                 const scale = Math.max(photoW / photoImg.width, photoH / photoImg.height);
                 const dw = photoImg.width * scale, dh = photoImg.height * scale;
                 ctx.drawImage(photoImg, photoX + (photoW - dw) / 2, photoY + (photoH - dh) / 2, dw, dh);
                 ctx.restore();
-                shareCanvasText(ctx, 'My photo', photoX, photoY - 18, 15, muted, '600');
-                contentBottom = photoY + photoH;
+                shareCanvasText(ctx, 'My photo', photoX, photoY - 22, 20, muted, '600');
             }
 
-            shareCanvasText(ctx, 'ghost tracker • personal progress', 90, canvas.height - 58, 16, muted, '600');
+            shareCanvasText(ctx, 'ghost tracker • personal progress', 140, logicalHeight - 85, 22, muted, '600');
             return canvas;
         }
 
@@ -2824,13 +2978,14 @@ let shareProgressType = null;
             const payload = { v: 1, type, user: currentUser || 'GHOST Tracker', createdAt: new Date().toISOString() };
             if (type === 'login') {
                 payload.streak = Number(userLoginStreakCount) || 0;
-            } else if (type === 'tracker') {
+            } else if (type === 'tracker' || type === 'stats-tracker') {
                 const t = trackers.find(x => String(x.id) === String(id));
                 if (!t) return window.location.href.split('#')[0];
                 payload.tracker = {
                     title: t.title || 'Tracker', goal: Number(t.goal) || 0, max: Number(t.max) || 1,
                     timeframe: t.timeframe || 'Day', data: Array.isArray(t.data) ? t.data.map(v => Number(v) || 0) : []
                 };
+                // Keep the public link as a tracker progress link; the image share uses the stats-specific rendering.
             } else if (type === 'habit') {
                 const h = habits.find(x => String(x.id) === String(id));
                 if (!h) return window.location.href.split('#')[0];
@@ -2921,6 +3076,7 @@ let shareProgressType = null;
         function getShareText(type, id) {
             if (type === 'login') return `🔥 ${userLoginStreakCount} day login streak on GHOST Tracker.`;
             if (type === 'tracker') return `📈 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} progress from GHOST Tracker.`;
+            if (type === 'stats-tracker') return `📊 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} 30-day stats from GHOST Tracker.`;
             return `🛡️ Sharing my clean timer from GHOST Tracker.`;
         }
 
@@ -3017,7 +3173,7 @@ let shareProgressType = null;
                     return;
                 }
 
-                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : 'ghost-clean-timer.png';
+                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : type === 'stats-tracker' ? 'ghost-30day-stats-HQ.png' : 'ghost-clean-timer.png';
                 const file = new File([blob], safeName, { type: 'image/png' });
                 lastShareBlob = blob;
                 lastShareFile = file;
@@ -3431,7 +3587,141 @@ let shareProgressType = null;
         }
 
         function shareStatsTracker(id) {
-            openShareProgressModal('tracker', id);
+            // Stats tab uses the 30-day bar chart shown in Stats, not the Tracker tab line graph.
+            openShareProgressModal('stats-tracker', id);
+        }
+
+        function drawShareLineGraph(ctx, t, x, y, w, h, scale = 1) {
+            const values = Array.from({ length: 30 }, (_, i) => {
+                const n = Number(t?.data?.[i]);
+                return Number.isFinite(n) ? n : 0;
+            });
+            const maxRaw = Number(t?.max);
+            const maxValue = Number.isFinite(maxRaw) && maxRaw > 0 ? maxRaw : 1;
+            const lineColor = t?.color || '#34d399';
+            const grid = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
+            const text = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
+            const axis = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
+
+            ctx.save();
+            ctx.strokeStyle = grid;
+            ctx.lineWidth = 1 * scale;
+            ctx.fillStyle = text;
+            ctx.font = `${11 * scale}px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace`;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const gy = y + h * i / 4;
+                ctx.beginPath();
+                ctx.moveTo(x, gy);
+                ctx.lineTo(x + w, gy);
+                ctx.stroke();
+                ctx.fillText(String(Math.round(maxValue - maxValue * i / 4)), x - 12 * scale, gy);
+            }
+
+            ctx.strokeStyle = axis;
+            ctx.lineWidth = 1 * scale;
+            ctx.beginPath();
+            ctx.moveTo(x, y + h);
+            ctx.lineTo(x + w, y + h);
+            ctx.stroke();
+
+            const labels = [0, 6, 13, 20, 29];
+            const dx = w / 29;
+            ctx.fillStyle = text;
+            ctx.font = `${10 * scale}px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            labels.forEach(i => ctx.fillText(String(i + 1), x + i * dx, y + h + 10 * scale));
+
+            const points = values.map((value, i) => {
+                const clamped = Math.max(0, Math.min(value, maxValue));
+                return {
+                    x: x + i * dx,
+                    y: y + h - (clamped / maxValue) * h,
+                    value
+                };
+            });
+
+            let lastRecorded = -1;
+            for (let i = 0; i < values.length; i++) {
+                if (values[i] > 0) lastRecorded = i;
+            }
+
+            if (lastRecorded >= 0) {
+                ctx.save();
+                if (lastRecorded === 0) {
+                    ctx.beginPath();
+                    ctx.arc(points[0].x, points[0].y, 5 * scale, 0, Math.PI * 2);
+                    ctx.fillStyle = lineColor;
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let i = 1; i <= lastRecorded; i++) ctx.lineTo(points[i].x, points[i].y);
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 4 * scale;
+                    ctx.lineJoin = 'miter';
+                    ctx.lineCap = 'butt';
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function drawShareStatsBars(ctx, values, maxValue, x, y, w, h, scale = 1) {
+            const groups = getStatsWeeklyGroups(values);
+            const grid = currentModeKey === 'light' ? '#e2e8f0' : '#1f2937';
+            const text = currentModeKey === 'light' ? '#64748b' : '#9ca3af';
+            const axis = currentModeKey === 'light' ? '#cbd5e1' : '#374151';
+
+            ctx.save();
+            ctx.strokeStyle = grid;
+            ctx.lineWidth = 1 * scale;
+            ctx.fillStyle = text;
+            ctx.font = `${11 * scale}px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const gy = y + h * i / 4;
+                ctx.beginPath();
+                ctx.moveTo(x, gy);
+                ctx.lineTo(x + w, gy);
+                ctx.stroke();
+                ctx.fillText(String(Math.round(maxValue - maxValue * i / 4)), x - 12 * scale, gy);
+            }
+
+            ctx.strokeStyle = axis;
+            ctx.beginPath();
+            ctx.moveTo(x, y + h);
+            ctx.lineTo(x + w, y + h);
+            ctx.stroke();
+
+            const gap = 7 * scale;
+            const barW = Math.max(12 * scale, (w - gap * 29) / 30);
+            values.forEach((value, i) => {
+                const group = groups.find(g => i >= g.start && i <= g.end) || groups[0];
+                const pct = Math.max(0, Math.min(1, value / Math.max(maxValue, 1)));
+                const bh = Math.max(value > 0 ? 4 * scale : 0, pct * h);
+                const bx = x + i * (barW + gap);
+                const by = y + h - bh;
+                if (bh > 0) {
+                    ctx.fillStyle = group.color;
+                    ctx.fillRect(bx, by, barW, bh);
+                }
+            });
+
+            ctx.fillStyle = text;
+            ctx.font = `${10 * scale}px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            [0, 4, 9, 14, 19, 24, 29].forEach(i => {
+                const bx = x + i * (barW + gap) + barW / 2;
+                ctx.fillText(String(i + 1), bx, y + h + 10 * scale);
+            });
+            ctx.restore();
         }
 
         function drawSmallDonut(canvasId, percentage, color) {
@@ -3474,16 +3764,7 @@ let shareProgressType = null;
         }
 
         function evaluateGoalCompletion(tracker) {
-            let currentCycleSum = 0;
-
-            if (tracker.timeframe === 'Day') {
-                currentCycleSum = tracker.data[0] || 0;
-            } else if (tracker.timeframe === 'Week') {
-                currentCycleSum = tracker.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-            } else {
-                currentCycleSum = tracker.data.reduce((a, b) => a + (b || 0), 0);
-            }
-
+            const currentCycleSum = getTrackerCurrentCycleSum(tracker);
             const isAchieved = tracker.goal && currentCycleSum >= tracker.goal;
 
             if (isAchieved && !tracker.congratulatedCycle) {
@@ -3549,13 +3830,8 @@ let shareProgressType = null;
             if (!tracker) return;
 
             if (confirm(`Are you sure you want to stop/reset the active cycle for "${tracker.title}"? This will reset the current cycle inputs to 0.`)) {
-                if (tracker.timeframe === 'Day') {
-                    tracker.data[0] = 0;
-                } else if (tracker.timeframe === 'Week') {
-                    for(let i=0; i<7; i++) tracker.data[i] = 0;
-                } else {
-                    tracker.data = Array(30).fill(0);
-                }
+                ensureTrackerHistoryMeta(tracker, localDateKey());
+                clearTrackerCurrentCycle(tracker);
                 tracker.congratulatedCycle = false;
                 tracker.showSettings = false;
                 saveAndCloudSync();
@@ -3678,10 +3954,7 @@ let shareProgressType = null;
 
                     const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                     
-                    let currentCycleSum = 0;
-                    if (t.timeframe === 'Day') currentCycleSum = t.data[0] || 0;
-                    else if (t.timeframe === 'Week') currentCycleSum = t.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-                    else currentCycleSum = totalVal;
+                    const currentCycleSum = getTrackerCurrentCycleSum(t);
 
                     const isGoalAchieved = t.goal && currentCycleSum >= t.goal;
 
@@ -3839,38 +4112,51 @@ let shareProgressType = null;
                 });
             }
 
-            // Straight point-to-point graph: no dots and no curve smoothing.
-            // A fixed 2px stroke keeps the line clean on both mobile and desktop.
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(points[0].x,points[0].y);
-            for(let i=1;i<points.length;i++){
-                ctx.lineTo(points[i].x,points[i].y);
+            // Build the graph only through the latest recorded day.
+            // Empty/future days remain visually empty so the line grows naturally as the user updates it.
+            let lastRecorded=-1;
+            for(let i=0;i<count;i++){
+                if(Number.isFinite(Number(data[i])) && Number(data[i])>0) lastRecorded=i;
             }
-            ctx.lineTo(points[points.length-1].x,top+plotH);
-            ctx.lineTo(points[0].x,top+plotH);
-            ctx.closePath();
 
-            const grad=ctx.createLinearGradient(0,top,0,top+plotH);
-            grad.addColorStop(0,hexToRgba(lineColor,.18));
-            grad.addColorStop(1,hexToRgba(lineColor,0));
-            ctx.fillStyle=grad;
-            ctx.fill();
-            ctx.restore();
+            if(lastRecorded>=0){
+                // Subtle area fill only beneath the portion that actually exists.
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(points[0].x,top+plotH);
+                ctx.lineTo(points[0].x,points[0].y);
+                for(let i=1;i<=lastRecorded;i++) ctx.lineTo(points[i].x,points[i].y);
+                ctx.lineTo(points[lastRecorded].x,top+plotH);
+                ctx.closePath();
 
-            // Draw the actual data line separately so the edge stays sharp.
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(points[0].x,points[0].y);
-            for(let i=1;i<points.length;i++){
-                ctx.lineTo(points[i].x,points[i].y);
+                const grad=ctx.createLinearGradient(0,top,0,top+plotH);
+                grad.addColorStop(0,hexToRgba(lineColor,.12));
+                grad.addColorStop(1,hexToRgba(lineColor,0));
+                ctx.fillStyle=grad;
+                ctx.fill();
+                ctx.restore();
+
+                // Draw only the recorded portion. With one day recorded, show a single point so
+                // the user can immediately see that the graph is working; from day 2 onward the
+                // sharp line grows point-to-point as new daily values are entered.
+                ctx.save();
+                if(lastRecorded===0){
+                    ctx.beginPath();
+                    ctx.arc(points[0].x,points[0].y,3.25,0,Math.PI*2);
+                    ctx.fillStyle=lineColor;
+                    ctx.fill();
+                }else{
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x,points[0].y);
+                    for(let i=1;i<=lastRecorded;i++) ctx.lineTo(points[i].x,points[i].y);
+                    ctx.strokeStyle=lineColor;
+                    ctx.lineWidth=2;
+                    ctx.lineJoin='miter';
+                    ctx.lineCap='butt';
+                    ctx.stroke();
+                }
+                ctx.restore();
             }
-            ctx.strokeStyle=lineColor;
-            ctx.lineWidth=2;
-            ctx.lineJoin='miter';
-            ctx.lineCap='butt';
-            ctx.stroke();
-            ctx.restore();
 
             return true;
         }
@@ -3908,6 +4194,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                historyStartDate: localDateKey(),
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -3940,6 +4227,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                historyStartDate: localDateKey(),
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -3953,11 +4241,17 @@ let shareProgressType = null;
         }
 
         async function deleteTracker(id, title) {
-            if(confirm(`Are you sure you want to delete the graph "${title}"?`)) {
-                trackers = trackers.filter(t => t.id !== id);
+            if(!confirm(`Are you sure you want to delete the graph "${title}"?`)) return;
+            const index = trackers.findIndex(t => String(t.id) === String(id));
+            if (index < 0) return;
+            const removed = trackers[index];
+            trackers.splice(index, 1);
+            render();
+            const result = await saveCloudNow();
+            if (result?.error) {
+                trackers.splice(index, 0, removed);
                 render();
-                const result = await saveCloudNow();
-                if (result?.error) alert(`Could not save the deleted graph: ${result.error.message}`);
+                alert(`Could not delete the graph from cloud storage.\n\n${result.error.message}`);
             }
         }
     </script>
