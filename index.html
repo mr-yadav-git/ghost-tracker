@@ -1105,6 +1105,7 @@
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
+        let currentSessionToken = localStorage.getItem('ghost_session_token') || null;
         let lastLoginAt = null;
         let isAdmin = false;
         let trackers = [];
@@ -1117,7 +1118,7 @@
         let currentAppTab = 'home';
         let habitToResetId = null;
         let userLoginStreakCount = 1;
-        const MASTER_ADMIN = 'Help'; 
+        const MASTER_ADMIN = 'mr_yadav'; 
 
         const ACCENTS = {
             emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.03)', glowLight: 'rgba(16, 185, 129, 0.05)' },
@@ -1146,9 +1147,9 @@
 
         (async function initThemeOnLoad() {
             try {
-                const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-                if (data && data.theme) {
-                    const parts = data.theme.split('_');
+                const { data } = await client.rpc('ghost_get_global_theme');
+                if (data) {
+                    const parts = String(data).split('_');
                     if (parts.length === 2 && ACCENTS[parts[0]]) {
                         currentAccentKey = parts[0];
                         currentModeKey = parts[1];
@@ -1251,8 +1252,10 @@
             const savedUser = localStorage.getItem('ghost_current_user');
             if (savedUser === GUEST_USER) {
                 startGuestMode();
-            } else if (savedUser) {
-                await restoreSession(savedUser);
+            } else if (currentSessionToken) {
+                await restoreSession(currentSessionToken);
+            } else {
+                localStorage.removeItem('ghost_current_user');
             }
             // Track unauthenticated/guest visitors in real time for the admin dashboard.
             await initGuestPresence();
@@ -1395,11 +1398,9 @@
 
         async function fetchLiveUsersCount() {
             try {
-                const { count, error } = await client.from('profiles').select('*', { count: 'exact', head: true });
+                const { data: count, error } = await client.rpc('ghost_user_count');
                 const liveCountEl = document.getElementById('home-live-users-count');
-                if (!error && liveCountEl) {
-                    liveCountEl.innerText = count !== null ? count : 1;
-                }
+                if (!error && liveCountEl) liveCountEl.innerText = count !== null ? count : 1;
             } catch (e) {
                 const liveCountEl = document.getElementById('home-live-users-count');
                 if (liveCountEl) liveCountEl.innerText = '1';
@@ -1474,8 +1475,16 @@
             currentModeKey = modeSelect.value;
             const combinedThemeKey = `${currentAccentKey}_${currentModeKey}`;
 
+            if (currentUser !== MASTER_ADMIN || !currentSessionToken) {
+                alert('Only the Master Admin can change the global theme.');
+                return;
+            }
             applyThemeUI(currentAccentKey, currentModeKey);
-            await client.from('profiles').update({ theme: combinedThemeKey }).eq('username', MASTER_ADMIN);
+            const { error } = await client.rpc('ghost_master_set_theme', {
+                p_session_token: currentSessionToken,
+                p_theme: combinedThemeKey
+            });
+            if (error) alert(`Theme update failed: ${error.message}`);
             render();
         }
 
@@ -1651,10 +1660,43 @@
             updateClock(); setInterval(updateClock,1000);
         }
 
-        async function restoreSession(username) {
-            const { data, error: themeError } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (!themeError && data && data.theme) {
-                const parts = data.theme.split('_');
+        function applyAuthenticatedProfile(profile, countThisVisit = true) {
+            if (!profile || !profile.username) return false;
+            currentUser = profile.username;
+            isAdmin = currentUser === MASTER_ADMIN || profile.is_admin === true;
+
+            try {
+                const parsed = profile.data ? JSON.parse(profile.data) : {};
+                if (Array.isArray(parsed)) {
+                    trackers = parsed;
+                    todos = [];
+                    habits = [];
+                    todoHistory = [];
+                    lastLoginAt = profile.last_login || null;
+                } else {
+                    trackers = Array.isArray(parsed.trackers) ? parsed.trackers : [];
+                    todos = Array.isArray(parsed.todos) ? parsed.todos : [];
+                    habits = Array.isArray(parsed.habits) ? parsed.habits : [];
+                    todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
+                    lastLoginAt = profile.last_login || parsed.lastLoginAt || null;
+                }
+            } catch (e) {
+                trackers = [];
+                todos = [];
+                habits = [];
+                todoHistory = [];
+                lastLoginAt = profile.last_login || null;
+            }
+
+            let streakMeta = null;
+            try {
+                const parsed = profile.data ? JSON.parse(profile.data) : {};
+                if (parsed && !Array.isArray(parsed)) streakMeta = parsed.loginStreak || null;
+            } catch (e) {}
+            calculateLoginStreak({ data: JSON.stringify({ loginStreak: streakMeta }) }, countThisVisit);
+
+            if (profile.theme) {
+                const parts = profile.theme.split('_');
                 if (parts.length === 2 && ACCENTS[parts[0]]) {
                     currentAccentKey = parts[0];
                     currentModeKey = parts[1];
@@ -1662,79 +1704,51 @@
                 }
             }
 
-            const { data: existingUser, error } = await client
-                .from('profiles')
-                .select('*')
-                .eq('username', username)
-                .maybeSingle();
-
-            if (!error && existingUser) {
-                if (existingUser.force_logout === true) {
-                    localStorage.removeItem('ghost_current_user');
-                    await client.from('profiles').update({ force_logout: false }).eq('username', username);
-                    return;
-                }
-
-                currentUser = username;
-                isAdmin = (username === MASTER_ADMIN) || (existingUser.is_admin === true);
-                
-                try {
-                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
-                    if (Array.isArray(parsed)) {
-                        trackers = parsed;
-                        todos = [];
-                        habits = [];
-                        todoHistory = [];
-                        lastLoginAt = existingUser.last_login || null;
-                    } else {
-                        trackers = parsed.trackers || [];
-                        todos = parsed.todos || [];
-                        habits = parsed.habits || [];
-                        todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
-                        lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
-                    }
-                } catch(e) {
-                    trackers = [];
-                    todos = [];
-                    habits = [];
-                    todoHistory = [];
-                }
-
-                calculateLoginStreak(existingUser, true);
-                const streakPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
-                await client.from('profiles').update({ data: streakPayload }).eq('username', username);
-                
-                checkAndResetPeriodicGoals();
-
-                document.getElementById('display-user').innerText = currentUser;
-                const roleBadge = document.getElementById('profile-role-badge');
-                if (currentUser === MASTER_ADMIN) {
-                    roleBadge.innerText = 'Master Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
-                } else if (isAdmin) {
-                    roleBadge.innerText = 'Admin';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
-                } else {
-                    roleBadge.innerText = 'User';
-                    roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
-                }
-
-                const regDeleteBtn = document.getElementById('regular-delete-btn');
-                if (currentUser === MASTER_ADMIN) {
-                    if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
-                    renderAdminPanel();
-                } else {
-                    if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
-                }
-
-                document.getElementById('auth-screen-wrapper').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                switchAppTab('home');
-                render();
-                updateTutorialQuickAccess();
-                await trackCurrentPresence();
+            localStorage.setItem('ghost_current_user', currentUser);
+            document.getElementById('display-user').innerText = currentUser;
+            const roleBadge = document.getElementById('profile-role-badge');
+            if (currentUser === MASTER_ADMIN) {
+                roleBadge.innerText = 'Master Admin';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/25 text-emerald-400 border border-emerald-500/30';
+            } else if (isAdmin) {
+                roleBadge.innerText = 'Admin';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/25 text-blue-400 border border-blue-500/30';
             } else {
+                roleBadge.innerText = 'User';
+                roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
+            }
+
+            const regDeleteBtn = document.getElementById('regular-delete-btn');
+            if (currentUser === MASTER_ADMIN) {
+                if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
+            } else if (regDeleteBtn) {
+                regDeleteBtn.classList.remove('hidden');
+            }
+
+            document.getElementById('auth-screen-wrapper').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            switchAppTab('home');
+            render();
+            updateTutorialQuickAccess();
+            return true;
+        }
+
+        async function restoreSession(sessionToken) {
+            if (!sessionToken) return;
+            const { data: profile, error } = await client.rpc('ghost_restore_session', {
+                p_session_token: sessionToken
+            });
+            if (error || !profile) {
+                localStorage.removeItem('ghost_session_token');
                 localStorage.removeItem('ghost_current_user');
+                currentSessionToken = null;
+                return;
+            }
+            currentSessionToken = sessionToken;
+            localStorage.setItem('ghost_session_token', currentSessionToken);
+            if (applyAuthenticatedProfile(profile, true)) {
+                await trackCurrentPresence();
+                fetchLiveUsersCount();
             }
         }
 
@@ -1760,101 +1774,90 @@
                 errTag.innerText = 'Error: Username and password are required.';
                 return;
             }
-
-            const { data: existingUser, error: fetchError } = await client
-                .from('profiles')
-                .select('*')
-                .eq('username', user)
-                .maybeSingle();
-
-            if (fetchError) {
-                errTag.innerText = 'Database connection error. Try again.';
+            if (/\s/.test(user)) {
+                errTag.innerText = 'Error: Username cannot contain spaces.';
+                document.getElementById('auth-user').focus();
+                return;
+            }
+            if (/\s/.test(pass)) {
+                errTag.innerText = 'Error: Password cannot contain spaces.';
+                document.getElementById('auth-pass').focus();
+                return;
+            }
+            if (pass.length < 5) {
+                errTag.innerText = 'Error: Password must be at least 5 characters.';
+                document.getElementById('auth-pass').focus();
                 return;
             }
 
             let isNewUserSignUp = false;
+            const { data: loginData, error: loginError } = await client.rpc('ghost_login', {
+                p_username: user,
+                p_password: pass
+            });
 
-            if (existingUser) {
-                if (existingUser.password !== pass) {
-                    errTag.innerText = 'Error: Incorrect password. Username already exists.';
+            if (!loginError && loginData) {
+                currentSessionToken = loginData.session_token || null;
+                if (!currentSessionToken) {
+                    errTag.innerText = 'Login failed: secure session could not be created.';
                     return;
                 }
-                try {
-                    const parsed = existingUser.data ? JSON.parse(existingUser.data) : [];
-                    if (Array.isArray(parsed)) {
-                        trackers = parsed;
-                        todos = [];
-                        habits = [];
-                        todoHistory = [];
-                        lastLoginAt = existingUser.last_login || null;
-                    } else {
-                        trackers = parsed.trackers || [];
-                        todos = parsed.todos || [];
-                        habits = parsed.habits || [];
-                        todoHistory = Array.isArray(parsed.todoHistory) ? parsed.todoHistory : [];
-                        lastLoginAt = existingUser.last_login || parsed.lastLoginAt || null;
-                    }
-                } catch(e) {
-                    trackers = [];
-                    todos = [];
-                    habits = [];
-                    todoHistory = [];
-                    lastLoginAt = existingUser.last_login || null;
-                }
-                isAdmin = (user === MASTER_ADMIN) || (existingUser.is_admin === true);
-                calculateLoginStreak(existingUser, true);
-                lastLoginAt = new Date().toISOString();
-                const updatedLoginPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
-                await client.from('profiles').update({ force_logout: false, data: updatedLoginPayload, last_login: lastLoginAt }).eq('username', user);
+                localStorage.setItem('ghost_session_token', currentSessionToken);
+                applyAuthenticatedProfile(loginData, true);
+                const payload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
+                await client.rpc('ghost_save_user_data', {
+                    p_session_token: currentSessionToken,
+                    p_data: payload,
+                    p_last_action: new Date().toISOString()
+                });
             } else {
-                // New accounts: usernames/passwords may not contain spaces, and passwords must be at least 5 characters.
-                if (/\s/.test(user)) {
-                    errTag.innerText = 'Error: Username cannot contain spaces.';
-                    document.getElementById('auth-user').focus();
-                    return;
-                }
-                if (/\s/.test(pass)) {
-                    errTag.innerText = 'Error: Password cannot contain spaces.';
-                    document.getElementById('auth-pass').focus();
-                    return;
-                }
-                if (pass.length < 5) {
-                    errTag.innerText = 'Error: Password must be at least 5 characters.';
-                    document.getElementById('auth-pass').focus();
+                const guestSnapshot = isGuestUser ? {
+                    trackers: [...trackers], todos: [...todos], habits: [...habits], todoHistory: [...todoHistory]
+                } : null;
+                const initialPayload = JSON.stringify({
+                    trackers: guestSnapshot ? guestSnapshot.trackers : [],
+                    todos: guestSnapshot ? guestSnapshot.todos : [],
+                    habits: guestSnapshot ? guestSnapshot.habits : [],
+                    todoHistory: guestSnapshot ? guestSnapshot.todoHistory : [],
+                    loginStreak: { count: 1, lastLoginDate: localDateKey() },
+                    lastLoginAt: new Date().toISOString()
+                });
+
+                const { data: createData, error: createError } = await client.rpc('ghost_create_user', {
+                    p_username: user,
+                    p_password: pass,
+                    p_data: initialPayload
+                });
+                if (createError || !createData) {
+                    errTag.innerText = (createError?.message || 'Incorrect password or username already exists.');
                     return;
                 }
 
                 isNewUserSignUp = true;
-                let guestSnapshot = null;
-                if (isGuestUser) {
-                    guestSnapshot = { trackers: [...trackers], todos: [...todos], habits: [...habits] };
+                currentSessionToken = createData.session_token || null;
+                if (!currentSessionToken) {
+                    errTag.innerText = 'Account created, but secure session could not be created.';
+                    return;
                 }
+                localStorage.setItem('ghost_session_token', currentSessionToken);
                 trackers = guestSnapshot ? guestSnapshot.trackers : [];
                 todos = guestSnapshot ? guestSnapshot.todos : [];
                 habits = guestSnapshot ? guestSnapshot.habits : [];
-                isAdmin = (user === MASTER_ADMIN);
+                todoHistory = guestSnapshot ? guestSnapshot.todoHistory : [];
+                currentUser = user;
+                isAdmin = false;
                 userLoginStreakCount = 1;
                 loginStreakMeta = { count: 1, lastLoginDate: localDateKey() };
                 lastLoginAt = new Date().toISOString();
-                const initialPayload = JSON.stringify({ trackers, todos, habits, todoHistory, loginStreak: loginStreakMeta, lastLoginAt });
-                const { error: insertError } = await client
-                    .from('profiles')
-                    .insert([{ username: user, password: pass, data: initialPayload, force_logout: false, is_admin: isAdmin, last_login: lastLoginAt, last_action: new Date().toISOString() }]);
-                
-                if (insertError) {
-                    errTag.innerText = 'Error creating user in cloud database.';
-                    return;
-                }
             }
 
-            currentUser = user;
             isGuestUser = false;
             guestDataSaveEnabled = true;
             localStorage.setItem('ghost_current_user', currentUser);
             localStorage.removeItem('ghost_guest_data');
             localStorage.removeItem('ghost_guest_session_count');
             sessionStorage.removeItem('ghost_guest_session_started');
-            
+
             checkAndResetPeriodicGoals();
 
             document.getElementById('display-user').innerText = currentUser;
@@ -1869,23 +1872,12 @@
                 roleBadge.innerText = 'User';
                 roleBadge.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-500/25 text-gray-400';
             }
-            
-            const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-            if (adminData && adminData.theme) {
-                const parts = adminData.theme.split('_');
-                if (parts.length === 2 && ACCENTS[parts[0]]) {
-                    currentAccentKey = parts[0];
-                    currentModeKey = parts[1];
-                    applyThemeUI(currentAccentKey, currentModeKey);
-                }
-            }
 
             const regDeleteBtn = document.getElementById('regular-delete-btn');
-            if (currentUser === MASTER_ADMIN || isAdmin) {
+            if (currentUser === MASTER_ADMIN) {
                 if (regDeleteBtn) regDeleteBtn.classList.add('hidden');
-                renderAdminPanel();
-            } else {
-                if (regDeleteBtn) regDeleteBtn.classList.remove('hidden');
+            } else if (regDeleteBtn) {
+                regDeleteBtn.classList.remove('hidden');
             }
 
             document.getElementById('auth-screen-wrapper').classList.add('hidden');
@@ -1896,122 +1888,7 @@
             await trackCurrentPresence();
             fetchLiveUsersCount();
 
-            // Trigger tutorial for new user login
-            if (isNewUserSignUp) {
-                setTimeout(startTutorialIfNeeded, 300);
-            }
-        }
-
-        function trackerDateForIndex(tracker, index) {
-            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
-            start.setDate(start.getDate() + index);
-            return start;
-        }
-
-        function trackerCurrentDayIndex(tracker, date = new Date()) {
-            if (!tracker.historyStartDate) return 0;
-            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
-            const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            const diff = Math.floor((day - start) / 86400000);
-            return Math.max(0, Math.min(29, diff));
-        }
-
-        function ensureTrackerHistoryMeta(tracker, todayStr = localDateKey()) {
-            let changed = false;
-            if (!Array.isArray(tracker.data)) {
-                tracker.data = Array(30).fill(0);
-                changed = true;
-            }
-            if (tracker.data.length < 30) {
-                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
-                changed = true;
-            }
-            if (tracker.data.length > 30) {
-                tracker.data = tracker.data.slice(0, 30);
-                changed = true;
-            }
-
-            if (!tracker.historyStartDate || !/^\d{4}-\d{2}-\d{2}$/.test(tracker.historyStartDate)) {
-                // Existing versions stored Day 1..30 without calendar dates. Preserve those values
-                // and anchor the most recently populated slot to today for a safe migration.
-                let lastRecorded = -1;
-                tracker.data.forEach((v, i) => {
-                    if (Number.isFinite(Number(v)) && Number(v) > 0) lastRecorded = i;
-                });
-                const anchor = new Date(`${todayStr}T00:00:00`);
-                anchor.setDate(anchor.getDate() - Math.max(0, lastRecorded));
-                tracker.historyStartDate = localDateKey(anchor);
-                changed = true;
-            }
-            return changed;
-        }
-
-        function advanceTrackerHistory(tracker, todayStr = localDateKey()) {
-            const today = new Date(`${todayStr}T00:00:00`);
-            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
-            const elapsed = Math.floor((today - start) / 86400000);
-
-            if (elapsed < 0) {
-                // Device clock moved backwards. Keep the stored history instead of erasing it.
-                tracker.historyStartDate = todayStr;
-                return true;
-            }
-
-            if (elapsed < 30) return false;
-
-            const shift = elapsed - 29;
-            tracker.data = tracker.data.slice(shift);
-            while (tracker.data.length < 30) tracker.data.push(0);
-            if (tracker.data.length > 30) tracker.data = tracker.data.slice(0, 30);
-
-            const newStart = new Date(start);
-            newStart.setDate(newStart.getDate() + shift);
-            tracker.historyStartDate = localDateKey(newStart);
-            return true;
-        }
-
-        function isSameLocalCalendarWeek(a, b) {
-            return getWeekNumber(a) === getWeekNumber(b);
-        }
-
-        function isSameLocalMonth(a, b) {
-            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
-        }
-
-        function getTrackerCurrentCycleSum(tracker, date = new Date()) {
-            if (!Array.isArray(tracker.data) || tracker.data.length === 0) return 0;
-            const todayIndex = trackerCurrentDayIndex(tracker, date);
-
-            if (tracker.timeframe === 'Day') {
-                return Number(tracker.data[todayIndex]) || 0;
-            }
-
-            let sum = 0;
-            for (let i = 0; i <= todayIndex; i++) {
-                const pointDate = trackerDateForIndex(tracker, i);
-                if (tracker.timeframe === 'Week' && isSameLocalCalendarWeek(pointDate, date)) {
-                    sum += Number(tracker.data[i]) || 0;
-                } else if (tracker.timeframe === 'Month' && isSameLocalMonth(pointDate, date)) {
-                    sum += Number(tracker.data[i]) || 0;
-                }
-            }
-            return sum;
-        }
-
-        function clearTrackerCurrentCycle(tracker, date = new Date()) {
-            const todayIndex = trackerCurrentDayIndex(tracker, date);
-            if (tracker.timeframe === 'Day') {
-                tracker.data[todayIndex] = 0;
-                return;
-            }
-
-            for (let i = 0; i <= todayIndex; i++) {
-                const pointDate = trackerDateForIndex(tracker, i);
-                const sameCycle = tracker.timeframe === 'Week'
-                    ? isSameLocalCalendarWeek(pointDate, date)
-                    : isSameLocalMonth(pointDate, date);
-                if (sameCycle) tracker.data[i] = 0;
-            }
+            if (isNewUserSignUp) setTimeout(startTutorialIfNeeded, 300);
         }
 
         function checkAndResetPeriodicGoals() {
@@ -2063,87 +1940,47 @@
         }
 
         async function handleRegularDeleteAccount() {
-            let passInput = prompt(`SECURITY CONFIRMATION: Enter your password to delete your account ("${currentUser}") permanently:`);
+            if (!currentUser || !currentSessionToken) return;
+            const passInput = prompt(`SECURITY CONFIRMATION: Enter your password to delete your account ("${currentUser}") permanently:`);
             if (!passInput) return;
-
-            const { data: userData } = await client.from('profiles').select('password').eq('username', currentUser).single();
-            if (!userData || userData.password !== passInput) {
-                alert('Authentication Failed: Incorrect password.');
-                return;
-            }
-
-            if (confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped.`)) {
-                const { error } = await client.from('profiles').delete().eq('username', currentUser);
-                if (!error) {
-                    alert('Your account has been successfully deleted.');
-                    handleLogout();
-                } else {
-                    alert(`Failed to delete account: ${error.message}`);
-                }
-            }
-        }
-
-        function switchAdminTab(tab) {
-            currentAdminTab = tab;
-            const trackerTabBtn = document.getElementById('admin-tab-tracker');
-            const usersTabBtn = document.getElementById('admin-tab-users');
-            const trackerContent = document.getElementById('admin-content-tracker');
-            const usersContent = document.getElementById('admin-content-users');
-
-            if (tab === 'tracker') {
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
-                trackerContent.classList.remove('hidden');
-                usersContent.classList.add('hidden');
+            if (!confirm(`Are you absolutely sure you want to delete your account? All your trackers and data will be permanently wiped.`)) return;
+            const { error } = await client.rpc('ghost_delete_self', {
+                p_session_token: currentSessionToken,
+                p_password: passInput
+            });
+            if (!error) {
+                alert('Your account has been successfully deleted.');
+                await handleLogout();
             } else {
-                usersTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium dynamic-bg';
-                trackerTabBtn.className = 'px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]';
-                usersContent.classList.remove('hidden');
-                trackerContent.classList.add('hidden');
-                renderAdminPanel();
+                alert(`Account deletion failed: ${error.message}`);
             }
         }
 
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
-            if(!container) return;
-            if (currentUser !== MASTER_ADMIN && !isAdmin) {
+            if (!container) return;
+            if (!currentSessionToken || (currentUser !== MASTER_ADMIN && !isAdmin)) {
                 container.innerHTML = '<p class="text-red-400 py-3 px-3">Admin access required.</p>';
                 return;
             }
-            container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
-            
-            // Passwords are returned only to the Master Admin. Normal admins never
-            // receive password fields from this query, so other admin passwords are
-            // not exposed to their browser at all.
-            const adminSelect = currentUser === MASTER_ADMIN
-                ? 'username, password, data, last_login, last_action, is_admin'
-                : 'username, data, last_login, last_action, is_admin';
-            const { data: users, error } = await client.from('profiles').select(adminSelect);
-            
+            container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from secure admin service...</p>';
+            const { data: users, error } = await client.rpc('ghost_admin_list_users', {
+                p_session_token: currentSessionToken
+            });
             if (error) {
-                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${escapeHtml(error.message || 'Unknown error')}</p>`;
                 return;
             }
-            
-            (users || []).forEach(u => {
-                // last_login is the dedicated login timestamp. Keep a legacy fallback for older records.
+            adminUsersCache = Array.isArray(users) ? users.map(u => ({...u})) : [];
+            adminUsersCache.forEach(u => {
                 if (!u.last_login) {
                     try {
                         const parsed = u.data ? JSON.parse(u.data) : null;
                         u.last_login = parsed && !Array.isArray(parsed) ? (parsed.lastLoginAt || null) : null;
-                    } catch (e) {
-                        u.last_login = null;
-                    }
+                    } catch (e) { u.last_login = null; }
                 }
             });
-
-            adminUsersCache = (users || []).sort((a, b) => {
-                const timeA = a.last_action ? new Date(a.last_action).getTime() : 0;
-                const timeB = b.last_action ? new Date(b.last_action).getTime() : 0;
-                return timeB - timeA;
-            });
-            
+            adminUsersCache.sort((a,b) => (new Date(b.last_action || 0).getTime()) - (new Date(a.last_action || 0).getTime()));
             displayAdminTable(adminUsersCache);
             renderAdminActivityFeed(adminUsersCache);
             renderAdminPresenceIndicators();
@@ -2167,9 +2004,8 @@
         }
 
         function filterAdminUsers() {
-            const query = document.getElementById('admin-search').value.toLowerCase();
-            const filtered = adminUsersCache.filter(u => u.username.toLowerCase().includes(query));
-            displayAdminTable(filtered);
+            const query = (document.getElementById('admin-search')?.value || '').toLowerCase();
+            displayAdminTable(adminUsersCache.filter(u => String(u.username || '').toLowerCase().includes(query)));
             renderAdminPresenceIndicators();
         }
 
@@ -2179,7 +2015,6 @@
             const diffMins = Math.floor(diffMs / (1000 * 60));
             const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
             if (diffMins < 1) return 'Just now';
             if (diffMins < 60) return `${diffMins}m ago`;
             if (diffHours < 24) return `${diffHours}h ago`;
@@ -2193,34 +2028,26 @@
                 container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">No users found.</p>';
                 return;
             }
-
             let html = '<table class="w-full border-collapse text-left">';
             html += '<tr class="border-b border-[var(--border-color)] text-[var(--text-muted)] text-[11px] uppercase tracking-wider"><th class="py-3 px-3.5">Username</th><th class="py-3 px-3.5">Role</th><th class="py-3 px-3.5">Password</th><th class="py-3 px-3.5">Status</th><th class="py-3 px-3.5">Last Logged In</th><th class="py-3 px-3.5">Last Activity</th><th class="py-3 px-3.5 text-right">Actions</th></tr>';
-            
             users.forEach(u => {
                 const lastLoginStr = formatTimeAgo(u.last_login);
                 const lastActivityStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
                 const isUserAdmin = u.is_admin === true || isUserMaster;
-                // Only the Master Admin can see stored password values. Normal admins
-                // always see passwords as protected, including their own/admin accounts.
-                const displayPassword = currentUser === MASTER_ADMIN
-                    ? (u.password || '••••••••')
-                    : '••••••••';
+                const displayPassword = currentUser === MASTER_ADMIN ? (u.password || '••••••••') : '••••••••';
                 const canManageTarget = currentUser === MASTER_ADMIN || (!isUserAdmin && !isUserMaster);
                 const roleAction = currentUser === MASTER_ADMIN
-                    ? (!isUserMaster
-                        ? (isUserAdmin
-                            ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
-                            : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`)
-                        : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>')
+                    ? (!isUserMaster ? (isUserAdmin
+                        ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
+                        : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`)
+                    : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>')
                     : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>';
-
                 html += `<tr class="border-b border-[var(--border-color)]">
-                    <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
+                    <td class="py-3 px-3.5 dynamic-text font-medium">${escapeHtml(u.username)}</td>
                     <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${displayPassword}</td>
-                    <td class="py-3 px-3.5 text-[11px]"><span data-presence-user="${u.username}"></span></td>
+                    <td class="py-3 px-3.5 text-[11px]"><span data-presence-user="${escapeHtml(u.username)}"></span></td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastLoginStr}</td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastActivityStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
@@ -2236,17 +2063,7 @@
         }
 
         async function adminToggleRole(targetUser, makeAdmin) {
-            const isMasterSession = currentUser === MASTER_ADMIN;
-            if (!isMasterSession) {
-                if (targetUser === MASTER_ADMIN) {
-                    alert('Only the Master Admin can modify the Master Admin account.');
-                    return;
-                }
-                const cachedTarget = adminUsersCache.find(u => String(u.username) === String(targetUser));
-                if (cachedTarget && (cachedTarget.is_admin === true || cachedTarget.username === MASTER_ADMIN)) {
-                    alert('Normal admins cannot modify another admin account.');
-                    return;
-                }
+            if (currentUser !== MASTER_ADMIN || !currentSessionToken) {
                 alert('Only the Master Admin can change admin roles.');
                 return;
             }
@@ -2254,120 +2071,66 @@
                 alert('The Master Admin role cannot be removed or changed.');
                 return;
             }
-            const actionText = makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from';
-            if (confirm(`Are you sure you want to ${actionText} "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').update({ is_admin: makeAdmin }).eq('username', targetUser);
-                if (!error) {
-                    alert(`User role updated successfully.`);
-                    renderAdminPanel();
-                } else {
-                    alert(`Error updating user role: ${error.message}`);
-                }
-            }
-        }
-
-        async function getAdminTargetStatus(targetUser) {
-            if (targetUser === MASTER_ADMIN) return { isMaster: true, isAdmin: true };
-            try {
-                const { data, error } = await client.from('profiles').select('username, is_admin').eq('username', targetUser).maybeSingle();
-                if (error) return { error };
-                return { isMaster: false, isAdmin: data?.is_admin === true };
-            } catch (error) {
-                return { error };
-            }
+            if (!confirm(`Are you sure you want to ${makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from'} "${targetUser}"?`)) return;
+            const { error } = await client.rpc('ghost_admin_set_role', {
+                p_session_token: currentSessionToken,
+                p_target_username: targetUser,
+                p_make_admin: makeAdmin
+            });
+            if (!error) await renderAdminPanel();
+            else alert(`Role update failed: ${error.message}`);
         }
 
         async function adminForceLogout(targetUser) {
-            if (currentUser !== MASTER_ADMIN) {
-                const targetStatus = await getAdminTargetStatus(targetUser);
-                if (targetStatus.error) {
-                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
-                    return;
-                }
-                if (targetStatus.isMaster || targetStatus.isAdmin) {
-                    alert('Normal admins cannot force logout the Master Admin or another admin.');
-                    return;
-                }
-            }
-            if (confirm(`Are you sure you want to force logout user "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').update({ force_logout: true }).eq('username', targetUser);
-                if (!error) {
-                    alert(`User "${targetUser}" logged out successfully.`);
-                    renderAdminPanel();
-                } else {
-                    alert(`Force logout failed: ${error.message}`);
-                }
-            }
+            if (!currentSessionToken) return;
+            const { error } = await client.rpc('ghost_admin_force_logout', {
+                p_session_token: currentSessionToken,
+                p_target_username: targetUser
+            });
+            if (!error) {
+                alert(`User "${targetUser}" logged out successfully.`);
+                await renderAdminPanel();
+            } else alert(`Force logout failed: ${error.message}`);
         }
 
         async function adminResetPassword(targetUser) {
-            if (currentUser !== MASTER_ADMIN) {
-                const targetStatus = await getAdminTargetStatus(targetUser);
-                if (targetStatus.error) {
-                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
-                    return;
-                }
-                if (targetStatus.isMaster || targetStatus.isAdmin) {
-                    alert('Normal admins cannot reset the password of the Master Admin or another admin.');
-                    return;
-                }
-            }
-            let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
+            if (!currentSessionToken) return;
+            const newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
             if (!newPass) return;
-            if (/\s/.test(newPass)) {
-                alert('Password cannot contain spaces.');
-                return;
-            }
-            if (newPass.length < 5) {
-                alert('Password must be at least 5 characters.');
-                return;
-            }
-            const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
-            if (!error) {
-                alert(`Password successfully updated.`);
-                renderAdminPanel();
-            } else {
-                alert(`Password update failed: ${error.message}`);
-            }
+            if (/\s/.test(newPass)) { alert('Password cannot contain spaces.'); return; }
+            if (newPass.length < 5) { alert('Password must be at least 5 characters.'); return; }
+            const { error } = await client.rpc('ghost_admin_reset_password', {
+                p_session_token: currentSessionToken,
+                p_target_username: targetUser,
+                p_new_password: newPass
+            });
+            if (!error) { alert('Password successfully updated.'); await renderAdminPanel(); }
+            else alert(`Password update failed: ${error.message}`);
         }
 
         async function adminDeleteAccount(targetUser) {
-            if (targetUser === MASTER_ADMIN) {
-                alert('Master Admin cannot be deleted.');
-                return;
-            }
-            if (currentUser !== MASTER_ADMIN) {
-                const targetStatus = await getAdminTargetStatus(targetUser);
-                if (targetStatus.error) {
-                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
-                    return;
-                }
-                if (targetStatus.isAdmin) {
-                    alert('Normal admins cannot delete another admin account.');
-                    return;
-                }
-            }
-            let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${currentUser}):`);
-            if (!adminPassInput) return;
-            const { data: adminData } = await client.from('profiles').select('password').eq('username', currentUser).single();
-            if (!adminData || adminData.password !== adminPassInput) {
-                alert('Incorrect password.');
-                return;
-            }
-            if (confirm(`Permanently erase user "${targetUser}"?`)) {
-                const { error } = await client.from('profiles').delete().eq('username', targetUser);
-                if (!error) {
-                    adminUsersCache = adminUsersCache.filter(u => u.username !== targetUser);
-                    displayAdminTable(adminUsersCache);
-                    renderAdminActivityFeed(adminUsersCache);
-                } else {
-                    alert(`Account deletion failed.\n\nSupabase returned: ${error.message}\n\nThe database may not allow DELETE for the client role.`);
-                }
-            }
+            if (targetUser === MASTER_ADMIN) { alert('Master Admin cannot be deleted.'); return; }
+            if (!currentSessionToken) return;
+            if (!confirm(`Permanently erase user "${targetUser}"?`)) return;
+            const { error } = await client.rpc('ghost_admin_delete_user', {
+                p_session_token: currentSessionToken,
+                p_target_username: targetUser
+            });
+            if (!error) {
+                adminUsersCache = adminUsersCache.filter(u => u.username !== targetUser);
+                displayAdminTable(adminUsersCache);
+                renderAdminActivityFeed(adminUsersCache);
+            } else alert(`Account deletion failed: ${error.message}`);
         }
 
-        function handleLogout() {
+        async function handleLogout() {
+            const tokenToRevoke = currentSessionToken;
+            currentSessionToken = null;
+            localStorage.removeItem('ghost_session_token');
             localStorage.removeItem('ghost_current_user');
+            if (tokenToRevoke) {
+                try { await client.rpc('ghost_logout', { p_session_token: tokenToRevoke }); } catch (e) {}
+            }
             currentUser = null;
             isGuestUser = false;
             guestDataSaveEnabled = true;
@@ -2405,7 +2168,11 @@
                     loginStreak: loginStreakMeta,
                     lastLoginAt: lastLoginAt
                 });
-                const result = await client.from('profiles').update({ data: payload, last_action: new Date().toISOString() }).eq('username', currentUser);
+                const result = await client.rpc('ghost_save_user_data', {
+                    p_session_token: currentSessionToken,
+                    p_data: payload,
+                    p_last_action: new Date().toISOString()
+                });
                 if (result?.error) console.error('GHOST cloud sync failed:', result.error.message);
             }, 600);
         }
@@ -2428,10 +2195,11 @@
                 loginStreak: loginStreakMeta,
                 lastLoginAt: lastLoginAt
             });
-            return await client.from('profiles').update({
-                data: payload,
-                last_action: new Date().toISOString()
-            }).eq('username', currentUser).select('username').maybeSingle();
+            return await client.rpc('ghost_save_user_data', {
+                p_session_token: currentSessionToken,
+                p_data: payload,
+                p_last_action: new Date().toISOString()
+            });
         }
 
         function updateValue(id, dayIndex, val) {
@@ -2846,6 +2614,8 @@
 
             isGuestUser = true;
             guestDataSaveEnabled = true;
+            currentSessionToken = null;
+            localStorage.removeItem('ghost_session_token');
             currentUser = GUEST_USER;
             isAdmin = false;
             localStorage.setItem('ghost_current_user', GUEST_USER);
@@ -3962,34 +3732,40 @@ let shareProgressType = null;
         function render() {
             const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
 
-            if (currentUser && currentUser !== MASTER_ADMIN && !isGuestUser) {
-                client.from('profiles').select('theme, force_logout, is_admin').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
-                    if (adminData && adminData.theme) {
-                        const parts = adminData.theme.split('_');
+            if (currentSessionToken && currentUser && !isGuestUser) {
+                client.rpc('ghost_restore_session', { p_session_token: currentSessionToken }).then(({data: sessionData, error}) => {
+                    if (error || !sessionData) {
+                        currentSessionToken = null;
+                        localStorage.removeItem('ghost_session_token');
+                        localStorage.removeItem('ghost_current_user');
+                        if (currentUser) handleLogout();
+                        return;
+                    }
+                    if (sessionData.theme) {
+                        const parts = sessionData.theme.split('_');
                         if (parts.length === 2 && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey)) {
                             currentAccentKey = parts[0];
                             currentModeKey = parts[1];
                             applyThemeUI(currentAccentKey, currentModeKey);
                         }
                     }
-                });
-
-                client.from('profiles').select('force_logout, is_admin').eq('username', currentUser).maybeSingle().then(({data}) => {
-                    if (data) {
-                        if (data.force_logout === true) {
-                            alert('Session terminated by administrator.');
-                            handleLogout();
-                        }
-                        if (data.is_admin !== isAdmin) {
-                            isAdmin = data.is_admin === true;
-                            const roleBadge = document.getElementById('profile-role-badge');
-                            if (roleBadge) {
-                                roleBadge.innerText = isAdmin ? 'Admin' : 'User';
-                                roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400'}`;
-                            }
+                    if (sessionData.force_logout === true) {
+                        alert('Session terminated by administrator.');
+                        handleLogout();
+                        return;
+                    }
+                    const serverIsAdmin = sessionData.username === MASTER_ADMIN || sessionData.is_admin === true;
+                    if (serverIsAdmin !== isAdmin || sessionData.username !== currentUser) {
+                        currentUser = sessionData.username;
+                        isAdmin = serverIsAdmin;
+                        localStorage.setItem('ghost_current_user', currentUser);
+                        const roleBadge = document.getElementById('profile-role-badge');
+                        if (roleBadge) {
+                            roleBadge.innerText = currentUser === MASTER_ADMIN ? 'Master Admin' : (isAdmin ? 'Admin' : 'User');
+                            roleBadge.className = `ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${currentUser === MASTER_ADMIN ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}`;
                         }
                     }
-                });
+                }).catch(() => {});
             }
 
             // Render each tracker into exactly one visible container.
