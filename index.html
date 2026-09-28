@@ -1147,9 +1147,9 @@
 
         (async function initThemeOnLoad() {
             try {
-                const { data } = await client.rpc('ghost_get_global_theme');
-                if (data) {
-                    const parts = String(data).split('_');
+                const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
+                if (data && data.theme) {
+                    const parts = data.theme.split('_');
                     if (parts.length === 2 && ACCENTS[parts[0]]) {
                         currentAccentKey = parts[0];
                         currentModeKey = parts[1];
@@ -1398,9 +1398,11 @@
 
         async function fetchLiveUsersCount() {
             try {
-                const { data: count, error } = await client.rpc('ghost_user_count');
+                const { count, error } = await client.from('profiles').select('username', { count: 'exact', head: true });
                 const liveCountEl = document.getElementById('home-live-users-count');
-                if (!error && liveCountEl) liveCountEl.innerText = count !== null ? count : 1;
+                if (!error && liveCountEl) {
+                    liveCountEl.innerText = count !== null ? count : 1;
+                }
             } catch (e) {
                 const liveCountEl = document.getElementById('home-live-users-count');
                 if (liveCountEl) liveCountEl.innerText = '1';
@@ -1796,6 +1798,11 @@
                 p_password: pass
             });
 
+            if (loginError && /Could not find the function public\.ghost_login/i.test(loginError.message || '')) {
+                errTag.innerText = 'Secure database setup is incomplete. Run the Master Admin setup SQL in Supabase first.';
+                return;
+            }
+
             if (!loginError && loginData) {
                 currentSessionToken = loginData.session_token || null;
                 if (!currentSessionToken) {
@@ -1811,6 +1818,11 @@
                     p_last_action: new Date().toISOString()
                 });
             } else {
+                // Never allow a failed Master Admin login to fall through into account creation.
+                if (user === MASTER_ADMIN) {
+                    errTag.innerText = 'Incorrect Master Admin password.';
+                    return;
+                }
                 const guestSnapshot = isGuestUser ? {
                     trackers: [...trackers], todos: [...todos], habits: [...habits], todoHistory: [...todoHistory]
                 } : null;
@@ -1829,7 +1841,11 @@
                     p_data: initialPayload
                 });
                 if (createError || !createData) {
-                    errTag.innerText = (createError?.message || 'Incorrect password or username already exists.');
+                    if (createError && /Could not find the function public\.ghost_create_user/i.test(createError.message || '')) {
+                        errTag.innerText = 'Secure database setup is incomplete. Run the Master Admin setup SQL in Supabase first.';
+                    } else {
+                        errTag.innerText = (createError?.message || 'Could not create the account.');
+                    }
                     return;
                 }
 
