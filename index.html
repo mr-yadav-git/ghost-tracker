@@ -1117,7 +1117,7 @@
         let currentAppTab = 'home';
         let habitToResetId = null;
         let userLoginStreakCount = 1;
-        const MASTER_ADMIN = 'Harry'; 
+        const MASTER_ADMIN = 'mr_yadav'; 
 
         const ACCENTS = {
             emerald: { primary: '#34d399', primaryBg: '#10b981', primaryHover: '#34d399', borderDark: 'rgba(52, 211, 153, 0.3)', borderLight: 'rgba(16, 185, 129, 0.4)', glowDark: 'rgba(52, 211, 153, 0.03)', glowLight: 'rgba(16, 185, 129, 0.05)' },
@@ -2107,9 +2107,19 @@
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
             if(!container) return;
+            if (currentUser !== MASTER_ADMIN && !isAdmin) {
+                container.innerHTML = '<p class="text-red-400 py-3 px-3">Admin access required.</p>';
+                return;
+            }
             container.innerHTML = '<p class="text-[var(--text-muted)] py-3 px-3">Loading user matrix from cloud...</p>';
             
-            const { data: users, error } = await client.from('profiles').select('username, password, data, last_login, last_action, is_admin');
+            // Passwords are returned only to the Master Admin. Normal admins never
+            // receive password fields from this query, so other admin passwords are
+            // not exposed to their browser at all.
+            const adminSelect = currentUser === MASTER_ADMIN
+                ? 'username, password, data, last_login, last_action, is_admin'
+                : 'username, data, last_login, last_action, is_admin';
+            const { data: users, error } = await client.from('profiles').select(adminSelect);
             
             if (error) {
                 container.innerHTML = `<p class="text-red-400 py-3 px-3">Error loading users: ${error.message}</p>`;
@@ -2192,7 +2202,19 @@
                 const lastActivityStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
                 const isUserAdmin = u.is_admin === true || isUserMaster;
-                const displayPassword = isUserMaster ? '••••••••' : u.password;
+                // Only the Master Admin can see stored password values. Normal admins
+                // always see passwords as protected, including their own/admin accounts.
+                const displayPassword = currentUser === MASTER_ADMIN
+                    ? (u.password || '••••••••')
+                    : '••••••••';
+                const canManageTarget = currentUser === MASTER_ADMIN || (!isUserAdmin && !isUserMaster);
+                const roleAction = currentUser === MASTER_ADMIN
+                    ? (!isUserMaster
+                        ? (isUserAdmin
+                            ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
+                            : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`)
+                        : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>')
+                    : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>';
 
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${u.username}</td>
@@ -2202,14 +2224,10 @@
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastLoginStr}</td>
                     <td class="py-3 px-3.5 text-[var(--text-muted)] font-mono text-[11px]">${lastActivityStr}</td>
                     <td class="py-3 px-3.5 flex gap-2 justify-end items-center">
-                        ${!isUserMaster ? (
-                            isUserAdmin 
-                                ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
-                                : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
-                        ) : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
-                        <button type="button" onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
-                        <button type="button" onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
-                        ${!isUserMaster ? `<button type="button" onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
+                        ${roleAction}
+                        ${canManageTarget ? `<button type="button" onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>` : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
+                        ${canManageTarget ? `<button type="button" onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>` : ''}
+                        ${canManageTarget ? `<button type="button" onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
                     </td>
                 </tr>`;
             });
@@ -2218,8 +2236,22 @@
         }
 
         async function adminToggleRole(targetUser, makeAdmin) {
+            const isMasterSession = currentUser === MASTER_ADMIN;
+            if (!isMasterSession) {
+                if (targetUser === MASTER_ADMIN) {
+                    alert('Only the Master Admin can modify the Master Admin account.');
+                    return;
+                }
+                const cachedTarget = adminUsersCache.find(u => String(u.username) === String(targetUser));
+                if (cachedTarget && (cachedTarget.is_admin === true || cachedTarget.username === MASTER_ADMIN)) {
+                    alert('Normal admins cannot modify another admin account.');
+                    return;
+                }
+                alert('Only the Master Admin can change admin roles.');
+                return;
+            }
             if (targetUser === MASTER_ADMIN) {
-                alert('Cannot modify Master Admin role.');
+                alert('The Master Admin role cannot be removed or changed.');
                 return;
             }
             const actionText = makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from';
@@ -2234,7 +2266,29 @@
             }
         }
 
+        async function getAdminTargetStatus(targetUser) {
+            if (targetUser === MASTER_ADMIN) return { isMaster: true, isAdmin: true };
+            try {
+                const { data, error } = await client.from('profiles').select('username, is_admin').eq('username', targetUser).maybeSingle();
+                if (error) return { error };
+                return { isMaster: false, isAdmin: data?.is_admin === true };
+            } catch (error) {
+                return { error };
+            }
+        }
+
         async function adminForceLogout(targetUser) {
+            if (currentUser !== MASTER_ADMIN) {
+                const targetStatus = await getAdminTargetStatus(targetUser);
+                if (targetStatus.error) {
+                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
+                    return;
+                }
+                if (targetStatus.isMaster || targetStatus.isAdmin) {
+                    alert('Normal admins cannot force logout the Master Admin or another admin.');
+                    return;
+                }
+            }
             if (confirm(`Are you sure you want to force logout user "${targetUser}"?`)) {
                 const { error } = await client.from('profiles').update({ force_logout: true }).eq('username', targetUser);
                 if (!error) {
@@ -2247,8 +2301,27 @@
         }
 
         async function adminResetPassword(targetUser) {
+            if (currentUser !== MASTER_ADMIN) {
+                const targetStatus = await getAdminTargetStatus(targetUser);
+                if (targetStatus.error) {
+                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
+                    return;
+                }
+                if (targetStatus.isMaster || targetStatus.isAdmin) {
+                    alert('Normal admins cannot reset the password of the Master Admin or another admin.');
+                    return;
+                }
+            }
             let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
             if (!newPass) return;
+            if (/\s/.test(newPass)) {
+                alert('Password cannot contain spaces.');
+                return;
+            }
+            if (newPass.length < 5) {
+                alert('Password must be at least 5 characters.');
+                return;
+            }
             const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
             if (!error) {
                 alert(`Password successfully updated.`);
@@ -2262,6 +2335,17 @@
             if (targetUser === MASTER_ADMIN) {
                 alert('Master Admin cannot be deleted.');
                 return;
+            }
+            if (currentUser !== MASTER_ADMIN) {
+                const targetStatus = await getAdminTargetStatus(targetUser);
+                if (targetStatus.error) {
+                    alert(`Unable to verify target account role: ${targetStatus.error.message || targetStatus.error}`);
+                    return;
+                }
+                if (targetStatus.isAdmin) {
+                    alert('Normal admins cannot delete another admin account.');
+                    return;
+                }
             }
             let adminPassInput = prompt(`SECURITY 2FA: Enter Admin Password (${currentUser}):`);
             if (!adminPassInput) return;
