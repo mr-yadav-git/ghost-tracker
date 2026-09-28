@@ -814,12 +814,12 @@
                     <div id="admin-section" class="dynamic-card border rounded-2xl p-6 shadow-xl hidden space-y-5">
                         <div class="flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-color)] pb-4">
                             <div>
-                                <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ GLOBAL ADMIN USER MATRIX</h3>
-                                <p class="text-xs text-[var(--text-muted)] mt-1">Manage platform users, roles, themes, and reset credentials securely.</p>
+                                <h3 class="dynamic-text font-bold text-xs tracking-widest uppercase flex items-center gap-2">⚡ MASTER ADMIN CONTROL CENTER</h3>
+                                <p class="text-xs text-[var(--text-muted)] mt-1">Master Admin control center for users, themes, sessions, and credentials.</p>
                             </div>
                             <div class="flex dynamic-card-solid border rounded-xl p-1 text-xs">
                                 <button onclick="switchAdminTab('tracker')" id="admin-tab-tracker" class="px-3.5 py-1.5 rounded-lg font-medium dynamic-bg">Tracker & Donut</button>
-                                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users & Roles</button>
+                                <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Users</button>
                             </div>
                         </div>
 
@@ -1147,9 +1147,10 @@
 
         (async function initThemeOnLoad() {
             try {
-                const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
-                if (data && data.theme) {
-                    const parts = data.theme.split('_');
+                const { data, error } = await client.rpc('ghost_get_global_theme');
+                if (!error && data) {
+                    const theme = typeof data === 'string' ? data : String(data);
+                    const parts = theme.split('_');
                     if (parts.length === 2 && ACCENTS[parts[0]]) {
                         currentAccentKey = parts[0];
                         currentModeKey = parts[1];
@@ -1397,16 +1398,15 @@
         });
 
         async function fetchLiveUsersCount() {
+            const liveCountEl = document.getElementById('home-live-users-count');
             try {
-                const { count, error } = await client.from('profiles').select('username', { count: 'exact', head: true });
-                const liveCountEl = document.getElementById('home-live-users-count');
+                const { data, error } = await client.rpc('ghost_user_count');
                 if (!error && liveCountEl) {
-                    liveCountEl.innerText = count !== null ? count : 1;
+                    liveCountEl.innerText = Number.isFinite(Number(data)) ? String(Number(data)) : '1';
+                    return;
                 }
-            } catch (e) {
-                const liveCountEl = document.getElementById('home-live-users-count');
-                if (liveCountEl) liveCountEl.innerText = '1';
-            }
+            } catch (e) {}
+            if (liveCountEl) liveCountEl.innerText = '1';
         }
 
         function copyShareUrl() {
@@ -1441,7 +1441,7 @@
                 }
             });
 
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+            const hasAdminAccess = currentUser === MASTER_ADMIN;
             if (tabName === 'tracker') {
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
@@ -1457,6 +1457,11 @@
 
             if (tabName === 'tracker') {
                 scheduleGraphRedraw();
+            }
+
+            if (tabName === 'todo') {
+                renderTodos();
+                renderTodoHistory();
             }
 
             if (tabName === 'habits') {
@@ -1665,7 +1670,7 @@
         function applyAuthenticatedProfile(profile, countThisVisit = true) {
             if (!profile || !profile.username) return false;
             currentUser = profile.username;
-            isAdmin = currentUser === MASTER_ADMIN || profile.is_admin === true;
+            isAdmin = currentUser === MASTER_ADMIN;
 
             try {
                 const parsed = profile.data ? JSON.parse(profile.data) : {};
@@ -1705,6 +1710,10 @@
                     applyThemeUI(currentAccentKey, currentModeKey);
                 }
             }
+
+            // Migrate/roll the 30-day tracker window immediately after restoring a session.
+            // This never clears history; it only shifts the rolling window when necessary.
+            checkAndResetPeriodicGoals();
 
             localStorage.setItem('ghost_current_user', currentUser);
             document.getElementById('display-user').innerText = currentUser;
@@ -1955,6 +1964,74 @@
             return `${d.getUTCFullYear()}-W${weekNo}`;
         }
 
+        function trackerDateForIndex(tracker, index) {
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            start.setDate(start.getDate() + index);
+            return start;
+        }
+
+        function trackerCurrentDayIndex(tracker, date = new Date()) {
+            if (!tracker.historyStartDate) return 0;
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diff = Math.floor((day - start) / 86400000);
+            return Math.max(0, Math.min(29, diff));
+        }
+
+        function ensureTrackerHistoryMeta(tracker, todayStr = localDateKey()) {
+            let changed = false;
+            if (!Array.isArray(tracker.data)) {
+                tracker.data = Array(30).fill(0);
+                changed = true;
+            }
+            if (tracker.data.length < 30) {
+                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+                changed = true;
+            }
+            if (tracker.data.length > 30) {
+                tracker.data = tracker.data.slice(0, 30);
+                changed = true;
+            }
+
+            if (!tracker.historyStartDate || !/^\d{4}-\d{2}-\d{2}$/.test(tracker.historyStartDate)) {
+                // Legacy trackers had Day 1..30 values but no calendar anchor. Preserve the
+                // values and place the newest populated slot on today's date.
+                let lastRecorded = -1;
+                tracker.data.forEach((v, i) => {
+                    if (Number.isFinite(Number(v)) && Number(v) > 0) lastRecorded = i;
+                });
+                const anchor = new Date(`${todayStr}T00:00:00`);
+                anchor.setDate(anchor.getDate() - Math.max(0, lastRecorded));
+                tracker.historyStartDate = localDateKey(anchor);
+                changed = true;
+            }
+            return changed;
+        }
+
+        function advanceTrackerHistory(tracker, todayStr = localDateKey()) {
+            if (!tracker.historyStartDate) return false;
+            const today = new Date(`${todayStr}T00:00:00`);
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const elapsed = Math.floor((today - start) / 86400000);
+
+            if (elapsed < 0) {
+                // Device clock moved backwards; never erase the stored graph.
+                tracker.historyStartDate = todayStr;
+                return true;
+            }
+            if (elapsed < 30) return false;
+
+            const shift = elapsed - 29;
+            tracker.data = tracker.data.slice(shift);
+            while (tracker.data.length < 30) tracker.data.push(0);
+            if (tracker.data.length > 30) tracker.data = tracker.data.slice(0, 30);
+
+            const newStart = new Date(start);
+            newStart.setDate(newStart.getDate() + shift);
+            tracker.historyStartDate = localDateKey(newStart);
+            return true;
+        }
+
         async function handleRegularDeleteAccount() {
             if (!currentUser || !currentSessionToken) return;
             const passInput = prompt(`SECURITY CONFIRMATION: Enter your password to delete your account ("${currentUser}") permanently:`);
@@ -1975,7 +2052,7 @@
         async function renderAdminPanel() {
             const container = document.getElementById('users-list-container');
             if (!container) return;
-            if (!currentSessionToken || (currentUser !== MASTER_ADMIN && !isAdmin)) {
+            if (!currentSessionToken || currentUser !== MASTER_ADMIN) {
                 container.innerHTML = '<p class="text-red-400 py-3 px-3">Admin access required.</p>';
                 return;
             }
@@ -2050,15 +2127,10 @@
                 const lastLoginStr = formatTimeAgo(u.last_login);
                 const lastActivityStr = formatTimeAgo(u.last_action);
                 const isUserMaster = u.username === MASTER_ADMIN;
-                const isUserAdmin = u.is_admin === true || isUserMaster;
+                const isUserAdmin = isUserMaster;
                 const displayPassword = currentUser === MASTER_ADMIN ? (u.password || '••••••••') : '••••••••';
-                const canManageTarget = currentUser === MASTER_ADMIN || (!isUserAdmin && !isUserMaster);
-                const roleAction = currentUser === MASTER_ADMIN
-                    ? (!isUserMaster ? (isUserAdmin
-                        ? `<button type="button" onclick="adminToggleRole('${u.username}', false)" class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-lg text-[11px]">Remove Admin</button>`
-                        : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`)
-                    : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>')
-                    : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>';
+                const canManageTarget = currentUser === MASTER_ADMIN && !isUserMaster;
+                const roleAction = '<span class="text-[10px] text-[var(--text-muted)] italic">Single-admin policy</span>';
                 html += `<tr class="border-b border-[var(--border-color)]">
                     <td class="py-3 px-3.5 dynamic-text font-medium">${escapeHtml(u.username)}</td>
                     <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isUserMaster ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/30' : (isUserAdmin ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-gray-500/25 text-gray-400')}">${isUserMaster ? 'Master Admin' : (isUserAdmin ? 'Admin' : 'User')}</span></td>
@@ -2078,27 +2150,15 @@
             container.innerHTML = html;
         }
 
-        async function adminToggleRole(targetUser, makeAdmin) {
-            if (currentUser !== MASTER_ADMIN || !currentSessionToken) {
-                alert('Only the Master Admin can change admin roles.');
-                return;
-            }
-            if (targetUser === MASTER_ADMIN) {
-                alert('The Master Admin role cannot be removed or changed.');
-                return;
-            }
-            if (!confirm(`Are you sure you want to ${makeAdmin ? 'grant admin privileges to' : 'revoke admin privileges from'} "${targetUser}"?`)) return;
-            const { error } = await client.rpc('ghost_admin_set_role', {
-                p_session_token: currentSessionToken,
-                p_target_username: targetUser,
-                p_make_admin: makeAdmin
-            });
-            if (!error) await renderAdminPanel();
-            else alert(`Role update failed: ${error.message}`);
+        async function adminToggleRole() {
+            alert('GHOST Tracker has a single-admin policy. Only mr_yadav can be the Master Admin.');
         }
 
         async function adminForceLogout(targetUser) {
-            if (!currentSessionToken) return;
+            if (currentUser !== MASTER_ADMIN || !currentSessionToken || targetUser === MASTER_ADMIN) {
+                alert('Only the Master Admin can manage other accounts.');
+                return;
+            }
             const { error } = await client.rpc('ghost_admin_force_logout', {
                 p_session_token: currentSessionToken,
                 p_target_username: targetUser
@@ -2110,7 +2170,10 @@
         }
 
         async function adminResetPassword(targetUser) {
-            if (!currentSessionToken) return;
+            if (currentUser !== MASTER_ADMIN || !currentSessionToken || targetUser === MASTER_ADMIN) {
+                alert('Only the Master Admin can reset user passwords.');
+                return;
+            }
             const newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
             if (!newPass) return;
             if (/\s/.test(newPass)) { alert('Password cannot contain spaces.'); return; }
@@ -2125,8 +2188,8 @@
         }
 
         async function adminDeleteAccount(targetUser) {
+            if (currentUser !== MASTER_ADMIN || !currentSessionToken) { alert('Only the Master Admin can delete users.'); return; }
             if (targetUser === MASTER_ADMIN) { alert('Master Admin cannot be deleted.'); return; }
-            if (!currentSessionToken) return;
             if (!confirm(`Permanently erase user "${targetUser}"?`)) return;
             const { error } = await client.rpc('ghost_admin_delete_user', {
                 p_session_token: currentSessionToken,
@@ -3746,7 +3809,7 @@ let shareProgressType = null;
         }
 
         function render() {
-            const hasAdminAccess = currentUser === MASTER_ADMIN || isAdmin;
+            const hasAdminAccess = currentUser === MASTER_ADMIN;
 
             if (currentSessionToken && currentUser && !isGuestUser) {
                 client.rpc('ghost_restore_session', { p_session_token: currentSessionToken }).then(({data: sessionData, error}) => {
@@ -3770,7 +3833,7 @@ let shareProgressType = null;
                         handleLogout();
                         return;
                     }
-                    const serverIsAdmin = sessionData.username === MASTER_ADMIN || sessionData.is_admin === true;
+                    const serverIsAdmin = sessionData.username === MASTER_ADMIN;
                     if (serverIsAdmin !== isAdmin || sessionData.username !== currentUser) {
                         currentUser = sessionData.username;
                         isAdmin = serverIsAdmin;
@@ -4038,7 +4101,7 @@ let shareProgressType = null;
         }
 
         let graphRedrawFrame=0, graphResizeTimer=0;
-        function redrawVisibleGraphs(){if(currentAppTab!=='tracker')return;const suffix=currentUser===MASTER_ADMIN||isAdmin?'1':'2';trackers.forEach(t=>drawGraph(t,suffix));}
+        function redrawVisibleGraphs(){if(currentAppTab!=='tracker')return;const suffix=currentUser===MASTER_ADMIN?'1':'2';trackers.forEach(t=>drawGraph(t,suffix));}
         function scheduleGraphRedraw(){if(graphRedrawFrame)cancelAnimationFrame(graphRedrawFrame);graphRedrawFrame=requestAnimationFrame(()=>{graphRedrawFrame=0;redrawVisibleGraphs();});}
         window.addEventListener('resize',()=>{clearTimeout(graphResizeTimer);graphResizeTimer=setTimeout(scheduleGraphRedraw,120);},{passive:true});
         window.addEventListener('orientationchange',()=>{clearTimeout(graphResizeTimer);graphResizeTimer=setTimeout(scheduleGraphRedraw,160);},{passive:true});
