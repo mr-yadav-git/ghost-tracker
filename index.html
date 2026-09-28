@@ -1258,6 +1258,17 @@
             await initGuestPresence();
             setInterval(updateHabitsStreaksTimer, 1000);
             setInterval(() => { if (resetTodoCompletionForNewDay()) renderTodos(); }, 60000);
+
+            // Keep 30-day tracker history moving even when the app stays open overnight.
+            let trackerHistoryDayKey = localDateKey();
+            setInterval(() => {
+                if (!currentUser) return;
+                const todayKey = localDateKey();
+                if (todayKey === trackerHistoryDayKey) return;
+                trackerHistoryDayKey = todayKey;
+                checkAndResetPeriodicGoals();
+                render();
+            }, 60000);
             
             fetchLiveUsersCount();
             bindWinterTilt();
@@ -1891,50 +1902,156 @@
             }
         }
 
+        function trackerDateForIndex(tracker, index) {
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            start.setDate(start.getDate() + index);
+            return start;
+        }
+
+        function trackerCurrentDayIndex(tracker, date = new Date()) {
+            if (!tracker.historyStartDate) return 0;
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diff = Math.floor((day - start) / 86400000);
+            return Math.max(0, Math.min(29, diff));
+        }
+
+        function ensureTrackerHistoryMeta(tracker, todayStr = localDateKey()) {
+            let changed = false;
+            if (!Array.isArray(tracker.data)) {
+                tracker.data = Array(30).fill(0);
+                changed = true;
+            }
+            if (tracker.data.length < 30) {
+                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+                changed = true;
+            }
+            if (tracker.data.length > 30) {
+                tracker.data = tracker.data.slice(0, 30);
+                changed = true;
+            }
+
+            if (!tracker.historyStartDate || !/^\d{4}-\d{2}-\d{2}$/.test(tracker.historyStartDate)) {
+                // Existing versions stored Day 1..30 without calendar dates. Preserve those values
+                // and anchor the most recently populated slot to today for a safe migration.
+                let lastRecorded = -1;
+                tracker.data.forEach((v, i) => {
+                    if (Number.isFinite(Number(v)) && Number(v) > 0) lastRecorded = i;
+                });
+                const anchor = new Date(`${todayStr}T00:00:00`);
+                anchor.setDate(anchor.getDate() - Math.max(0, lastRecorded));
+                tracker.historyStartDate = localDateKey(anchor);
+                changed = true;
+            }
+            return changed;
+        }
+
+        function advanceTrackerHistory(tracker, todayStr = localDateKey()) {
+            const today = new Date(`${todayStr}T00:00:00`);
+            const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+            const elapsed = Math.floor((today - start) / 86400000);
+
+            if (elapsed < 0) {
+                // Device clock moved backwards. Keep the stored history instead of erasing it.
+                tracker.historyStartDate = todayStr;
+                return true;
+            }
+
+            if (elapsed < 30) return false;
+
+            const shift = elapsed - 29;
+            tracker.data = tracker.data.slice(shift);
+            while (tracker.data.length < 30) tracker.data.push(0);
+            if (tracker.data.length > 30) tracker.data = tracker.data.slice(0, 30);
+
+            const newStart = new Date(start);
+            newStart.setDate(newStart.getDate() + shift);
+            tracker.historyStartDate = localDateKey(newStart);
+            return true;
+        }
+
+        function isSameLocalCalendarWeek(a, b) {
+            return getWeekNumber(a) === getWeekNumber(b);
+        }
+
+        function isSameLocalMonth(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+        }
+
+        function getTrackerCurrentCycleSum(tracker, date = new Date()) {
+            if (!Array.isArray(tracker.data) || tracker.data.length === 0) return 0;
+            const todayIndex = trackerCurrentDayIndex(tracker, date);
+
+            if (tracker.timeframe === 'Day') {
+                return Number(tracker.data[todayIndex]) || 0;
+            }
+
+            let sum = 0;
+            for (let i = 0; i <= todayIndex; i++) {
+                const pointDate = trackerDateForIndex(tracker, i);
+                if (tracker.timeframe === 'Week' && isSameLocalCalendarWeek(pointDate, date)) {
+                    sum += Number(tracker.data[i]) || 0;
+                } else if (tracker.timeframe === 'Month' && isSameLocalMonth(pointDate, date)) {
+                    sum += Number(tracker.data[i]) || 0;
+                }
+            }
+            return sum;
+        }
+
+        function clearTrackerCurrentCycle(tracker, date = new Date()) {
+            const todayIndex = trackerCurrentDayIndex(tracker, date);
+            if (tracker.timeframe === 'Day') {
+                tracker.data[todayIndex] = 0;
+                return;
+            }
+
+            for (let i = 0; i <= todayIndex; i++) {
+                const pointDate = trackerDateForIndex(tracker, i);
+                const sameCycle = tracker.timeframe === 'Week'
+                    ? isSameLocalCalendarWeek(pointDate, date)
+                    : isSameLocalMonth(pointDate, date);
+                if (sameCycle) tracker.data[i] = 0;
+            }
+        }
+
         function checkAndResetPeriodicGoals() {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = localDateKey(now);
             const currentWeekNum = getWeekNumber(now);
-            const currentMonthNum = now.getMonth();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
             let updated = false;
 
             trackers.forEach(t => {
+                if (ensureTrackerHistoryMeta(t, todayStr)) updated = true;
+                if (advanceTrackerHistory(t, todayStr)) updated = true;
+
+                // Timeframe controls the GOAL cycle only. Never erase the 30-day graph history.
                 if (!t.lastResetPeriod) {
                     t.lastResetPeriod = todayStr;
                     t.lastResetWeek = currentWeekNum;
-                    t.lastResetMonth = currentMonthNum;
+                    t.lastResetMonth = currentMonthKey;
+                    t.congratulatedCycle = false;
                     updated = true;
                     return;
                 }
 
-                if (t.timeframe === 'Day') {
-                    if (t.lastResetPeriod !== todayStr) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetPeriod = todayStr;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Week') {
-                    if (t.lastResetWeek !== currentWeekNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetWeek = currentWeekNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
-                } else if (t.timeframe === 'Month') {
-                    if (t.lastResetMonth !== currentMonthNum) {
-                        t.data = Array(30).fill(0);
-                        t.lastResetMonth = currentMonthNum;
-                        t.congratulatedCycle = false;
-                        updated = true;
-                    }
+                if (t.timeframe === 'Day' && t.lastResetPeriod !== todayStr) {
+                    t.lastResetPeriod = todayStr;
+                    t.congratulatedCycle = false;
+                    updated = true;
+                } else if (t.timeframe === 'Week' && t.lastResetWeek !== currentWeekNum) {
+                    t.lastResetWeek = currentWeekNum;
+                    t.congratulatedCycle = false;
+                    updated = true;
+                } else if (t.timeframe === 'Month' && t.lastResetMonth !== currentMonthKey) {
+                    t.lastResetMonth = currentMonthKey;
+                    t.congratulatedCycle = false;
+                    updated = true;
                 }
             });
 
-            if (updated && currentUser) {
-                saveAndCloudSync();
-            }
+            if (updated && currentUser) saveAndCloudSync();
         }
 
         function getWeekNumber(d) {
@@ -2649,6 +2766,7 @@
             isAdmin = false;
             localStorage.setItem('ghost_current_user', GUEST_USER);
             loadGuestData();
+            checkAndResetPeriodicGoals();
             setLoginStreakDisplay({ count: 1 });
             document.getElementById('display-user').innerText = 'Guest';
             const guestRoleBadge = document.getElementById('profile-role-badge');
@@ -3646,16 +3764,7 @@ let shareProgressType = null;
         }
 
         function evaluateGoalCompletion(tracker) {
-            let currentCycleSum = 0;
-
-            if (tracker.timeframe === 'Day') {
-                currentCycleSum = tracker.data[0] || 0;
-            } else if (tracker.timeframe === 'Week') {
-                currentCycleSum = tracker.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-            } else {
-                currentCycleSum = tracker.data.reduce((a, b) => a + (b || 0), 0);
-            }
-
+            const currentCycleSum = getTrackerCurrentCycleSum(tracker);
             const isAchieved = tracker.goal && currentCycleSum >= tracker.goal;
 
             if (isAchieved && !tracker.congratulatedCycle) {
@@ -3721,13 +3830,8 @@ let shareProgressType = null;
             if (!tracker) return;
 
             if (confirm(`Are you sure you want to stop/reset the active cycle for "${tracker.title}"? This will reset the current cycle inputs to 0.`)) {
-                if (tracker.timeframe === 'Day') {
-                    tracker.data[0] = 0;
-                } else if (tracker.timeframe === 'Week') {
-                    for(let i=0; i<7; i++) tracker.data[i] = 0;
-                } else {
-                    tracker.data = Array(30).fill(0);
-                }
+                ensureTrackerHistoryMeta(tracker, localDateKey());
+                clearTrackerCurrentCycle(tracker);
                 tracker.congratulatedCycle = false;
                 tracker.showSettings = false;
                 saveAndCloudSync();
@@ -3850,10 +3954,7 @@ let shareProgressType = null;
 
                     const totalVal = t.data.reduce((a, b) => a + (b || 0), 0);
                     
-                    let currentCycleSum = 0;
-                    if (t.timeframe === 'Day') currentCycleSum = t.data[0] || 0;
-                    else if (t.timeframe === 'Week') currentCycleSum = t.data.slice(0, 7).reduce((a, b) => a + (b || 0), 0);
-                    else currentCycleSum = totalVal;
+                    const currentCycleSum = getTrackerCurrentCycleSum(t);
 
                     const isGoalAchieved = t.goal && currentCycleSum >= t.goal;
 
@@ -4093,6 +4194,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                historyStartDate: localDateKey(),
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -4125,6 +4227,7 @@ let shareProgressType = null;
                 timeframe: timeframe,
                 color: color,
                 data: Array(30).fill(0),
+                historyStartDate: localDateKey(),
                 showSettings: false,
                 congratulatedCycle: false
             });
