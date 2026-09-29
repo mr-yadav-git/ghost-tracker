@@ -1277,8 +1277,8 @@
                     <div class="dynamic-card border rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-[var(--border-color)] pb-4">
                             <div>
-                                <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-main)]">30-Day Stats</h3>
-                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Select a metric to review its 30-day performance and weekly breakdown.</p>
+                                <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-main)]">Stats</h3>
+                                <p class="text-[11px] text-[var(--text-muted)] mt-1">Select a metric to review calendar-month performance, weekly breakdowns, and saved monthly graphs.</p>
                             </div>
                             <span class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]"></span>
                         </div>
@@ -1328,6 +1328,9 @@
         let habits = [];
         let todoHistory = [];
         let selectedTodoHistoryRange = 'daily';
+        let selectedTodoMonthKey = localDateKey().slice(0, 7);
+        let selectedStatsTrackerRange = 'daily';
+        let selectedStatsTrackerMonthKey = localDateKey().slice(0, 7);
         let adminUsersCache = [];
         let currentAdminTab = 'tracker';
         let currentAppTab = 'home';
@@ -1505,7 +1508,7 @@
             setInterval(updateHabitsStreaksTimer, 1000);
             setInterval(() => { if (resetTodoCompletionForNewDay()) renderTodos(); }, 60000);
 
-            // Keep 30-day tracker history moving even when the app stays open overnight.
+            // Keep tracker history synchronized with the calendar month.
             let trackerHistoryDayKey = localDateKey();
             setInterval(() => {
                 if (!currentUser) return;
@@ -2315,21 +2318,125 @@
             const start = new Date(`${tracker.historyStartDate}T00:00:00`);
             const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const diff = Math.floor((day - start) / 86400000);
-            return Math.max(0, Math.min(29, diff));
+            const limit = tracker.monthKey === getStatsMonthKey(day) ? getStatsMonthDays(tracker.monthKey) - 1 : 30;
+            return Math.max(0, Math.min(limit, diff));
+        }
+
+        function getStatsMonthKey(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function getStatsMonthDays(monthKey) {
+            const [y, m] = String(monthKey).split('-').map(Number);
+            if (!y || !m) return 30;
+            return new Date(y, m, 0).getDate();
+        }
+
+        function statsMonthLabel(monthKey) {
+            const [y, m] = String(monthKey).split('-').map(Number);
+            if (!y || !m) return monthKey;
+            return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        }
+
+        function keepLastThreeMonths(list) {
+            const arr = Array.isArray(list) ? list : [];
+            arr.sort((a, b) => String(a.monthKey || '').localeCompare(String(b.monthKey || '')));
+            return arr.slice(-3);
+        }
+
+        function archiveTrackerMonth(tracker, monthKey, sourceData = tracker.data, sourceStartDate = tracker.historyStartDate) {
+            if (!monthKey || !Array.isArray(sourceData)) return false;
+            if (!Array.isArray(tracker.monthlyHistory)) tracker.monthlyHistory = [];
+            const days = getStatsMonthDays(monthKey);
+            const values = Array(days).fill(0);
+            const start = sourceStartDate && /^\d{4}-\d{2}-\d{2}$/.test(sourceStartDate)
+                ? new Date(`${sourceStartDate}T00:00:00`) : null;
+            const [y, m] = monthKey.split('-').map(Number);
+            for (let day = 1; day <= days; day++) {
+                if (start) {
+                    const target = new Date(y, m - 1, day);
+                    const idx = Math.floor((target - start) / 86400000);
+                    if (idx >= 0 && idx < sourceData.length) values[day - 1] = Number(sourceData[idx]) || 0;
+                }
+            }
+            const existing = tracker.monthlyHistory.find(x => x && x.monthKey === monthKey);
+            const snapshot = { monthKey, values, max: Number(tracker.max) || 1, savedAt: new Date().toISOString() };
+            if (existing) Object.assign(existing, snapshot);
+            else tracker.monthlyHistory.push(snapshot);
+            tracker.monthlyHistory = keepLastThreeMonths(tracker.monthlyHistory);
+            return true;
+        }
+
+        function ensureTrackerMonthCycle(tracker, todayStr = localDateKey()) {
+            let changed = false;
+            const today = new Date(`${todayStr}T00:00:00`);
+            const currentMonth = getStatsMonthKey(today);
+            const monthStart = `${currentMonth}-01`;
+            if (!Array.isArray(tracker.data)) tracker.data = Array(31).fill(0);
+            if (!Array.isArray(tracker.monthlyHistory)) tracker.monthlyHistory = [];
+
+            const oldStartKey = tracker.historyStartDate && /^\d{4}-\d{2}-\d{2}$/.test(tracker.historyStartDate)
+                ? tracker.historyStartDate : null;
+            const oldMonth = oldStartKey ? oldStartKey.slice(0, 7) : currentMonth;
+
+            if (tracker.monthKey && tracker.monthKey !== currentMonth) {
+                archiveTrackerMonth(tracker, tracker.monthKey, tracker.data, tracker.historyStartDate || `${tracker.monthKey}-01`);
+                tracker.data = Array(31).fill(0);
+                tracker.historyStartDate = monthStart;
+                tracker.monthKey = currentMonth;
+                changed = true;
+            } else if (!tracker.monthKey) {
+                if (oldMonth !== currentMonth) {
+                    archiveTrackerMonth(tracker, oldMonth, tracker.data, tracker.historyStartDate || `${oldMonth}-01`);
+                    tracker.data = Array(31).fill(0);
+                    tracker.historyStartDate = monthStart;
+                } else {
+                    const migrated = Array(31).fill(0);
+                    const start = oldStartKey ? new Date(`${oldStartKey}T00:00:00`) : today;
+                    const offset = Math.floor((start - new Date(`${monthStart}T00:00:00`)) / 86400000);
+                    tracker.data.forEach((v, i) => {
+                        const dayIndex = offset + i;
+                        if (dayIndex >= 0 && dayIndex < 31) migrated[dayIndex] = Number(v) || 0;
+                    });
+                    tracker.data = migrated;
+                    tracker.historyStartDate = monthStart;
+                }
+                tracker.monthKey = currentMonth;
+                changed = true;
+            } else if (tracker.historyStartDate !== monthStart) {
+                const migrated = Array(31).fill(0);
+                const start = new Date(`${tracker.historyStartDate}T00:00:00`);
+                const monthStartDate = new Date(`${monthStart}T00:00:00`);
+                const offset = Math.floor((start - monthStartDate) / 86400000);
+                tracker.data.forEach((v, i) => {
+                    const dayIndex = offset + i;
+                    if (dayIndex >= 0 && dayIndex < 31) migrated[dayIndex] = Number(v) || 0;
+                });
+                tracker.data = migrated;
+                tracker.historyStartDate = monthStart;
+                changed = true;
+            }
+
+            tracker.data = tracker.data.slice(0, 31);
+            while (tracker.data.length < 31) tracker.data.push(0);
+            const before = JSON.stringify(tracker.monthlyHistory);
+            tracker.monthlyHistory = keepLastThreeMonths(tracker.monthlyHistory);
+            if (before !== JSON.stringify(tracker.monthlyHistory)) changed = true;
+            return changed;
         }
 
         function ensureTrackerHistoryMeta(tracker, todayStr = localDateKey()) {
             let changed = false;
             if (!Array.isArray(tracker.data)) {
-                tracker.data = Array(30).fill(0);
+                tracker.data = Array(31).fill(0);
                 changed = true;
             }
-            if (tracker.data.length < 30) {
-                tracker.data = tracker.data.concat(Array(30 - tracker.data.length).fill(0));
+            if (tracker.data.length < 31) {
+                tracker.data = tracker.data.concat(Array(31 - tracker.data.length).fill(0));
                 changed = true;
             }
-            if (tracker.data.length > 30) {
-                tracker.data = tracker.data.slice(0, 30);
+            if (tracker.data.length > 31) {
+                tracker.data = tracker.data.slice(0, 31);
                 changed = true;
             }
 
@@ -2363,8 +2470,8 @@
 
             const shift = elapsed - 29;
             tracker.data = tracker.data.slice(shift);
-            while (tracker.data.length < 30) tracker.data.push(0);
-            if (tracker.data.length > 30) tracker.data = tracker.data.slice(0, 30);
+            while (tracker.data.length < 31) tracker.data.push(0);
+            if (tracker.data.length > 31) tracker.data = tracker.data.slice(0, 31);
 
             const newStart = new Date(start);
             newStart.setDate(newStart.getDate() + shift);
@@ -2425,8 +2532,9 @@
             let updated = false;
 
             trackers.forEach(t => {
+                if (ensureTrackerMonthCycle(t, todayStr)) updated = true;
                 if (ensureTrackerHistoryMeta(t, todayStr)) updated = true;
-                if (advanceTrackerHistory(t, todayStr)) updated = true;
+                if (!t.monthKey && advanceTrackerHistory(t, todayStr)) updated = true;
 
                 // Timeframe controls the GOAL cycle only. Never erase the 30-day graph history.
                 if (!t.lastResetPeriod) {
@@ -2822,11 +2930,12 @@
 
         function updateValue(id, dayIndex, val) {
             const tracker=trackers.find(t=>t.id===id); if(!tracker)return;
+            ensureTrackerMonthCycle(tracker, localDateKey());
             let num=parseFloat(val);
             if(isNaN(num)||val==='') num=0;
             else if(num<0) num=0;
             else if(num>Number(tracker.max||1)){alert(`Error: Value cannot exceed the maximum Y-axis limit (${tracker.max}).`);scheduleGraphRedraw();return;}
-            if(!Array.isArray(tracker.data))tracker.data=Array(30).fill(0);
+            if(!Array.isArray(tracker.data))tracker.data=Array(31).fill(0);
             tracker.data[dayIndex]=num;
             evaluateGoalCompletion(tracker); saveAndCloudSync(); scheduleGraphRedraw();
         }
@@ -2866,7 +2975,10 @@
             }
             todoHistory = todoHistory.filter(h => h && /^\d{4}-\d{2}-\d{2}$/.test(h.date));
             todoHistory.sort((a, b) => a.date.localeCompare(b.date));
-            if (todoHistory.length > 370) todoHistory = todoHistory.slice(-370);
+            const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 3);
+            const cutoffKey = getTodoHistoryDateKey(cutoff);
+            todoHistory = todoHistory.filter(h => h.date >= cutoffKey);
+            if (todoHistory.length > 100) todoHistory = todoHistory.slice(-100);
         }
 
         function getTodoHistoryRecord(dateKey) {
@@ -3348,7 +3460,7 @@ let shareProgressType = null;
         }
 
         function createShareCardCanvas(type, id, photoImg) {
-            const isStatsTracker = type === 'stats-tracker';
+            const isStatsTracker = type === 'stats-tracker' || type === 'stats-tracker-month' || type === 'stats-todo-month';
             const SHARE_RENDER_SCALE = 2;
             const logicalWidth = 2400;
             const logicalHeight = photoImg ? (isStatsTracker ? 1850 : 1650) : (isStatsTracker ? 1550 : 1350);
@@ -3383,10 +3495,33 @@ let shareProgressType = null;
                 shareCanvasText(ctx, `${userLoginStreakCount} DAYS`, 140, 390, 110, accent, '900');
                 shareCanvasText(ctx, 'logged in / matrix days', 150, 470, 31, muted, '600');
                 shareCanvasText(ctx, 'Keep building the streak.', 150, 550, 29, main, '600');
+            } else if (type === 'stats-todo-month') {
+                const monthKey = id;
+                const [yy, mm] = monthKey.split('-').map(Number);
+                const days = getStatsMonthDays(monthKey);
+                const rows = Array.from({length: days}, (_, i) => { const d=new Date(yy,mm-1,i+1); const r=getTodoHistoryRecord(getTodoHistoryDateKey(d)); return {completed:Number(r?.completed||0),total:Number(r?.total||0),pct:Number(r?.total||0)>0?Math.round(Number(r.completed||0)/Number(r.total||0)*100):0}; });
+                const values = rows.map(r=>r.pct); const total=rows.reduce((s,r)=>s+r.completed,0); const active=rows.filter(r=>r.total>0).length;
+                shareCanvasText(ctx, `📋 To-Do Completion · ${statsMonthLabel(monthKey)}`, 140, 230, 46, main, '900');
+                shareCanvasText(ctx, `${active}/${days} active days`, 140, 285, 28, muted, '600');
+                const graphX=190, graphY=345, graphW=2010, graphH=560; roundRectPath(ctx,graphX-35,graphY-35,graphW+70,graphH+110,30); ctx.fillStyle=graphBg; ctx.fill();
+                drawShareStatsBars(ctx, values, 100, graphX, graphY, graphW, graphH, 2);
+                shareCanvasText(ctx, `Completed: ${total}`, 140, 1060, 30, main, '700');
+                shareCanvasText(ctx, `Average: ${Math.round(values.reduce((a,b)=>a+b,0)/Math.max(1,values.length))}%`, 140, 1112, 28, muted, '600');
+            } else if (type === 'stats-tracker-month') {
+                const [trackerId, monthKey] = String(id).split('::');
+                const t = trackers.find(x => String(x.id) === String(trackerId));
+                if (!t) return null;
+                const snap = (Array.isArray(t.monthlyHistory)?t.monthlyHistory:[]).find(x=>x.monthKey===monthKey);
+                const values = monthKey===getStatsMonthKey() ? Array.from({length:getStatsMonthDays(monthKey)},(_,i)=>Number(t.data?.[i])||0) : Array.from({length:getStatsMonthDays(monthKey)},(_,i)=>Number(snap?.values?.[i])||0);
+                const maxValue=Math.max(Number(snap?.max)||Number(t.max)||1,...values,1); const total=values.reduce((a,b)=>a+b,0); const active=values.filter(v=>v>0).length;
+                shareCanvasText(ctx, `📊 ${t.title} · ${statsMonthLabel(monthKey)}`, 140, 230, 46, main, '900'); shareCanvasText(ctx, `Goal ${t.goal} • Max ${t.max} • ${active}/${values.length} active days`, 140, 285, 28, muted, '600');
+                const graphX=190,graphY=345,graphW=2010,graphH=560; roundRectPath(ctx,graphX-35,graphY-35,graphW+70,graphH+110,30);ctx.fillStyle=graphBg;ctx.fill(); drawShareStatsBars(ctx,values,maxValue,graphX,graphY,graphW,graphH,2);
+                shareCanvasText(ctx,`Total logged: ${total}`,140,1060,30,main,'700');
             } else if (type === 'tracker' || type === 'stats-tracker') {
                 const t = trackers.find(x => String(x.id) === String(id));
                 if (!t) return null;
-                const values = Array.from({ length: 30 }, (_, i) => {
+                const count = getStatsMonthDays(t?.monthKey || getStatsMonthKey());
+            const values = Array.from({ length: count }, (_, i) => {
                     const n = Number(t.data?.[i]);
                     return Number.isFinite(n) ? n : 0;
                 });
@@ -3476,25 +3611,51 @@ let shareProgressType = null;
             const payload = { v: 1, type, user: currentUser || 'GHOST Tracker', createdAt: new Date().toISOString() };
             if (type === 'login') {
                 payload.streak = Number(userLoginStreakCount) || 0;
+            } else if (type === 'stats-todo-month') {
+                const monthKey = String(id);
+                const days = getStatsMonthDays(monthKey);
+                const [yy, mm] = monthKey.split('-').map(Number);
+                payload.todoMonth = {
+                    monthKey,
+                    days,
+                    rows: Array.from({ length: days }, (_, i) => {
+                        const d = new Date(yy, mm - 1, i + 1);
+                        const r = getTodoHistoryRecord(getTodoHistoryDateKey(d));
+                        return { completed: Number(r?.completed || 0), total: Number(r?.total || 0) };
+                    })
+                };
+            } else if (type === 'stats-tracker-month') {
+                const [trackerId, monthKey] = String(id).split('::');
+                const t = trackers.find(x => String(x.id) === String(trackerId));
+                if (!t) return window.location.href.split('#')[0];
+                const snap = (Array.isArray(t.monthlyHistory) ? t.monthlyHistory : []).find(x => x.monthKey === monthKey);
+                payload.trackerMonth = {
+                    title: t.title || 'Tracker',
+                    monthKey,
+                    goal: Number(t.goal) || 0,
+                    max: Number(t.max) || 1,
+                    timeframe: t.timeframe || 'Day',
+                    data: monthKey === getStatsMonthKey()
+                        ? Array.from({ length: getStatsMonthDays(monthKey) }, (_, i) => Number(t.data?.[i]) || 0)
+                        : Array.from({ length: getStatsMonthDays(monthKey) }, (_, i) => Number(snap?.values?.[i]) || 0)
+                };
             } else if (type === 'tracker' || type === 'stats-tracker') {
                 const t = trackers.find(x => String(x.id) === String(id));
                 if (!t) return window.location.href.split('#')[0];
                 payload.tracker = {
-                    title: t.title || 'Tracker', goal: Number(t.goal) || 0, max: Number(t.max) || 1,
-                    timeframe: t.timeframe || 'Day', data: Array.isArray(t.data) ? t.data.map(v => Number(v) || 0) : []
+                    title: t.title || 'Tracker',
+                    goal: Number(t.goal) || 0,
+                    max: Number(t.max) || 1,
+                    timeframe: t.timeframe || 'Day',
+                    monthKey: t.monthKey || getStatsMonthKey(),
+                    data: Array.isArray(t.data) ? t.data.map(v => Number(v) || 0) : []
                 };
-                // Keep the public link as a tracker progress link; the image share uses the stats-specific rendering.
             } else if (type === 'habit') {
                 const h = habits.find(x => String(x.id) === String(id));
                 if (!h) return window.location.href.split('#')[0];
                 const elapsedSeconds = Math.max(0, Math.floor((new Date() - new Date(h.startDate)) / 1000));
                 const bestStreakSeconds = Math.max(Number(h.bestStreakSeconds) || 0, elapsedSeconds);
-                payload.habit = {
-                    name: h.name || 'Clean Timer',
-                    elapsedSeconds,
-                    bestStreakSeconds,
-                    relapses: Number(h.relapses) || 0
-                };
+                payload.habit = { name: h.name || 'Clean Timer', elapsedSeconds, bestStreakSeconds, relapses: Number(h.relapses) || 0 };
             }
             const encoded = encodeProgressPayload(payload);
             return encoded ? `${window.location.origin}${window.location.pathname}#progress=${encoded}` : window.location.href.split('#')[0];
@@ -3542,6 +3703,14 @@ let shareProgressType = null;
                     <div class="text-base font-black mt-5" style="color:var(--theme-primary)">Best streak: ${escapeHtml(formatHabitStreak(Math.max(Number(payload.habit.bestStreakSeconds)||0, e)))}</div>
                     <div class="text-xs font-semibold dynamic-text mt-3">Relapses / resets: ${Number(payload.habit.relapses)||0}</div>
                 </div>`;
+            } else if (payload.type === 'stats-tracker-month' && payload.trackerMonth) {
+                const t=payload.trackerMonth, values=Array.isArray(t.data)?t.data.map(Number):[], total=values.reduce((a,b)=>a+(Number.isFinite(b)?b:0),0), active=values.filter(v=>Number(v)!==0).length;
+                content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-6"><h2 class="text-xl sm:text-2xl font-black dynamic-text">📊 ${escapeHtml(t.title)} · ${escapeHtml(statsMonthLabel(t.monthKey))}</h2><p class="text-xs text-[var(--text-muted)] mt-1">Goal ${Number(t.goal)||0} • Max ${Number(t.max)||0} • ${active}/${values.length} active days</p><canvas id="public-progress-graph" width="1000" height="420" class="w-full rounded-xl mt-4"></canvas><div class="grid grid-cols-2 gap-3 mt-4"><div class="rounded-xl border border-[var(--border-color)] p-3"><div class="text-[10px] text-[var(--text-muted)]">Total logged</div><div class="text-lg font-black dynamic-text">${total}</div></div><div class="rounded-xl border border-[var(--border-color)] p-3"><div class="text-[10px] text-[var(--text-muted)]">Active days</div><div class="text-lg font-black dynamic-text">${active}</div></div></div></div>`;
+                drawPublicProgressGraph(values, Number(t.max)||1);
+            } else if (payload.type === 'stats-todo-month' && payload.todoMonth) {
+                const t=payload.todoMonth, rows=Array.isArray(t.rows)?t.rows:[], values=rows.map(r=>Number(r.total)>0?Math.round(Number(r.completed||0)/Number(r.total)*100):0); const total=rows.reduce((a,r)=>a+(Number(r.completed)||0),0);
+                content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-6"><h2 class="text-xl sm:text-2xl font-black dynamic-text">📋 To-Do Completion · ${escapeHtml(statsMonthLabel(t.monthKey))}</h2><p class="text-xs text-[var(--text-muted)] mt-1">${values.filter(v=>v>0).length}/${values.length} active days</p><canvas id="public-progress-graph" width="1000" height="420" class="w-full rounded-xl mt-4"></canvas><div class="mt-4 rounded-xl border border-[var(--border-color)] p-3"><div class="text-[10px] text-[var(--text-muted)]">Completed</div><div class="text-lg font-black dynamic-text">${total}</div></div></div>`;
+                drawPublicProgressGraph(values, 100);
             } else if (payload.type === 'tracker' && payload.tracker) {
                 const t=payload.tracker, values=Array.isArray(t.data)?t.data.map(Number):[], total=values.reduce((a,b)=>a+(Number.isFinite(b)?b:0),0), active=values.filter(v=>Number(v)!==0).length;
                 content.innerHTML = `<div class="dynamic-card-solid border rounded-2xl p-4 sm:p-6">
@@ -3578,7 +3747,9 @@ let shareProgressType = null;
         function getShareText(type, id) {
             if (type === 'login') return `🔥 ${userLoginStreakCount} day login streak on GHOST Tracker.`;
             if (type === 'tracker') return `📈 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} progress from GHOST Tracker.`;
-            if (type === 'stats-tracker') return `📊 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} 30-day stats from GHOST Tracker.`;
+            if (type === 'stats-tracker') return `📊 Sharing my ${trackers.find(t => String(t.id) === String(id))?.title || 'tracker'} stats from GHOST Tracker.`;
+            if (type === 'stats-tracker-month') { const [tid,mk]=String(id).split('::'); return `📊 Sharing my ${trackers.find(t=>String(t.id)===tid)?.title||'tracker'} ${statsMonthLabel(mk)} graph from GHOST Tracker.`; }
+            if (type === 'stats-todo-month') return `📋 Sharing my To-Do ${statsMonthLabel(id)} graph from GHOST Tracker.`;
             return `🛡️ Sharing my clean timer from GHOST Tracker.`;
         }
 
@@ -3675,7 +3846,7 @@ let shareProgressType = null;
                     return;
                 }
 
-                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : type === 'stats-tracker' ? 'ghost-30day-stats-HQ.png' : 'ghost-clean-timer.png';
+                const safeName = type === 'login' ? 'ghost-login-streak.png' : type === 'tracker' ? 'ghost-graph-progress.png' : type === 'stats-tracker' ? 'ghost-stats-HQ.png' : type === 'stats-tracker-month' ? 'ghost-tracker-month.png' : type === 'stats-todo-month' ? 'ghost-todo-month.png' : 'ghost-clean-timer.png';
                 const file = new File([blob], safeName, { type: 'image/png' });
                 lastShareBlob = blob;
                 lastShareFile = file;
@@ -3782,8 +3953,35 @@ let shareProgressType = null;
                 detail.innerHTML = '';
                 return;
             }
+            ensureTrackerMonthCycle(tracker, localDateKey());
 
-            const values = Array.from({ length: 30 }, (_, i) => Number(tracker.data?.[i]) || 0);
+            if (selectedStatsTrackerRange === 'monthly') {
+                renderTrackerMonthlyStats(tracker);
+                return;
+            }
+
+            const trackerCalendarDays = getStatsMonthDays(getStatsMonthKey());
+            const currentTrackerValues = Array.from({ length: trackerCalendarDays }, (_, i) => Number(tracker.data?.[i]) || 0);
+            if (selectedStatsTrackerRange === 'weekly') {
+                const groups = getStatsWeeklyGroups(currentTrackerValues);
+                const total = currentTrackerValues.reduce((a,b)=>a+b,0);
+                const active = currentTrackerValues.filter(v=>v>0).length;
+                detail.innerHTML = `
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="stats-option" onclick="selectStatsTrackerRange('daily')">Daily</button>
+                        <button type="button" class="stats-option active">Weekly</button>
+                        <button type="button" class="stats-option" onclick="selectStatsTrackerRange('monthly')">Monthly</button>
+                    </div>
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div><div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div><h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">${escapeHtml(tracker.title || 'Untitled')}</h4><p class="text-[11px] text-[var(--text-muted)] mt-1">Weekly breakdown · ${escapeHtml(statsMonthLabel(getStatsMonthKey()))}</p></div>
+                        <div class="flex items-center gap-2 flex-wrap"><div class="rounded-xl border border-[var(--border-color)] px-3 py-2"><div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Total</div><div class="text-sm font-black dynamic-text mt-0.5">${total}</div></div><div class="rounded-xl border border-[var(--border-color)] px-3 py-2"><div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div><div class="text-sm font-black text-[var(--text-main)] mt-0.5">${active}/${trackerCalendarDays}</div></div></div>
+                    </div>
+                    <div><div class="stats-week-label mb-2">Weekly Breakdown</div><div class="stats-week-grid">${groups.map(g=>{const pct=Math.min(100,Math.round(g.total/(Math.max(1,g.values.length*(Number(tracker.max)||1)))*100));return `<div class="stats-week-card"><div class="flex items-center justify-between gap-2"><span class="stats-week-label">${g.label}</span><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${g.color}"></span></div><div class="mt-3 text-lg font-black text-[var(--text-main)]">${g.total}</div><div class="mt-1 text-[10px] text-[var(--text-muted)]">${g.active}/${g.values.length} active days</div><div class="mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5"><div class="h-full rounded-full" style="width:${pct}%;background:${g.color}"></div></div></div>`}).join('')}</div></div>
+                `;
+                return;
+            }
+
+            const values = currentTrackerValues;
             const maxValue = Math.max(Number(tracker.max) || 1, ...values, 1);
             const total = values.reduce((sum, v) => sum + v, 0);
             const activeDays = values.filter(v => v > 0).length;
@@ -3830,11 +4028,16 @@ let shareProgressType = null;
 
             const safeTrackerId = String(tracker.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             detail.innerHTML = `
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="stats-option ${selectedStatsTrackerRange === 'daily' ? 'active' : ''}" onclick="selectStatsTrackerRange('daily')">Daily</button>
+                    <button type="button" class="stats-option ${selectedStatsTrackerRange === 'weekly' ? 'active' : ''}" onclick="selectStatsTrackerRange('weekly')">Weekly</button>
+                    <button type="button" class="stats-option ${selectedStatsTrackerRange === 'monthly' ? 'active' : ''}" onclick="selectStatsTrackerRange('monthly')">Monthly</button>
+                </div>
                 <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div>
                         <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
                         <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">${escapeHtml(tracker.title || 'Untitled')}</h4>
-                        <p class="text-[11px] text-[var(--text-muted)] mt-1">${escapeHtml(tracker.timeframe || 'Day')} target · 30-day cycle · Max ${Number(tracker.max) || 0}</p>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-1">${escapeHtml(tracker.timeframe || 'Day')} target · calendar-month cycle · Max ${Number(tracker.max) || 0}</p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
@@ -3843,7 +4046,7 @@ let shareProgressType = null;
                         </div>
                         <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
                             <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div>
-                            <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays}/30</div>
+                            <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays}/${calendarDays}</div>
                         </div>
                         <button type="button" class="stats-share-btn" onclick="shareStatsTracker('${safeTrackerId}')">Share</button>
                     </div>
@@ -3871,6 +4074,50 @@ let shareProgressType = null;
             `;
         }
 
+        function selectStatsTrackerRange(range) {
+            selectedStatsTrackerRange = range;
+            renderWeeklyHistoryView();
+        }
+
+        function renderTrackerMonthlyStats(tracker) {
+            const detail = document.getElementById('stats-tracker-detail');
+            if (!detail) return;
+            const currentKey = getStatsMonthKey();
+            const snapshots = Array.isArray(tracker.monthlyHistory) ? tracker.monthlyHistory.slice() : [];
+            const currentValues = Array.from({ length: getStatsMonthDays(currentKey) }, (_, i) => Number(tracker.data?.[i]) || 0);
+            const monthMap = new Map(snapshots.map(s => [s.monthKey, s]));
+            monthMap.set(currentKey, { monthKey: currentKey, values: currentValues, max: Number(tracker.max) || 1, current: true });
+            const months = Array.from(monthMap.values()).sort((a,b) => String(b.monthKey).localeCompare(String(a.monthKey))).slice(0, 3);
+            if (!months.some(m => m.monthKey === selectedStatsTrackerMonthKey)) selectedStatsTrackerMonthKey = currentKey;
+            const selected = months.find(m => m.monthKey === selectedStatsTrackerMonthKey) || months[0];
+            const values = Array.from({ length: getStatsMonthDays(selected.monthKey) }, (_, i) => Number(selected.values?.[i]) || 0);
+            const maxValue = Math.max(Number(selected.max) || Number(tracker.max) || 1, ...values, 1);
+            const total = values.reduce((a,b)=>a+b,0);
+            const active = values.filter(v=>v>0).length;
+            const groups = getStatsWeeklyGroups(values);
+            const bars = values.map((v,i) => {
+                const g = groups.find(x => i >= x.start && i <= x.end) || {color:'var(--theme-primary)'};
+                const pct = v > 0 ? Math.max(2, Math.round((v / maxValue) * 100)) : 3;
+                return `<div class=\"stats-bar${v ? '' : ' stats-bar-empty'}\" title=\"${statsMonthLabel(selected.monthKey)} · Day ${i+1}: ${v}\" style=\"height:${pct}%;background:${g.color};\"></div>`;
+            }).join('');
+            const safeId = String(tracker.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            detail.innerHTML = `
+                <div class=\"flex flex-wrap gap-2\">\n                    <button type=\"button\" class=\"stats-option\" onclick=\"selectStatsTrackerRange('daily')\">Daily</button>\n                    <button type=\"button\" class=\"stats-option\" onclick=\"selectStatsTrackerRange('weekly')\">Weekly</button>\n                    <button type=\"button\" class=\"stats-option active\">Monthly</button>\n                </div>
+                <div class=\"flex flex-wrap gap-2\">${months.map(m => `<button type=\"button\" class=\"stats-option ${m.monthKey===selected.monthKey?'active':''}\" onclick=\"selectStatsTrackerMonth('${m.monthKey}')\">${escapeHtml(statsMonthLabel(m.monthKey))}</button>`).join('')}</div>
+                <div class=\"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4\">
+                    <div><div class=\"text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]\">Saved Monthly Graph</div><h4 class=\"mt-1 text-lg font-bold text-[var(--text-main)]\">${escapeHtml(tracker.title || 'Untitled')} · ${escapeHtml(statsMonthLabel(selected.monthKey))}</h4><p class=\"text-[11px] text-[var(--text-muted)] mt-1\">Month resets independently. Previous 3 months are retained.</p></div>
+                    <div class=\"flex items-center gap-2 flex-wrap\"><div class=\"rounded-xl border border-[var(--border-color)] px-3 py-2\"><div class=\"text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]\">Total</div><div class=\"text-sm font-black dynamic-text mt-0.5\">${total}</div></div><div class=\"rounded-xl border border-[var(--border-color)] px-3 py-2\"><div class=\"text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]\">Active Days</div><div class=\"text-sm font-black text-[var(--text-main)] mt-0.5\">${active}/${values.length}</div></div><button type=\"button\" class=\"stats-share-btn\" onclick=\"shareStatsTrackerMonth('${safeId}','${selected.monthKey}')\">Share</button></div>
+                </div>
+                <div><div class=\"flex items-center justify-between gap-3 mb-2\"><span class=\"stats-week-label\">${escapeHtml(statsMonthLabel(selected.monthKey))} Calendar</span><span class=\"text-[10px] text-[var(--text-muted)]\">1st is always the first bar · ${values.length} days</span></div><div class=\"stats-bar-track\" style=\"--stats-columns:${values.length}\">${bars}</div><div class=\"stats-day-labels\" style=\"--stats-columns:${values.length}\">${values.map((_,i)=>{const d=i+1,show=d===1||d%5===0||d===values.length;return `<span class=\"stats-axis-date ${d===1?'stats-month-start':''}\">${show?d:''}</span>`}).join('')}</div></div>
+                <div><div class=\"stats-week-label mb-2\">Weekly Breakdown</div><div class=\"stats-week-grid\">${groups.map(g=>`<div class=\"stats-week-card\"><div class=\"flex items-center justify-between gap-2\"><span class=\"stats-week-label\">${g.label}</span><span class=\"w-2.5 h-2.5 rounded-full shrink-0\" style=\"background:${g.color}\"></span></div><div class=\"mt-3 text-lg font-black text-[var(--text-main)]\">${g.total}</div><div class=\"mt-1 text-[10px] text-[var(--text-muted)]\">${g.active}/${g.values.length} active days</div><div class=\"mt-3 h-1.5 rounded-full overflow-hidden bg-black/10 dark:bg-white/5\"><div class=\"h-full rounded-full\" style=\"width:${Math.min(100,Math.round(g.total/(Math.max(1,g.values.length*maxValue))*100))}%;background:${g.color}\"></div></div></div>`).join('')}</div></div>
+            `;
+        }
+
+        function selectStatsTrackerMonth(monthKey) {
+            selectedStatsTrackerMonthKey = monthKey;
+            renderWeeklyHistoryView();
+        }
+
         function getTodoHistoryDateKey(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -3885,6 +4132,12 @@ let shareProgressType = null;
 
         function selectTodoHistoryRange(range) {
             selectedTodoHistoryRange = range;
+            renderTodoHistory();
+        }
+
+        function selectTodoMonth(monthKey) {
+            selectedTodoMonthKey = monthKey;
+            selectedTodoHistoryRange = 'monthly';
             renderTodoHistory();
         }
 
@@ -3938,7 +4191,7 @@ let shareProgressType = null;
                         <div>
                             <div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Selected Metric</div>
                             <h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">To-Do Completion</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-1">Daily completion · 30-day performance</p>
+                            <p class="text-[11px] text-[var(--text-muted)] mt-1">Daily completion · calendar-month performance</p>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
@@ -4051,6 +4304,26 @@ let shareProgressType = null;
                 return;
             }
 
+            if (selectedTodoHistoryRange === 'monthly') {
+                const monthKeys = [];
+                const now = new Date();
+                for (let m = 0; m < 3; m++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+                    monthKeys.push(getStatsMonthKey(d));
+                }
+                if (!monthKeys.includes(selectedTodoMonthKey)) selectedTodoMonthKey = monthKeys[0];
+                const selectedKey = selectedTodoMonthKey;
+                const [sy, sm] = selectedKey.split('-').map(Number);
+                const days = getStatsMonthDays(selectedKey);
+                const monthDays = Array.from({length:days},(_,i)=>{const d=new Date(sy,sm-1,i+1); const rec=getTodoHistoryRecord(getTodoHistoryDateKey(d)); const completed=Number(rec?.completed||0), total=Number(rec?.total||0); return {date:d,completed,total,pct:total?Math.round(completed/total*100):0};});
+                const groups = getStatsWeeklyGroups(monthDays.map(r=>r.completed));
+                const maxPct = 100;
+                const bars = monthDays.map((r,i)=>{const g=groups.find(x=>i>=x.start&&i<=x.end)||{color:'var(--theme-primary)'}; const pct=r.total>0?Math.max(2,r.pct):3; return `<div class="stats-bar${r.total?'':' stats-bar-empty'}" title="${r.date.toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${r.completed}/${r.total} · ${r.pct}%" style="height:${pct}%;background:${g.color}"></div>`;}).join('');
+                const totalCompleted=monthDays.reduce((s,r)=>s+r.completed,0); const totalTasks=monthDays.reduce((s,r)=>s+r.total,0); const active=monthDays.filter(r=>r.total>0).length;
+                detail.innerHTML = `<div class="flex flex-wrap gap-2">${monthKeys.map(k=>`<button type="button" class="stats-option ${k===selectedKey?'active':''}" onclick="selectTodoMonth('${k}')">${escapeHtml(statsMonthLabel(k))}</button>`).join('')}</div><div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4"><div><div class="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Saved Monthly Graph</div><h4 class="mt-1 text-lg font-bold text-[var(--text-main)]">To-Do Completion · ${escapeHtml(statsMonthLabel(selectedKey))}</h4><p class="text-[11px] text-[var(--text-muted)] mt-1">Last 3 months are retained and each month is independent.</p></div><div class="flex items-center gap-2 flex-wrap"><div class="rounded-xl border border-[var(--border-color)] px-3 py-2"><div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Completed</div><div class="text-sm font-black dynamic-text mt-0.5">${totalCompleted}</div></div><div class="rounded-xl border border-[var(--border-color)] px-3 py-2"><div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div><div class="text-sm font-black text-[var(--text-main)] mt-0.5">${active}/${days}</div></div><button type="button" class="stats-share-btn" onclick="shareTodoMonth('${selectedKey}')">Share</button></div></div><div><div class="flex items-center justify-between gap-3 mb-2"><span class="stats-week-label">${escapeHtml(statsMonthLabel(selectedKey))} Calendar</span><span class="text-[10px] text-[var(--text-muted)]">1st is always the first bar · ${days} days</span></div><div class="stats-bar-track" style="--stats-columns:${days}">${bars}</div><div class="stats-day-labels" style="--stats-columns:${days}">${monthDays.map((_,i)=>{const d=i+1,show=d===1||d%5===0||d===days;return `<span class="stats-axis-date ${d===1?'stats-month-start':''}">${show?d:''}</span>`}).join('')}</div></div><div><div class="stats-week-label mb-2">Weekly Breakdown</div><div class="stats-week-grid">${groups.map(g=>`<div class="stats-week-card"><div class="flex items-center justify-between gap-2"><span class="stats-week-label">${g.label}</span><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${g.color}"></span></div><div class="mt-3 text-lg font-black text-[var(--text-main)]">${g.total}</div><div class="mt-1 text-[10px] text-[var(--text-muted)]">${g.active}/${g.values.length} active days</div></div>`).join('')}</div></div>`;
+                return;
+            }
+
             const months = [];
             for (let m = 0; m < 6; m++) {
                 const start = new Date(today.getFullYear(), today.getMonth() - m, 1);
@@ -4101,6 +4374,18 @@ let shareProgressType = null;
                     </div>
                 </div>
             `;
+        }
+
+        function shareStatsTrackerMonth(id, monthKey) {
+            shareProgressType = 'stats-tracker-month';
+            shareProgressId = `${id}::${monthKey}`;
+            openShareProgressModal('stats-tracker-month', `${id}::${monthKey}`);
+        }
+
+        function shareTodoMonth(monthKey) {
+            shareProgressType = 'stats-todo-month';
+            shareProgressId = monthKey;
+            openShareProgressModal('stats-todo-month', monthKey);
         }
 
         function shareStatsTracker(id) {
@@ -4443,9 +4728,10 @@ let shareProgressType = null;
                 }
 
                 trackers.forEach(t => {
+                    ensureTrackerMonthCycle(t, localDateKey());
                     if (!Array.isArray(t.data)) t.data = [];
-                    if (t.data.length < 30) t.data = t.data.concat(Array(30 - t.data.length).fill(0));
-                    if (t.data.length > 30) t.data = t.data.slice(0, 30);
+                    if (t.data.length < 31) t.data = t.data.concat(Array(31 - t.data.length).fill(0));
+                    if (t.data.length > 31) t.data = t.data.slice(0, 31);
                     if (!Number.isFinite(Number(t.max)) || Number(t.max) <= 0) t.max = 1;
                     if (!t.timeframe) t.timeframe = 'Week';
                     if (!t.goal) t.goal = Math.round(Number(t.max) / 2);
@@ -4455,7 +4741,8 @@ let shareProgressType = null;
                     card.className = 'dynamic-card border rounded-2xl p-5 shadow-sm space-y-4';
                     
                     let inputsHtml = '';
-                    for(let i = 0; i < 30; i++) {
+                    const trackerMonthDays = getStatsMonthDays(getStatsMonthKey());
+                    for(let i = 0; i < trackerMonthDays; i++) {
                         const displayVal = (t.data[i] === 0 || t.data[i] === undefined) ? '' : t.data[i];
                         inputsHtml += `
                             <div class="flex flex-col items-center text-[10px] text-[var(--text-muted)] input-cell">
@@ -4610,8 +4897,9 @@ let shareProgressType = null;
             ctx.lineTo(left+plotW,top+plotH);
             ctx.stroke();
 
-            const labels=cssWidth<380?[0,7,14,21,29]:[0,6,13,20,29];
-            const count=30;
+            const monthKey = t.monthKey || getStatsMonthKey();
+            const count = getStatsMonthDays(monthKey);
+            const labels = count <= 28 ? [0,6,13,20,count-1] : count === 29 ? [0,6,13,20,27,28] : count === 30 ? [0,6,14,21,28,29] : [0,6,14,21,27,30];
             const dx=plotW/(count-1);
             ctx.fillStyle=text;
             ctx.font='10px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace';
@@ -4712,8 +5000,10 @@ let shareProgressType = null;
                 goal: goal,
                 timeframe: timeframe,
                 color: color,
-                data: Array(30).fill(0),
-                historyStartDate: localDateKey(),
+                data: Array(31).fill(0),
+                historyStartDate: `${getStatsMonthKey()}-01`,
+                monthKey: getStatsMonthKey(),
+                monthlyHistory: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
@@ -4745,8 +5035,10 @@ let shareProgressType = null;
                 goal: goal,
                 timeframe: timeframe,
                 color: color,
-                data: Array(30).fill(0),
-                historyStartDate: localDateKey(),
+                data: Array(31).fill(0),
+                historyStartDate: `${getStatsMonthKey()}-01`,
+                monthKey: getStatsMonthKey(),
+                monthlyHistory: [],
                 showSettings: false,
                 congratulatedCycle: false
             });
