@@ -10,7 +10,11 @@
     <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>html.theme-boot-pending body{visibility:hidden} html.theme-boot-pending body.theme-boot-timeout{visibility:visible}</style>
     <script>
+        try { document.documentElement.classList.add('theme-boot-pending'); } catch(e) {}
+        window.__ghostThemeBootTimer=setTimeout(function(){ try{ document.documentElement.classList.remove('theme-boot-pending'); document.body&&document.body.classList.add('theme-boot-timeout'); }catch(e){} },3500);
+
         /* Standalone/PWA cache-bust: installed Brave apps can otherwise keep an older HTML shell. */
         (function(){
             try {
@@ -54,15 +58,15 @@
 
         /* Refined Light Mode — darker, textured, low-glare grey/white */
         body.light-mode {
-            --bg-main: #dfe3e8;
-            --bg-card: #edf0f3;
-            --bg-card-solid: #d7dbe0;
-            --bg-input: #e4e7eb;
-            --text-main: #20252d;
-            --text-muted: #5f6875;
-            --canvas-bg: #e7eaed;
-            --canvas-grid: #c5cbd2;
-            --canvas-text: #7c8794;
+            --bg-main: #d6d9de;
+            --bg-card: #e7e9ec;
+            --bg-card-solid: #cfd3d8;
+            --bg-input: #dfe2e6;
+            --text-main: #252a31;
+            --text-muted: #5a6470;
+            --canvas-bg: #dde1e5;
+            --canvas-grid: #bcc3cb;
+            --canvas-text: #727d89;
             background-image:
                 radial-gradient(circle at 15% 10%, rgba(255,255,255,.42), transparent 28%),
                 radial-gradient(circle at 85% 85%, rgba(148,163,184,.16), transparent 32%),
@@ -146,6 +150,192 @@
                 radial-gradient(circle at 82% 18%, rgba(147, 197, 253, 0.12), transparent 25%),
                 linear-gradient(180deg, rgba(255,255,255,0.28), transparent 52%);
         }
+        /* SUMMER ARC THEME — warm sky glow with subtle floating sun particles */
+        body.summer-arc {
+            background-image:
+                radial-gradient(circle at 84% 9%, rgba(253, 224, 71, 0.24), transparent 22%),
+                radial-gradient(circle at 84% 9%, rgba(251, 191, 36, 0.18), transparent 24%),
+                radial-gradient(circle at 18% 28%, rgba(34, 211, 238, 0.10), transparent 28%),
+                linear-gradient(180deg, rgba(14, 165, 233, 0.08), transparent 54%);
+            background-attachment: fixed;
+        }
+        body.summer-arc.light-mode {
+            background-image:
+                radial-gradient(circle at 84% 9%, rgba(254, 240, 138, 0.36), transparent 22%),
+                radial-gradient(circle at 84% 9%, rgba(251, 191, 36, 0.24), transparent 24%),
+                radial-gradient(circle at 18% 28%, rgba(6, 182, 212, 0.14), transparent 30%),
+                linear-gradient(180deg, rgba(255, 247, 214, 0.68), transparent 58%);
+        }
+        #summer-arc-layer {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 19;
+            display: none;
+        }
+        body.summer-arc #summer-arc-layer { display: block; }
+        #summer-arc-layer::after {
+            content: '';
+            position: absolute;
+            left: -8%;
+            right: -8%;
+            bottom: -15%;
+            height: 38%;
+            border-radius: 50% 50% 0 0;
+            background: radial-gradient(ellipse at center, rgba(34, 211, 238, .10), transparent 68%);
+            filter: blur(18px);
+        }
+        #summer-arc-layer::before {
+            content: '';
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            top: 6%;
+            right: 6%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(254, 240, 138, .72) 0%, rgba(251, 191, 36, .24) 42%, transparent 72%);
+            filter: blur(1px);
+        }
+        .summer-particle {
+            position: absolute;
+            top: -10px;
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(253, 224, 71, .78);
+            box-shadow: 0 0 10px rgba(251, 191, 36, .34);
+            animation: summerFloat linear infinite;
+            opacity: .5;
+        }
+        .summer-particle.soft { opacity: .28; filter: blur(.5px); }
+        @keyframes summerFloat {
+            0% { transform: translate3d(0, -15px, 0) scale(.8); }
+            50% { transform: translate3d(var(--summer-drift), 52vh, 0) scale(1.15); }
+            100% { transform: translate3d(calc(var(--summer-drift) * -1), 112vh, 0) scale(.9); }
+        }
+        /* Summer details: sunset rays + fireflies instead of a single bright spot */
+        .summer-ray {
+            position:absolute; top:-12%; width:14px; height:72vh; transform-origin:50% 0;
+            transform:rotate(var(--ray-angle)); background:linear-gradient(to bottom, rgba(253,224,71,.16), transparent 78%);
+            filter:blur(3px); opacity:.55; animation:summerRayPulse ease-in-out infinite alternate;
+        }
+        .summer-firefly {
+            position:absolute; width:4px; height:4px; border-radius:50%;
+            background:rgba(254,240,138,.95); box-shadow:0 0 12px 3px rgba(250,204,21,.28);
+            animation:summerFirefly ease-in-out infinite;
+        }
+        @keyframes summerRayPulse { from{opacity:.18; transform:rotate(var(--ray-angle)) scaleY(.86)} to{opacity:.58; transform:rotate(var(--ray-angle)) scaleY(1.04)} }
+        @keyframes summerFirefly { 0%,100%{opacity:.12; transform:translate3d(0,0,0) scale(.7)} 45%{opacity:.9; transform:translate3d(var(--firefly-drift),-16px,0) scale(1.2)} 70%{opacity:.45; transform:translate3d(calc(var(--firefly-drift)*-.35),10px,0) scale(.9)} }
+
+        /* MONSOON ARC — deep clouds, rain haze and distant lightning, always behind app content */
+        body.monsoon-arc {
+            background-image:
+                radial-gradient(circle at 15% 8%, rgba(71,85,105,.22), transparent 28%),
+                radial-gradient(circle at 78% 14%, rgba(30,64,175,.14), transparent 32%),
+                linear-gradient(180deg, rgba(15,23,42,.32), transparent 58%);
+            background-attachment: fixed;
+        }
+        body.monsoon-arc.light-mode {
+            background-image:
+                radial-gradient(circle at 15% 8%, rgba(100,116,139,.18), transparent 28%),
+                radial-gradient(circle at 78% 14%, rgba(59,130,246,.10), transparent 32%),
+                linear-gradient(180deg, rgba(219,234,254,.55), transparent 62%);
+        }
+        #monsoon-arc-layer, #autumn-arc-layer, #spring-arc-layer {
+            position: fixed; inset: 0; overflow: hidden; pointer-events: none; display: none;
+        }
+        #monsoon-arc-layer { z-index: 0; }
+        #autumn-arc-layer, #spring-arc-layer { z-index: 0; }
+        body.monsoon-arc #monsoon-arc-layer,
+        body.autumn-arc #autumn-arc-layer,
+        body.spring-arc #spring-arc-layer { display:block; }
+        .monsoon-cloud {
+            position:absolute; left:-18vw; width:34vw; min-width:260px; max-width:560px; height:100px;
+            border-radius:999px; filter:blur(7px); opacity:.26;
+            background: radial-gradient(ellipse at 50% 50%, rgba(15,23,42,.92), rgba(51,65,85,.68) 58%, transparent 74%);
+            animation: monsoonCloudDrift linear infinite;
+        }
+        .monsoon-cloud::before,.monsoon-cloud::after { content:''; position:absolute; border-radius:50%; background:inherit; }
+        .monsoon-cloud::before { width:42%; height:125%; left:18%; top:-55%; }
+        .monsoon-cloud::after { width:50%; height:145%; right:12%; top:-70%; }
+        @keyframes monsoonCloudDrift { from { transform:translateX(-8vw); } to { transform:translateX(128vw); } }
+        .monsoon-rain {
+            position:absolute; top:-30px; width:1px; height:28px; border-radius:999px;
+            background:linear-gradient(to bottom, transparent, rgba(147,197,253,.50));
+            animation: monsoonRain linear infinite;
+        }
+        @keyframes monsoonRain { from { transform:translate3d(0,-40px,0) rotate(10deg); } to { transform:translate3d(-70px,115vh,0) rotate(10deg); } }
+        #monsoon-lightning-flash {
+            position:absolute; inset:0; opacity:0; background:rgba(239,246,255,.18);
+            mix-blend-mode:screen; pointer-events:none;
+        }
+        #monsoon-lightning-flash::before {
+            content:''; position:absolute; left:52%; top:3%; width:30vw; height:62vh;
+            transform:translateX(-50%);
+            background:rgba(255,255,255,.98);
+            clip-path:polygon(51% 0, 44% 21%, 54% 21%, 38% 49%, 49% 49%, 31% 82%, 41% 58%, 32% 58%, 47% 34%, 37% 34%);
+            filter:drop-shadow(0 0 5px rgba(255,255,255,.98)) drop-shadow(0 0 16px rgba(191,219,254,.95));
+            opacity:0;
+        }
+        #monsoon-lightning-flash::after {
+            content:''; position:absolute; left:0; right:0; top:0; height:38%;
+            background:radial-gradient(ellipse at 52% 8%, rgba(255,255,255,.34), transparent 58%);
+            opacity:0;
+        }
+        #monsoon-arc-layer.lightning #monsoon-lightning-flash { animation: lightningFlash .48s ease-out both; }
+        #monsoon-arc-layer.lightning #monsoon-lightning-flash::before { animation: lightningBolt .48s steps(1,end) both; }
+        #monsoon-arc-layer.lightning #monsoon-lightning-flash::after { animation: lightningGlow .48s ease-out both; }
+        @keyframes lightningFlash { 0%,100%{opacity:0} 8%{opacity:.08} 16%{opacity:.82} 24%{opacity:.12} 34%{opacity:.68} 43%{opacity:.05} 58%{opacity:.24} 72%{opacity:0} }
+        @keyframes lightningBolt { 0%,100%{opacity:0} 12%{opacity:1} 23%{opacity:.15} 31%{opacity:.96} 43%{opacity:.08} 52%{opacity:.82} 67%{opacity:0} }
+        @keyframes lightningGlow { 0%,100%{opacity:0} 15%{opacity:.75} 29%{opacity:.08} 40%{opacity:.5} 62%{opacity:0} }
+
+        /* AUTUMN ARC — drifting leaves with warm layered atmosphere */
+        body.autumn-arc {
+            background-image:
+                radial-gradient(circle at 18% 12%, rgba(180,83,9,.18), transparent 30%),
+                radial-gradient(circle at 82% 82%, rgba(120,53,15,.14), transparent 34%),
+                linear-gradient(180deg, rgba(69,39,18,.16), transparent 58%);
+            background-attachment:fixed;
+        }
+        body.autumn-arc.light-mode {
+            background-image:
+                radial-gradient(circle at 18% 12%, rgba(245,158,11,.20), transparent 30%),
+                radial-gradient(circle at 82% 82%, rgba(146,64,14,.10), transparent 34%),
+                linear-gradient(180deg, rgba(255,247,237,.72), transparent 62%);
+        }
+        .autumn-leaf {
+            position:absolute; top:-28px; width:var(--leaf-w); height:calc(var(--leaf-w) * .72);
+            border-radius:12% 72% 12% 72%; background:var(--leaf-color);
+            box-shadow:0 2px 8px rgba(69,39,18,.18); transform-origin:50% 50%;
+            animation: autumnLeafFall linear infinite;
+        }
+        .autumn-leaf::after { content:''; position:absolute; width:1px; height:75%; left:50%; top:15%; background:rgba(255,220,160,.34); transform:rotate(25deg); }
+        @keyframes autumnLeafFall { 0%{transform:translate3d(0,-35px,0) rotate(0deg)} 35%{transform:translate3d(var(--leaf-drift),34vh,0) rotate(130deg)} 70%{transform:translate3d(calc(var(--leaf-drift)*-.7),72vh,0) rotate(250deg)} 100%{transform:translate3d(var(--leaf-drift),116vh,0) rotate(390deg)} }
+
+        /* SPRING ARC — cool garden air with petals and leaves */
+        body.spring-arc {
+            background-image:
+                radial-gradient(circle at 20% 12%, rgba(244,114,182,.18), transparent 30%),
+                radial-gradient(circle at 82% 20%, rgba(74,222,128,.15), transparent 32%),
+                linear-gradient(180deg, rgba(236,253,245,.10), transparent 62%);
+            background-attachment:fixed;
+        }
+        body.spring-arc.light-mode {
+            background-image:
+                radial-gradient(circle at 20% 12%, rgba(251,207,232,.48), transparent 30%),
+                radial-gradient(circle at 82% 20%, rgba(187,247,208,.44), transparent 32%),
+                linear-gradient(180deg, rgba(255,247,252,.78), transparent 62%);
+        }
+        .spring-petal {
+            position:absolute; top:-25px; width:var(--petal-w); height:calc(var(--petal-w)*.64);
+            border-radius:70% 30% 70% 30%; background:var(--petal-color);
+            box-shadow:0 2px 8px rgba(236,72,153,.10);
+            animation:springPetalFall linear infinite;
+        }
+        .spring-petal.leaf { border-radius:70% 18% 70% 18%; }
+        @keyframes springPetalFall { 0%{transform:translate3d(0,-30px,0) rotate(0deg)} 35%{transform:translate3d(var(--petal-drift),35vh,0) rotate(100deg)} 70%{transform:translate3d(calc(var(--petal-drift)*-.65),72vh,0) rotate(220deg)} 100%{transform:translate3d(var(--petal-drift),116vh,0) rotate(360deg)} }
+
         #winter-snow-layer {
             position: fixed;
             inset: 0;
@@ -393,8 +583,9 @@
         }
         .stats-bar-track {
             height: 138px;
-            display: flex;
-            align-items: flex-end;
+            display: grid;
+            grid-template-columns: repeat(var(--stats-columns, 30), minmax(8px, 1fr));
+            align-items: end;
             gap: 3px;
             padding: 12px 8px 8px;
             border: 1px solid var(--border-color);
@@ -403,24 +594,29 @@
             overflow-x: auto;
         }
         .stats-bar {
-            flex: 1 0 7px;
-            min-width: 7px;
-            max-width: 18px;
+            width: 100%;
+            min-width: 0;
+            max-width: none;
             border-radius: 3px 3px 1px 1px;
             opacity: .88;
             transition: height .2s ease, opacity .15s ease, transform .15s ease;
         }
         .stats-bar:hover { opacity: 1; transform: translateY(-2px); }
+        .stats-bar-empty { opacity: .78; pointer-events: auto; }
+        .stats-bar-future { opacity: .45; pointer-events: none; }
         .stats-day-labels {
             display: grid;
-            grid-template-columns: repeat(30, minmax(8px, 1fr));
+            grid-template-columns: repeat(var(--stats-columns, 30), minmax(8px, 1fr));
             gap: 3px;
             padding: 0 8px;
             margin-top: 4px;
             color: var(--text-muted);
             font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
-        .stats-day-labels span { text-align: center; }
+        .stats-day-labels span { text-align: center; min-width: 0; }
+        .stats-day-labels span.stats-month-start { font-weight: 800; color: var(--text-main); }
+        .stats-day-labels span.stats-today { font-weight: 800; color: var(--theme-primary); }
+        .stats-day-labels span.stats-axis-date { white-space: nowrap; }
         .stats-week-grid {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -452,6 +648,10 @@
 </head>
 <body id="app-body" class="min-h-screen flex flex-col items-center justify-between p-4 pb-24 md:pb-4">
     <div id="winter-snow-layer" aria-hidden="true"></div>
+    <div id="summer-arc-layer" aria-hidden="true"></div>
+    <div id="monsoon-arc-layer" aria-hidden="true"><div id="monsoon-lightning-flash"></div></div>
+    <div id="autumn-arc-layer" aria-hidden="true"></div>
+    <div id="spring-arc-layer" aria-hidden="true"></div>
 
     <!-- Ambient Background Glow -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
@@ -840,21 +1040,30 @@
                             <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                                 <div class="flex justify-between items-center flex-wrap gap-4">
                                     <div>
-                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🎨 Global 10-Theme Matrix Engine</h3>
-                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Combine accent colors with Dark or White modes.</p>
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">🎨 Seasonal Accent Matrix</h3>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Match seasonal accents with Dark or White modes.</p>
                                     </div>
                                     <div class="flex flex-wrap gap-2 items-center">
                                         <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
-                                            <option value="emerald">Emerald Accent</option>
-                                            <option value="cyan">Cyber Neon (Cyan)</option>
+                                            <option value="winterFrost">❄️ Winter Frost</option>
+                                            <option value="summerSunset">☀️ Summer Sunset</option>
+                                            <option value="monsoonRain">🌧️ Monsoon Rain</option>
+                                            <option value="autumnEmber">🍂 Autumn Ember</option>
+                                            <option value="springBloom">🌸 Spring Bloom</option>
                                             <option value="amber">Matrix Amber</option>
-                                            <option value="indigo">Deep Indigo</option>
                                             <option value="crimson">Crimson Protocol</option>
-                                            <option value="winter">❄️ Winter Arc</option>
                                         </select>
                                         <select id="global-mode-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
                                             <option value="dark">Dark Night Mode</option>
                                             <option value="light">Pure White Mode</option>
+                                        </select>
+                                        <select id="global-background-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs font-semibold text-[var(--text-main)] focus:outline-none">
+                                            <option value="plain">Plain Background</option>
+                                            <option value="winter">❄️ Winter Arc</option>
+                                            <option value="summer">☀️ Summer Arc</option>
+                                            <option value="monsoon">🌧️ Monsoon Arc</option>
+                                            <option value="autumn">🍂 Autumn Arc</option>
+                                            <option value="spring">🌸 Spring Arc</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1124,13 +1333,25 @@
             cyan: { primary: '#22d3ee', primaryBg: '#06b6d4', primaryHover: '#22d3ee', borderDark: 'rgba(34, 211, 238, 0.3)', borderLight: 'rgba(6, 182, 212, 0.4)', glowDark: 'rgba(34, 211, 238, 0.03)', glowLight: 'rgba(6, 182, 212, 0.05)' },
             amber: { primary: '#fbbf24', primaryBg: '#f59e0b', primaryHover: '#fbbf24', borderDark: 'rgba(251, 191, 36, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(251, 191, 36, 0.03)', glowLight: 'rgba(245, 158, 11, 0.05)' },
             indigo: { primary: '#818cf8', primaryBg: '#6366f1', primaryHover: '#818cf8', borderDark: 'rgba(129, 140, 248, 0.3)', borderLight: 'rgba(99, 102, 241, 0.4)', glowDark: 'rgba(129, 140, 248, 0.03)', glowLight: 'rgba(99, 102, 241, 0.05)' },
-            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.03)', glowLight: 'rgba(239, 68, 68, 0.05)' }
-,
-            winter: { primary: '#bae6fd', primaryBg: '#38bdf8', primaryHover: '#7dd3fc', borderDark: 'rgba(125, 211, 252, 0.34)', borderLight: 'rgba(14, 165, 233, 0.32)', glowDark: 'rgba(125, 211, 252, 0.07)', glowLight: 'rgba(56, 189, 248, 0.08)' }
+            crimson: { primary: '#f87171', primaryBg: '#ef4444', primaryHover: '#f87171', borderDark: 'rgba(248, 113, 113, 0.3)', borderLight: 'rgba(239, 68, 68, 0.4)', glowDark: 'rgba(248, 113, 113, 0.03)', glowLight: 'rgba(239, 68, 68, 0.05)' },
+            ocean: { primary: '#2dd4bf', primaryBg: '#14b8a6', primaryHover: '#5eead4', borderDark: 'rgba(45, 212, 191, 0.3)', borderLight: 'rgba(20, 184, 166, 0.4)', glowDark: 'rgba(45, 212, 191, 0.04)', glowLight: 'rgba(20, 184, 166, 0.06)' },
+            rose: { primary: '#fb7185', primaryBg: '#f43f5e', primaryHover: '#fda4af', borderDark: 'rgba(251, 113, 133, 0.3)', borderLight: 'rgba(244, 63, 94, 0.4)', glowDark: 'rgba(251, 113, 133, 0.04)', glowLight: 'rgba(244, 63, 94, 0.06)' },
+            sky: { primary: '#38bdf8', primaryBg: '#0ea5e9', primaryHover: '#7dd3fc', borderDark: 'rgba(56, 189, 248, 0.3)', borderLight: 'rgba(14, 165, 233, 0.4)', glowDark: 'rgba(56, 189, 248, 0.04)', glowLight: 'rgba(14, 165, 233, 0.06)' },
+            violet: { primary: '#c084fc', primaryBg: '#a855f7', primaryHover: '#d8b4fe', borderDark: 'rgba(192, 132, 252, 0.3)', borderLight: 'rgba(168, 85, 247, 0.4)', glowDark: 'rgba(192, 132, 252, 0.04)', glowLight: 'rgba(168, 85, 247, 0.06)' },
+            forest: { primary: '#84cc16', primaryBg: '#65a30d', primaryHover: '#a3e635', borderDark: 'rgba(132, 204, 22, 0.3)', borderLight: 'rgba(101, 163, 13, 0.4)', glowDark: 'rgba(132, 204, 22, 0.04)', glowLight: 'rgba(101, 163, 13, 0.06)' },
+            solar: { primary: '#fcd34d', primaryBg: '#f59e0b', primaryHover: '#fde68a', borderDark: 'rgba(252, 211, 77, 0.3)', borderLight: 'rgba(245, 158, 11, 0.4)', glowDark: 'rgba(252, 211, 77, 0.04)', glowLight: 'rgba(245, 158, 11, 0.06)' },
+            winterFrost: { primary: '#93c5fd', primaryBg: '#60a5fa', primaryHover: '#bfdbfe', borderDark: 'rgba(147,197,253,.32)', borderLight: 'rgba(96,165,250,.40)', glowDark: 'rgba(147,197,253,.05)', glowLight: 'rgba(96,165,250,.07)' },
+            summerSunset: { primary: '#fb923c', primaryBg: '#f97316', primaryHover: '#fdba74', borderDark: 'rgba(251,146,60,.32)', borderLight: 'rgba(249,115,22,.40)', glowDark: 'rgba(251,146,60,.05)', glowLight: 'rgba(249,115,22,.07)' },
+            monsoonRain: { primary: '#38bdf8', primaryBg: '#0284c7', primaryHover: '#7dd3fc', borderDark: 'rgba(56,189,248,.32)', borderLight: 'rgba(2,132,199,.40)', glowDark: 'rgba(56,189,248,.05)', glowLight: 'rgba(2,132,199,.07)' },
+            autumnEmber: { primary: '#b45309', primaryBg: '#92400e', primaryHover: '#d97706', borderDark: 'rgba(180,83,9,.34)', borderLight: 'rgba(146,64,14,.42)', glowDark: 'rgba(180,83,9,.05)', glowLight: 'rgba(146,64,14,.07)' },
+            springBloom: { primary: '#ec4899', primaryBg: '#db2777', primaryHover: '#f472b6', borderDark: 'rgba(236,72,153,.30)', borderLight: 'rgba(219,39,119,.38)', glowDark: 'rgba(236,72,153,.05)', glowLight: 'rgba(219,39,119,.07)' }
         };
+        const LEGACY_ACCENT_MAP={emerald:'springBloom',cyan:'monsoonRain',indigo:'winterFrost',ocean:'monsoonRain',rose:'springBloom',sky:'summerSunset',violet:'springBloom',forest:'springBloom',solar:'summerSunset'};
+        function normalizeAccentKey(key){ return ACCENTS[key] ? (LEGACY_ACCENT_MAP[key] || key) : 'winterFrost'; }
 
         let currentAccentKey = 'emerald';
         let currentModeKey = 'dark';
+        let currentBackgroundKey = 'plain';
         let saveTimeout = null;
 
         // TUTORIAL STATE MACHINE WALKING THROUGH TABS
@@ -1149,13 +1370,14 @@
                 const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
                 if (data && data.theme) {
                     const parts = data.theme.split('_');
-                    if (parts.length === 2 && ACCENTS[parts[0]]) {
-                        currentAccentKey = parts[0];
-                        currentModeKey = parts[1];
+                    if ((parts.length === 2 || parts.length === 3) && (ACCENTS[parts[0]] || parts[0] === 'winter')) {
+                        currentAccentKey = parts[0] === 'winter' ? 'winterFrost' : normalizeAccentKey(parts[0]);
+                        currentModeKey = parts[1] === 'light' ? 'light' : 'dark';
+                        currentBackgroundKey = ['winter','summer','monsoon','autumn','spring'].includes(parts[2]) ? parts[2] : (parts[0] === 'winter' ? 'winter' : 'plain');
                     }
                 }
             } catch (e) {}
-            applyThemeUI(currentAccentKey, currentModeKey);
+            applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
         })();
 
         // Check pre-login popup seen state
@@ -1254,6 +1476,7 @@
             } else if (savedUser) {
                 await restoreSession(savedUser);
             }
+            revealThemeBoot();
             // Track unauthenticated/guest visitors in real time for the admin dashboard.
             await initGuestPresence();
             setInterval(updateHabitsStreaksTimer, 1000);
@@ -1468,13 +1691,16 @@
         async function triggerThemeUpdate() {
             const accentSelect = document.getElementById('global-accent-select');
             const modeSelect = document.getElementById('global-mode-select');
+            const backgroundSelect = document.getElementById('global-background-select');
             if (!accentSelect || !modeSelect) return;
 
-            currentAccentKey = accentSelect.value;
+            currentAccentKey = normalizeAccentKey(accentSelect.value);
             currentModeKey = modeSelect.value;
-            const combinedThemeKey = `${currentAccentKey}_${currentModeKey}`;
+            currentBackgroundKey = ['winter', 'summer', 'monsoon', 'autumn', 'spring'].includes(backgroundSelect?.value) ? backgroundSelect.value : 'plain';
+            const combinedThemeKey = `${currentAccentKey}_${currentModeKey}_${currentBackgroundKey}`;
 
-            applyThemeUI(currentAccentKey, currentModeKey);
+            applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
+            localStorage.setItem('ghost_last_theme', combinedThemeKey);
             await client.from('profiles').update({ theme: combinedThemeKey }).eq('username', MASTER_ADMIN);
             render();
         }
@@ -1617,11 +1843,158 @@
             snowLayer.dataset.ready = 'true';
         }
 
-        function applyThemeUI(accentKey, modeKey) {
-            const accent = ACCENTS[accentKey] || ACCENTS['emerald'];
+        let monsoonLightningTimer = null;
+
+        function populateFloatingLayer(layer, className, count, config) {
+            if (!layer || layer.dataset.ready === 'true') return;
+            layer.innerHTML = layer.id === 'monsoon-arc-layer' ? '<div id="monsoon-lightning-flash"></div>' : '';
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('span');
+                el.className = className + (config.extraClass ? config.extraClass(i) : '');
+                const size = config.size(i);
+                el.style.setProperty(config.sizeVar, size.toFixed(1) + 'px');
+                el.style.left = (Math.random() * 100).toFixed(2) + '%';
+                el.style.setProperty(config.driftVar, ((Math.random() * 120) - 60).toFixed(1) + 'px');
+                el.style.animationDuration = config.duration(i).toFixed(2) + 's';
+                el.style.animationDelay = (-Math.random() * config.delayMax).toFixed(2) + 's';
+                el.style.opacity = (config.opacity(i)).toFixed(2);
+                if (config.color) el.style.setProperty(config.colorVar, config.color(i));
+                fragment.appendChild(el);
+            }
+            layer.appendChild(fragment);
+            layer.dataset.ready = 'true';
+        }
+
+        function updateSummerArcVisuals(isSummer) {
+            const layer = document.getElementById('summer-arc-layer');
+            if (!layer) return;
+            document.body.classList.toggle('summer-arc', isSummer);
+            if (!isSummer || layer.dataset.ready === 'true') return;
+            layer.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            // Summer is a sunset garden rather than a single bright dot: slow rays, fireflies and a soft horizon glow.
+            for (let i = 0; i < (window.innerWidth < 640 ? 12 : 20); i++) {
+                const ray = document.createElement('span');
+                ray.className = 'summer-ray';
+                ray.style.left = (50 + (Math.random() * 26 - 13)).toFixed(1) + '%';
+                ray.style.setProperty('--ray-angle', (Math.random() * 70 - 35).toFixed(1) + 'deg');
+                ray.style.animationDuration = (12 + Math.random() * 10).toFixed(2) + 's';
+                ray.style.animationDelay = (-Math.random() * 16).toFixed(2) + 's';
+                fragment.appendChild(ray);
+            }
+            for (let i = 0; i < (window.innerWidth < 640 ? 16 : 28); i++) {
+                const firefly = document.createElement('span');
+                firefly.className = 'summer-firefly';
+                firefly.style.left = (Math.random() * 100).toFixed(2) + '%';
+                firefly.style.top = (45 + Math.random() * 48).toFixed(2) + '%';
+                firefly.style.setProperty('--firefly-drift', ((Math.random() * 80) - 40).toFixed(1) + 'px');
+                firefly.style.animationDuration = (5 + Math.random() * 7).toFixed(2) + 's';
+                firefly.style.animationDelay = (-Math.random() * 9).toFixed(2) + 's';
+                fragment.appendChild(firefly);
+            }
+            layer.appendChild(fragment);
+            layer.dataset.ready = 'true';
+        }
+
+        function updateMonsoonArcVisuals(isMonsoon) {
+            const layer = document.getElementById('monsoon-arc-layer');
+            if (!layer) return;
+            document.body.classList.toggle('monsoon-arc', isMonsoon);
+            if (!isMonsoon) {
+                if (monsoonLightningTimer) { clearTimeout(monsoonLightningTimer); monsoonLightningTimer = null; }
+                layer.classList.remove('lightning');
+                return;
+            }
+            if (layer.dataset.ready !== 'true') {
+                layer.innerHTML = '<div id="monsoon-lightning-flash"></div>';
+                for (let i = 0; i < (window.innerWidth < 640 ? 5 : 8); i++) {
+                    const cloud = document.createElement('span');
+                    cloud.className = 'monsoon-cloud';
+                    cloud.style.top = (5 + Math.random() * 28).toFixed(1) + '%';
+                    cloud.style.animationDuration = (42 + Math.random() * 34).toFixed(1) + 's';
+                    cloud.style.animationDelay = (-Math.random() * 40).toFixed(1) + 's';
+                    cloud.style.opacity = (0.18 + Math.random() * 0.18).toFixed(2);
+                    layer.appendChild(cloud);
+                }
+                for (let i = 0; i < (window.innerWidth < 640 ? 30 : 54); i++) {
+                    const rain = document.createElement('span');
+                    rain.className = 'monsoon-rain';
+                    rain.style.left = (Math.random() * 100).toFixed(2) + '%';
+                    rain.style.animationDuration = (1.0 + Math.random() * 1.2).toFixed(2) + 's';
+                    rain.style.animationDelay = (-Math.random() * 2.2).toFixed(2) + 's';
+                    rain.style.opacity = (0.18 + Math.random() * 0.35).toFixed(2);
+                    layer.appendChild(rain);
+                }
+                layer.dataset.ready = 'true';
+            }
+            scheduleMonsoonLightning();
+        }
+
+        function scheduleMonsoonLightning() {
+            const layer = document.getElementById('monsoon-arc-layer');
+            if (!layer || !document.body.classList.contains('monsoon-arc')) return;
+            if (monsoonLightningTimer) clearTimeout(monsoonLightningTimer);
+            monsoonLightningTimer = setTimeout(() => {
+                if (!document.body.classList.contains('monsoon-arc')) return;
+                layer.classList.remove('lightning');
+                void layer.offsetWidth;
+                layer.classList.add('lightning');
+                setTimeout(() => layer.classList.remove('lightning'), 420);
+                scheduleMonsoonLightning();
+            }, 6000 + Math.random() * 14000);
+        }
+
+        function updateAutumnArcVisuals(isAutumn) {
+            const layer = document.getElementById('autumn-arc-layer');
+            if (!layer) return;
+            document.body.classList.toggle('autumn-arc', isAutumn);
+            if (!isAutumn || layer.dataset.ready === 'true') return;
+            const colors = ['#92400e','#78350f','#a16207','#9a3412','#713f12'];
+            populateFloatingLayer(layer, 'autumn-leaf', window.innerWidth < 640 ? 24 : 42, {
+                sizeVar:'--leaf-w', driftVar:'--leaf-drift', delayMax:24,
+                size:i => 8 + Math.random() * 13,
+                duration:i => 11 + Math.random() * 14,
+                opacity:i => .45 + Math.random() * .42,
+                colorVar:'--leaf-color', color:i => colors[i % colors.length],
+                extraClass:() => ''
+            });
+        }
+
+        function updateSpringArcVisuals(isSpring) {
+            const layer = document.getElementById('spring-arc-layer');
+            if (!layer) return;
+            document.body.classList.toggle('spring-arc', isSpring);
+            if (!isSpring || layer.dataset.ready === 'true') return;
+            const colors = ['#f9a8d4','#fbcfe8','#f472b6','#bbf7d0','#86efac'];
+            populateFloatingLayer(layer, 'spring-petal', window.innerWidth < 640 ? 24 : 42, {
+                sizeVar:'--petal-w', driftVar:'--petal-drift', delayMax:24,
+                size:i => 7 + Math.random() * 10,
+                duration:i => 12 + Math.random() * 15,
+                opacity:i => .42 + Math.random() * .42,
+                colorVar:'--petal-color', color:i => colors[i % colors.length],
+                extraClass:i => i % 4 === 0 ? ' leaf' : ''
+            });
+        }
+
+        function updateSeasonalArcVisuals(backgroundKey) {
+            updateWinterArcVisuals(backgroundKey === 'winter');
+            updateSummerArcVisuals(backgroundKey === 'summer');
+            updateMonsoonArcVisuals(backgroundKey === 'monsoon');
+            updateAutumnArcVisuals(backgroundKey === 'autumn');
+            updateSpringArcVisuals(backgroundKey === 'spring');
+        }
+
+        function applyThemeUI(accentKey, modeKey, backgroundKey = currentBackgroundKey) {
+            const normalizedAccentKey=normalizeAccentKey(accentKey);
+            const accent = ACCENTS[normalizedAccentKey] || ACCENTS['winterFrost'];
+            currentAccentKey=normalizedAccentKey;
             const root = document.documentElement;
             const body = document.getElementById('app-body');
-            updateWinterArcVisuals(accentKey === 'winter');
+            currentBackgroundKey = ['winter', 'summer', 'monsoon', 'autumn', 'spring'].includes(backgroundKey) ? backgroundKey : 'plain';
+            // Seasonal Arc backgrounds are independent from accent colour and Dark/White mode.
+            document.body.classList.remove('summer-arc','monsoon-arc','autumn-arc','spring-arc');
+            updateSeasonalArcVisuals(currentBackgroundKey);
 
             if (modeKey === 'light') {
                 body.classList.add('light-mode');
@@ -1640,8 +2013,10 @@
 
             const accentSelect = document.getElementById('global-accent-select');
             const modeSelect = document.getElementById('global-mode-select');
-            if (accentSelect) accentSelect.value = accentKey;
+            const backgroundSelect = document.getElementById('global-background-select');
+            if (accentSelect) accentSelect.value = normalizedAccentKey;
             if (modeSelect) modeSelect.value = modeKey;
+            if (backgroundSelect) backgroundSelect.value = currentBackgroundKey;
         }
 
         function startLiveClock() {
@@ -1651,14 +2026,17 @@
             updateClock(); setInterval(updateClock,1000);
         }
 
+        function revealThemeBoot(){ try{ clearTimeout(window.__ghostThemeBootTimer); document.documentElement.classList.remove('theme-boot-pending'); document.body.classList.add('theme-ready'); }catch(e){} }
+
         async function restoreSession(username) {
             const { data, error: themeError } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
             if (!themeError && data && data.theme) {
                 const parts = data.theme.split('_');
-                if (parts.length === 2 && ACCENTS[parts[0]]) {
-                    currentAccentKey = parts[0];
-                    currentModeKey = parts[1];
-                    applyThemeUI(currentAccentKey, currentModeKey);
+                if ((parts.length === 2 || parts.length === 3) && (ACCENTS[parts[0]] || parts[0] === 'winter')) {
+                    currentAccentKey = parts[0] === 'winter' ? 'winterFrost' : normalizeAccentKey(parts[0]);
+                    currentModeKey = parts[1] === 'light' ? 'light' : 'dark';
+                    currentBackgroundKey = ['winter','summer','monsoon','autumn','spring'].includes(parts[2]) ? parts[2] : (parts[0] === 'winter' ? 'winter' : 'plain');
+                    applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
                 }
             }
 
@@ -1873,10 +2251,11 @@
             const { data: adminData } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
             if (adminData && adminData.theme) {
                 const parts = adminData.theme.split('_');
-                if (parts.length === 2 && ACCENTS[parts[0]]) {
-                    currentAccentKey = parts[0];
-                    currentModeKey = parts[1];
-                    applyThemeUI(currentAccentKey, currentModeKey);
+                if ((parts.length === 2 || parts.length === 3) && (ACCENTS[parts[0]] || parts[0] === 'winter')) {
+                    currentAccentKey = parts[0] === 'winter' ? 'winterFrost' : normalizeAccentKey(parts[0]);
+                    currentModeKey = parts[1] === 'light' ? 'light' : 'dark';
+                    currentBackgroundKey = ['winter','summer','monsoon','autumn','spring'].includes(parts[2]) ? parts[2] : (parts[0] === 'winter' ? 'winter' : 'plain');
+                    applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
                 }
             }
 
@@ -2510,6 +2889,22 @@
             renderHabits();
         }
 
+        function getHabitCurrentStreakSeconds(habit, now = new Date()) {
+            if (!habit?.startDate) return 0;
+            const seconds = Math.floor((now - new Date(habit.startDate)) / 1000);
+            return Math.max(0, Number.isFinite(seconds) ? seconds : 0);
+        }
+
+        function formatHabitStreak(seconds) {
+            const total = Math.max(0, Math.floor(Number(seconds) || 0));
+            const days = Math.floor(total / 86400);
+            const hours = Math.floor((total % 86400) / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
         function promptResetHabitStreak(id) {
             habitToResetId = id;
             const modal = document.getElementById('relapseModal');
@@ -2529,6 +2924,8 @@
             if (confirmed && habitToResetId) {
                 const habit = habits.find(h => h.id === habitToResetId);
                 if (habit) {
+                    const finishedStreak = getHabitCurrentStreakSeconds(habit);
+                    habit.bestStreakSeconds = Math.max(Number(habit.bestStreakSeconds) || 0, finishedStreak);
                     habit.startDate = new Date().toISOString();
                     habit.relapses = (habit.relapses || 0) + 1;
                     saveAndCloudSync();
@@ -2561,6 +2958,7 @@
             habits.forEach(h => {
                 const diffMs = new Date() - new Date(h.startDate);
                 const totalSeconds = Math.floor(diffMs / 1000);
+                const bestStreakSeconds = Math.max(Number(h.bestStreakSeconds) || 0, totalSeconds);
                 const days = Math.floor(totalSeconds / (3600 * 24));
                 const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -2576,6 +2974,10 @@
                                 <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Total Relapses / Resets: <span class="font-mono text-[var(--text-main)]">${h.relapses || 0}</span></p>
                             </div>
                             <div class="flex items-center gap-2">
+                                <div class="dynamic-card border rounded-xl px-2.5 py-1.5 text-center" title="Highest clean streak recorded on this habit">
+                                    <span class="block text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Best Streak</span>
+                                    <span class="block text-[11px] font-black dynamic-text font-mono mt-0.5 habit-best-streak">${escapeHtml(formatHabitStreak(bestStreakSeconds))}</span>
+                                </div>
                                 <button type="button" onclick="deleteHabit('${h.id}')" class="dynamic-card border px-2.5 py-1.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-red-400">✕</button>
                             </div>
                         </div>
@@ -2620,6 +3022,7 @@
                 if (!cardEl) return;
                 const diffMs = new Date() - new Date(h.startDate);
                 const totalSeconds = Math.floor(diffMs / 1000);
+                const bestStreakSeconds = Math.max(Number(h.bestStreakSeconds) || 0, totalSeconds);
                 const days = Math.floor(totalSeconds / (3600 * 24));
                 const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -2634,6 +3037,8 @@
                 if (hoursEl) hoursEl.innerText = hours;
                 if (minsEl) minsEl.innerText = minutes;
                 if (secsEl) secsEl.innerText = seconds;
+                const bestEl = cardEl.querySelector('.habit-best-streak');
+                if (bestEl) bestEl.innerText = formatHabitStreak(bestStreakSeconds);
             });
         }
 
@@ -3229,20 +3634,23 @@ let shareProgressType = null;
         let selectedStatsTrackerId = null;
 
         function getStatsWeeklyGroups(values) {
-            const arr = Array.from({ length: 30 }, (_, i) => Number(values?.[i]) || 0);
-            return [
-                { label: 'Week 1', start: 0, end: 6, color: '#38bdf8' },
-                { label: 'Week 2', start: 7, end: 13, color: '#818cf8' },
-                { label: 'Week 3', start: 14, end: 20, color: '#a78bfa' },
-                { label: 'Week 4', start: 21, end: 27, color: '#34d399' },
-                { label: 'Week 5', start: 28, end: 29, color: '#fbbf24' }
-            ].map(group => {
-                const slice = arr.slice(group.start, group.end + 1);
+            const arr = Array.from(values || [], v => Number(v) || 0);
+            const length = arr.length;
+            if (!length) return [];
+            const base = Math.ceil(length / 5);
+            const groups = [];
+            let startIndex = 0;
+            const colors = ['#38bdf8','#818cf8','#a78bfa','#34d399','#fbbf24'];
+            for (let i = 0; i < 5 && startIndex < length; i++) {
+                const endIndex = i === 4 ? length - 1 : Math.min(length - 1, startIndex + base - 1);
+                const slice = arr.slice(startIndex, endIndex + 1);
                 const total = slice.reduce((sum, v) => sum + v, 0);
                 const active = slice.filter(v => v > 0).length;
                 const avg = slice.length ? total / slice.length : 0;
-                return { ...group, values: slice, total, active, avg };
-            });
+                groups.push({ label:`Week ${i + 1}`, start:startIndex, end:endIndex, color:colors[i], values:slice, total, active, avg });
+                startIndex = endIndex + 1;
+            }
+            return groups;
         }
 
         function selectStatsTracker(id) {
@@ -3282,12 +3690,26 @@ let shareProgressType = null;
             const maxValue = Math.max(Number(tracker.max) || 1, ...values, 1);
             const total = values.reduce((sum, v) => sum + v, 0);
             const activeDays = values.filter(v => v > 0).length;
-            const groups = getStatsWeeklyGroups(values);
-
-            const barHtml = values.map((v, i) => {
-                const group = groups.find(g => i >= g.start && i <= g.end);
-                const pct = Math.max(2, Math.round((Math.min(v, maxValue) / maxValue) * 100));
-                const title = `Day ${i + 1}: ${v}`;
+            const today = new Date();
+            const calendarDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const calendarValues = Array.from({ length: calendarDays }, (_, dayIndex) => {
+                const dayDate = new Date(monthStart);
+                dayDate.setDate(dayIndex + 1);
+                const dataIndex = tracker.historyStartDate ? Math.floor((dayDate - new Date(`${tracker.historyStartDate}T00:00:00`)) / 86400000) : -1;
+                const isFuture = dayDate > today;
+                return { day: dayIndex + 1, date: dayDate, index: dataIndex, value: !isFuture && dataIndex >= 0 && dataIndex < values.length ? values[dataIndex] : null, isFuture };
+            });
+            const groups = getStatsWeeklyGroups(calendarValues.map(r => Number(r.value) || 0));
+            const calendarMax = Math.max(maxValue, ...calendarValues.map(r => Number(r.value) || 0), 1);
+            const barHtml = calendarValues.map(r => {
+                const group = groups.find(g => r.day - 1 >= g.start && r.day - 1 <= g.end) || { color: 'var(--theme-primary)' };
+                if (r.value === null) {
+                    if (r.isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:3px;background:${group.color};"></div>`;
+                    return `<div class="stats-bar stats-bar-empty" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · No tracker entry" style="height:3px;background:${group.color};"></div>`;
+                }
+                const pct = Math.max(2, Math.round((Math.min(r.value, calendarMax) / calendarMax) * 100));
+                const title = `${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Day ${r.index + 1}: ${r.value}`;
                 return `<div class="stats-bar" title="${title}" style="height:${pct}%;background:${group.color};"></div>`;
             }).join('');
 
@@ -3332,12 +3754,16 @@ let shareProgressType = null;
 
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-2">
-                        <span class="stats-week-label">30-Day Performance</span>
-                        <span class="text-[10px] text-[var(--text-muted)]">Days 1–30 · colour indicates week</span>
+                        <span class="stats-week-label">${today.toLocaleDateString(undefined, { month:'long', year:'numeric' })} Calendar</span>
+                        <span class="text-[10px] text-[var(--text-muted)]">Calendar axis · 1st is always the first bar · Today = ${today.getDate()}</span>
                     </div>
-                    <div class="stats-bar-track">${barHtml}</div>
-                    <div class="stats-day-labels">
-                        ${Array.from({ length: 30 }, (_, i) => `<span>${(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>`).join('')}
+                    <div class="stats-bar-track" style="--stats-columns:${calendarDays}">${barHtml}</div>
+                    <div class="stats-day-labels" style="--stats-columns:${calendarDays}">
+                        ${calendarValues.map(r => {
+                            const show = r.day === 1 || r.day % 5 === 0 || r.day === calendarDays || r.day === today.getDate();
+                            const cls = r.day === 1 ? 'stats-month-start' : (r.day === today.getDate() ? 'stats-today' : '');
+                            return `<span class="stats-axis-date ${cls}" title="${r.date.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric', year:'numeric' })}">${show ? r.day : ''}</span>`;
+                        }).join('')}
                     </div>
                 </div>
 
@@ -3381,44 +3807,33 @@ let shareProgressType = null;
             const todayRec = getTodoHistoryRecord(todayKey);
             const currentTotal = Number(todayRec?.total ?? todos.length ?? 0);
 
-            // To-Do Stats uses the same fixed 30-day cycle model as Graph Stats.
-            // A newly started history begins at Day 1 / Week 1 instead of placing
-            // the current day into Week 5 simply because we are viewing a rolling
-            // calendar window.
-            const sortedHistory = [...todoHistory]
-                .filter(h => h && /^\d{4}-\d{2}-\d{2}$/.test(h.date))
-                .sort((a, b) => a.date.localeCompare(b.date));
-
-            let cycleStart = new Date(today);
-            if (sortedHistory.length) {
-                const firstRecorded = new Date(`${sortedHistory[0].date}T00:00:00`);
-                const elapsedDays = Math.floor((today - firstRecorded) / 86400000);
-                cycleStart = elapsedDays < 30 ? firstRecorded : new Date(today);
-                if (elapsedDays >= 30) cycleStart.setDate(today.getDate() - 29);
-            } else {
-                cycleStart.setDate(today.getDate() - 29);
-            }
-
-            const recentDays = [];
-            for (let i = 0; i < 30; i++) {
-                const d = new Date(cycleStart);
-                d.setDate(cycleStart.getDate() + i);
+            // To-Do Stats follows the real calendar month. The first bar is always
+            // the 1st of the current month, so the front bars are never removed or shifted.
+            const calendarDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const recentDays = Array.from({ length: calendarDays }, (_, i) => {
+                const d = new Date(monthStart);
+                d.setDate(i + 1);
                 const rec = getTodoHistoryRecord(getTodoHistoryDateKey(d));
                 const completed = Number(rec?.completed || 0);
                 const total = Number(rec?.total || 0);
                 const pct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
-                recentDays.push({ date: d, completed, total, pct });
-            }
+                return { date: d, completed, total, pct };
+            });
 
             const totalCompleted30 = recentDays.reduce((sum, r) => sum + r.completed, 0);
             const activeDays30 = recentDays.filter(r => r.total > 0).length;
             const avgPct30 = activeDays30 ? Math.round(recentDays.filter(r => r.total > 0).reduce((sum, r) => sum + r.pct, 0) / activeDays30) : 0;
+            const todoCurrentIndex = today.getDate() - 1;
 
             if (selectedTodoHistoryRange === 'daily') {
                 const dayBars = recentDays.map((r, i) => {
-                    const group = getStatsWeeklyGroups(Array(30).fill(0))[Math.floor(i / 7)] || { color: 'var(--theme-primary)' };
-                    const label = i === 0 || (i + 1) % 5 === 0 ? i + 1 : '';
-                    return `<div class="stats-bar" title="Day ${i + 1}: ${r.completed}/${r.total} · ${r.pct}%" style="height:${Math.max(2, r.pct)}%;background:${group.color};"></div>`;
+                    const todoGroups = getStatsWeeklyGroups(recentDays.map(r => r.completed));
+                    const group = todoGroups.find(g => i >= g.start && i <= g.end) || { color: 'var(--theme-primary)' };
+                    const isFuture = r.date > today;
+                    if (isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:3px;background:${group.color};"></div>`;
+                    const emptyDay = r.total <= 0;
+                    return `<div class="stats-bar${emptyDay ? ' stats-bar-empty' : ''}" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · ${r.completed}/${r.total} · ${r.pct}%" style="height:${emptyDay ? 3 : Math.max(2, r.pct)}%;background:${group.color};"></div>`;
                 }).join('');
 
                 detail.innerHTML = `
@@ -3435,7 +3850,7 @@ let shareProgressType = null;
                             </div>
                             <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
                                 <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Active Days</div>
-                                <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays30}/30</div>
+                                <div class="text-sm font-black text-[var(--text-main)] mt-0.5">${activeDays30}/${calendarDays}</div>
                             </div>
                             <div class="rounded-xl border border-[var(--border-color)] px-3 py-2">
                                 <div class="text-[9px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Average</div>
@@ -3446,19 +3861,24 @@ let shareProgressType = null;
 
                     <div>
                         <div class="flex items-center justify-between gap-3 mb-2">
-                            <span class="stats-week-label">30-Day Performance</span>
-                            <span class="text-[10px] text-[var(--text-muted)]">Days 1–30 · colour indicates week</span>
+                            <span class="stats-week-label">${today.toLocaleDateString(undefined, { month:'long', year:'numeric' })} Calendar</span>
+                            <span class="text-[10px] text-[var(--text-muted)]">Calendar axis · 1st is always the first bar · Today = ${today.getDate()}</span>
                         </div>
-                        <div class="stats-bar-track">${dayBars}</div>
-                        <div class="stats-day-labels">
-                            ${Array.from({ length: 30 }, (_, i) => `<span>${(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}</span>`).join('')}
+                        <div class="stats-bar-track" style="--stats-columns:${calendarDays}">${dayBars}</div>
+                        <div class="stats-day-labels" style="--stats-columns:${calendarDays}">
+                            ${recentDays.map((r, i) => {
+                                const day = i + 1;
+                                const show = day === 1 || day % 5 === 0 || day === calendarDays || day === today.getDate();
+                                const cls = day === 1 ? 'stats-month-start' : (day === today.getDate() ? 'stats-today' : '');
+                                return `<span class="stats-axis-date ${cls}" title="${r.date.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric', year:'numeric' })}">${show ? day : ''}</span>`;
+                            }).join('')}
                         </div>
                     </div>
 
                     <div>
                         <div class="stats-week-label mb-2">Weekly Breakdown</div>
                         <div class="stats-week-grid">
-                            ${getStatsWeeklyGroups(Array(30).fill(0)).map((g, idx) => {
+                            ${getStatsWeeklyGroups(recentDays.map(r => r.completed)).map((g, idx) => {
                                 const slice = recentDays.slice(g.start, g.end + 1);
                                 const completed = slice.reduce((sum, r) => sum + r.completed, 0);
                                 const total = slice.reduce((sum, r) => sum + r.total, 0);
@@ -3882,10 +4302,12 @@ let shareProgressType = null;
                 client.from('profiles').select('theme, force_logout, is_admin').eq('username', MASTER_ADMIN).maybeSingle().then(({data: adminData}) => {
                     if (adminData && adminData.theme) {
                         const parts = adminData.theme.split('_');
-                        if (parts.length === 2 && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey)) {
-                            currentAccentKey = parts[0];
-                            currentModeKey = parts[1];
-                            applyThemeUI(currentAccentKey, currentModeKey);
+                        const savedBackground = ['winter','summer','monsoon','autumn','spring'].includes(parts[2]) ? parts[2] : (parts[0] === 'winter' ? 'winter' : 'plain');
+                        if ((parts.length === 2 || parts.length === 3) && (parts[0] !== currentAccentKey || parts[1] !== currentModeKey || savedBackground !== currentBackgroundKey)) {
+                            currentAccentKey = parts[0] === 'winter' ? 'winterFrost' : normalizeAccentKey(parts[0]);
+                            currentModeKey = parts[1] === 'light' ? 'light' : 'dark';
+                            currentBackgroundKey = savedBackground;
+                            applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
                         }
                     }
                 });
