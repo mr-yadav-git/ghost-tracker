@@ -10,10 +10,16 @@
     <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>html.theme-boot-pending body{visibility:hidden} html.theme-boot-pending body.theme-boot-timeout{visibility:visible}</style>
+    <style>html.theme-boot-pending body{visibility:hidden!important} html.theme-boot-pending body.theme-boot-timeout{visibility:visible!important}</style>
     <script>
-        try { document.documentElement.classList.add('theme-boot-pending'); } catch(e) {}
-        window.__ghostThemeBootTimer=setTimeout(function(){ try{ document.documentElement.classList.remove('theme-boot-pending'); document.body&&document.body.classList.add('theme-boot-timeout'); }catch(e){} },3500);
+        /* Keep the page hidden until the saved theme has been applied. The local theme
+           is read synchronously so a cached selection never flashes Emerald first. */
+        try {
+            document.documentElement.classList.add('theme-boot-pending');
+            const bootTheme = localStorage.getItem('ghost_last_theme');
+            if (bootTheme) document.documentElement.dataset.ghostTheme = bootTheme;
+        } catch(e) {}
+        window.__ghostThemeBootTimer=setTimeout(function(){ try{ document.documentElement.classList.remove('theme-boot-pending'); document.body&&document.body.classList.add('theme-boot-timeout'); }catch(e){} },8000);
 
         /* Standalone/PWA cache-bust: installed Brave apps can otherwise keep an older HTML shell. */
         (function(){
@@ -602,8 +608,8 @@
             transition: height .2s ease, opacity .15s ease, transform .15s ease;
         }
         .stats-bar:hover { opacity: 1; transform: translateY(-2px); }
-        .stats-bar-empty { opacity: .78; pointer-events: auto; }
-        .stats-bar-future { opacity: .45; pointer-events: none; }
+        .stats-bar-empty { opacity: .82; pointer-events: auto; }
+        .stats-bar-future { opacity: .72; pointer-events: auto; min-height: 4px; }
         .stats-day-labels {
             display: grid;
             grid-template-columns: repeat(var(--stats-columns, 30), minmax(8px, 1fr));
@@ -1046,8 +1052,8 @@
                                     <div class="flex flex-wrap gap-2 items-center">
                                         <select id="global-accent-select" onchange="triggerThemeUpdate()" class="dynamic-card border rounded-xl px-3 py-2 text-xs dynamic-text font-semibold focus:outline-none">
                                             <option value="winterFrost">❄️ Winter Frost</option>
-                                            <option value="summerSunset">☀️ Summer Sunset</option>
-                                            <option value="monsoonRain">🌧️ Monsoon Rain</option>
+                                            <option value="summerSunset">☀️ Summer Gold</option>
+                                            <option value="monsoonRain">🌧️ Monsoon Mist</option>
                                             <option value="autumnEmber">🍂 Autumn Ember</option>
                                             <option value="springBloom">🌸 Spring Bloom</option>
                                             <option value="amber">Matrix Amber</option>
@@ -1365,7 +1371,21 @@
             { tab: 'profile', title: 'User Profile & Account', desc: 'Manage your active session details, check your operator role, or securely sign out whenever you choose.' }
         ];
 
-        (async function initThemeOnLoad() {
+        window.__ghostThemePromise = (async function initThemeOnLoad() {
+            // Local storage is the immediate source for the last selected browser theme.
+            try {
+                const localTheme = localStorage.getItem('ghost_last_theme');
+                if (localTheme) {
+                    const parts = localTheme.split('_');
+                    if ((parts.length === 2 || parts.length === 3) && (ACCENTS[parts[0]] || parts[0] === 'winter')) {
+                        currentAccentKey = parts[0] === 'winter' ? 'winterFrost' : normalizeAccentKey(parts[0]);
+                        currentModeKey = parts[1] === 'light' ? 'light' : 'dark';
+                        currentBackgroundKey = ['winter','summer','monsoon','autumn','spring'].includes(parts[2]) ? parts[2] : (parts[0] === 'winter' ? 'winter' : 'plain');
+                    }
+                }
+            } catch (e) {}
+
+            // Then confirm/sync the saved server theme before the boot veil is removed.
             try {
                 const { data } = await client.from('profiles').select('theme').eq('username', MASTER_ADMIN).maybeSingle();
                 if (data && data.theme) {
@@ -1377,7 +1397,7 @@
                     }
                 }
             } catch (e) {}
-            applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
+            return true;
         })();
 
         // Check pre-login popup seen state
@@ -1465,6 +1485,8 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (renderPublicProgressView()) return;
+            try { await window.__ghostThemePromise; } catch (e) {}
+            applyThemeUI(currentAccentKey, currentModeKey, currentBackgroundKey);
             startLiveClock();
             
             const shareInput = document.getElementById('site-share-url');
@@ -3705,8 +3727,8 @@ let shareProgressType = null;
             const barHtml = calendarValues.map(r => {
                 const group = groups.find(g => r.day - 1 >= g.start && r.day - 1 <= g.end) || { color: 'var(--theme-primary)' };
                 if (r.value === null) {
-                    if (r.isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:3px;background:${group.color};"></div>`;
-                    return `<div class="stats-bar stats-bar-empty" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · No tracker entry" style="height:3px;background:${group.color};"></div>`;
+                    if (r.isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:4px;background:${group.color};"></div>`;
+                    return `<div class="stats-bar stats-bar-empty" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · No tracker entry" style="height:4px;background:${group.color};"></div>`;
                 }
                 const pct = Math.max(2, Math.round((Math.min(r.value, calendarMax) / calendarMax) * 100));
                 const title = `${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Day ${r.index + 1}: ${r.value}`;
@@ -3831,7 +3853,7 @@ let shareProgressType = null;
                     const todoGroups = getStatsWeeklyGroups(recentDays.map(r => r.completed));
                     const group = todoGroups.find(g => i >= g.start && i <= g.end) || { color: 'var(--theme-primary)' };
                     const isFuture = r.date > today;
-                    if (isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:3px;background:${group.color};"></div>`;
+                    if (isFuture) return `<div class="stats-bar stats-bar-future" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · Future day" style="height:4px;background:${group.color};"></div>`;
                     const emptyDay = r.total <= 0;
                     return `<div class="stats-bar${emptyDay ? ' stats-bar-empty' : ''}" title="${r.date.toLocaleDateString(undefined, { month:'short', day:'numeric' })} · ${r.completed}/${r.total} · ${r.pct}%" style="height:${emptyDay ? 3 : Math.max(2, r.pct)}%;background:${group.color};"></div>`;
                 }).join('');
