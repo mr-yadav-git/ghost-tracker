@@ -1007,7 +1007,8 @@
                             <span class="w-2 h-2 rounded-full dynamic-bg animate-pulse"></span>
                             <span class="text-xs text-[var(--text-muted)]">Logged in as: <strong id="display-user" class="dynamic-text font-semibold"></strong> <span id="profile-role-badge" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase"></span></span>
                         </div>
-                        <div class="flex items-center gap-3 pt-2">
+                        <div class="flex flex-wrap items-center gap-3 pt-2">
+                            <button onclick="changeOwnPassword()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Change Password</button>
                             <button id="regular-delete-btn" onclick="handleRegularDeleteAccount()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs px-4 py-2 rounded-xl hidden font-semibold">Delete Account</button>
                             <button onclick="handleLogout()" class="dynamic-card border text-xs px-4 py-2 rounded-xl text-[var(--text-main)] font-semibold">Logout</button>
                         </div>
@@ -2609,7 +2610,7 @@
                                 : `<button type="button" onclick="adminToggleRole('${u.username}', true)" class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px]">Make Admin</button>`
                         ) : '<span class="text-[10px] text-[var(--text-muted)] italic">Protected</span>'}
                         <button type="button" onclick="adminForceLogout('${u.username}')" class="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px]">Logout</button>
-                        <button type="button" onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>
+                        ${isUserMaster ? '<span class="text-[10px] text-[var(--text-muted)] italic">Password protected</span>' : `<button type="button" onclick="adminResetPassword('${u.username}')" class="dynamic-card border px-2.5 py-1 rounded-lg text-[11px] text-[var(--text-main)]">Reset Pass</button>`}
                         ${!isUserMaster ? `<button type="button" onclick="adminDeleteAccount('${u.username}')" class="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-lg text-[11px]">Delete</button>` : ''}
                     </td>
                 </tr>`;
@@ -2647,10 +2648,78 @@
             }
         }
 
+        async function changeOwnPassword() {
+            if (!currentUser || isGuestUser) {
+                alert('Please log in to change your password.');
+                return;
+            }
+
+            const currentPass = prompt('SECURITY CHECK: Enter your current password:');
+            if (currentPass === null) return;
+            if (!currentPass) {
+                alert('Current password is required.');
+                return;
+            }
+
+            const { data: userData, error: fetchError } = await client
+                .from('profiles')
+                .select('password')
+                .eq('username', currentUser)
+                .single();
+
+            if (fetchError || !userData || userData.password !== currentPass) {
+                alert('Authentication failed: incorrect current password.');
+                return;
+            }
+
+            const newPass = prompt('Enter your new password (minimum 5 characters):');
+            if (newPass === null) return;
+            if (!newPass || newPass.length < 5) {
+                alert('New password must be at least 5 characters.');
+                return;
+            }
+            if (/\s/.test(newPass)) {
+                alert('New password cannot contain spaces.');
+                return;
+            }
+
+            const confirmPass = prompt('Confirm your new password:');
+            if (confirmPass === null) return;
+            if (confirmPass !== newPass) {
+                alert('The new passwords do not match.');
+                return;
+            }
+
+            const { error: updateError } = await client
+                .from('profiles')
+                .update({ password: newPass })
+                .eq('username', currentUser);
+
+            if (updateError) {
+                alert(`Password update failed: ${updateError.message}`);
+                return;
+            }
+
+            alert('Your password was changed successfully.');
+        }
+
         async function adminResetPassword(targetUser) {
+            // HARD GUARD: the Master Admin password may NEVER be reset through
+            // the admin-user management flow. The Master Admin may only change
+            // their own password through changeOwnPassword(), which verifies
+            // the current password first.
+            const normalizedTarget = String(targetUser || '').trim();
+            if (normalizedTarget === String(MASTER_ADMIN).trim()) {
+                alert('Protected account: the Master Admin password can only be changed by the Master Admin from their own Profile.');
+                return;
+            }
+            if (!isAdmin && currentUser !== MASTER_ADMIN) {
+                alert('Admin access required.');
+                return;
+            }
             let newPass = prompt(`Enter new temporary password for user "${targetUser}":`);
             if (!newPass) return;
-            const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser);
+            const { error } = await client.from('profiles').update({ password: newPass }).eq('username', targetUser).neq('username', MASTER_ADMIN);
             if (!error) {
                 alert(`Password successfully updated.`);
                 renderAdminPanel();
@@ -3370,7 +3439,9 @@ let shareProgressType = null;
                 shareCanvasText(ctx, `🛡️ CLEAN TIMER • ${h.name}`, 140, 230, 45, main, '900');
                 shareCanvasText(ctx, `${String(days).padStart(2,'0')}d  ${String(hours).padStart(2,'0')}h  ${String(minutes).padStart(2,'0')}m  ${String(seconds).padStart(2,'0')}s`, 140, 400, 92, accent, '900');
                 shareCanvasText(ctx, 'time since I last repeated this habit', 150, 475, 30, muted, '600');
-                shareCanvasText(ctx, `Relapses / resets: ${h.relapses || 0}`, 150, 555, 28, main, '700');
+                const bestStreakSeconds = Math.max(Number(h.bestStreakSeconds) || 0, totalSeconds);
+                shareCanvasText(ctx, `Best streak: ${formatHabitStreak(bestStreakSeconds)}`, 150, 555, 30, accent, '800');
+                shareCanvasText(ctx, `Relapses / resets: ${h.relapses || 0}`, 150, 615, 28, main, '700');
             }
 
             if (photoImg) {
@@ -3416,9 +3487,12 @@ let shareProgressType = null;
             } else if (type === 'habit') {
                 const h = habits.find(x => String(x.id) === String(id));
                 if (!h) return window.location.href.split('#')[0];
+                const elapsedSeconds = Math.max(0, Math.floor((new Date() - new Date(h.startDate)) / 1000));
+                const bestStreakSeconds = Math.max(Number(h.bestStreakSeconds) || 0, elapsedSeconds);
                 payload.habit = {
                     name: h.name || 'Clean Timer',
-                    elapsedSeconds: Math.max(0, Math.floor((new Date() - new Date(h.startDate)) / 1000)),
+                    elapsedSeconds,
+                    bestStreakSeconds,
                     relapses: Number(h.relapses) || 0
                 };
             }
@@ -3465,7 +3539,8 @@ let shareProgressType = null;
                     <div class="text-4xl mb-4">🛡️</div><h2 class="text-2xl sm:text-3xl font-black dynamic-text">${escapeHtml(payload.habit.name)}</h2>
                     <div class="text-3xl sm:text-5xl font-black mt-6" style="color:var(--theme-primary)">${String(d).padStart(2,'0')}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s</div>
                     <div class="text-sm text-[var(--text-muted)] mt-3">time since the last repeated habit</div>
-                    <div class="text-xs font-semibold dynamic-text mt-5">Relapses / resets: ${Number(payload.habit.relapses)||0}</div>
+                    <div class="text-base font-black mt-5" style="color:var(--theme-primary)">Best streak: ${escapeHtml(formatHabitStreak(Math.max(Number(payload.habit.bestStreakSeconds)||0, e)))}</div>
+                    <div class="text-xs font-semibold dynamic-text mt-3">Relapses / resets: ${Number(payload.habit.relapses)||0}</div>
                 </div>`;
             } else if (payload.type === 'tracker' && payload.tracker) {
                 const t=payload.tracker, values=Array.isArray(t.data)?t.data.map(Number):[], total=values.reduce((a,b)=>a+(Number.isFinite(b)?b:0),0), active=values.filter(v=>Number(v)!==0).length;
