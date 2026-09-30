@@ -1044,6 +1044,16 @@
                                 </div>
                             </div>
 
+                            <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] flex items-center gap-2">📅 Guests Arrived Today</h3>
+                                        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Unique Guest Mode visitors recorded today.</p>
+                                    </div>
+                                    <span id="admin-today-guest-count" class="text-2xl font-black dynamic-text font-mono">0</span>
+                                </div>
+                            </div>
+
                             <div class="dynamic-card-solid border rounded-2xl p-5 shadow-sm space-y-4">
                                 <div class="flex justify-between items-center flex-wrap gap-4">
                                     <div>
@@ -1608,6 +1618,50 @@
             renderAdminPresenceIndicators();
         }
 
+        // Persist one Guest Mode arrival per browser per local calendar day.
+        // The database-backed counter is fetched only when the admin panel is opened.
+        async function recordGuestArrival() {
+            const today = localDateKey();
+            try {
+                if (localStorage.getItem('ghost_guest_arrival_date') === today) return;
+                const visitId = `${GUEST_PRESENCE_ID}:${today}`;
+                const { error } = await client.from('guest_visits').insert({
+                    visit_id: visitId,
+                    visit_date: today
+                });
+                if (!error) localStorage.setItem('ghost_guest_arrival_date', today);
+            } catch (e) {
+                // Analytics must never block or affect Guest Mode.
+            }
+        }
+
+        let adminTodayGuestCountDate = null;
+        let adminTodayGuestCountValue = null;
+
+        async function fetchTodayGuestCount() {
+            const el = document.getElementById('admin-today-guest-count');
+            if (!el || currentUser !== MASTER_ADMIN && !isAdmin) return;
+
+            const today = localDateKey();
+            if (adminTodayGuestCountDate === today && adminTodayGuestCountValue !== null) {
+                el.innerText = String(adminTodayGuestCountValue);
+                return;
+            }
+
+            try {
+                const { data, error } = await client.rpc('get_guest_visits_today', { requested_date: today });
+                if (error) throw error;
+                const count = Number(data);
+                if (!Number.isFinite(count)) throw new Error('Invalid guest count');
+                adminTodayGuestCountDate = today;
+                adminTodayGuestCountValue = count;
+                el.innerText = String(count);
+            } catch (e) {
+                // Keep the existing small panel stable if the optional analytics table/function is not installed yet.
+                el.innerText = '—';
+            }
+        }
+
         function renderAdminPresenceIndicators() {
             document.querySelectorAll('[data-presence-user]').forEach(el => {
                 const username = el.getAttribute('data-presence-user');
@@ -1692,6 +1746,7 @@
                 if (hasAdminAccess) {
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.add('hidden');
+                    fetchTodayGuestCount();
                 } else {
                     document.getElementById('admin-section').classList.add('hidden');
                     document.getElementById('regular-trackers-wrapper').classList.remove('hidden');
@@ -3372,6 +3427,7 @@
             guestDataSaveEnabled = true;
             currentUser = GUEST_USER;
             isAdmin = false;
+            recordGuestArrival();
             localStorage.setItem('ghost_current_user', GUEST_USER);
             loadGuestData();
             checkAndResetPeriodicGoals();
